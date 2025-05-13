@@ -1,27 +1,32 @@
 NAME = webserv
 
-SRCS = main.cpp Server.cpp
+SRCS_DIR = src/
+BUILD_DIR = build/
 
-OBJS = $(addprefix build/, $(SRCS:.cpp=.o))
+SRCS = main.cpp
+
+SRCS := $(addprefix $(SRCS_DIR), $(SRCS))
+
+OBJS := $(addprefix $(BUILD_DIR), $(notdir $(SRCS:.cpp=.o)))
 
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./inc
 
 $(NAME): $(OBJS)
 	@ echo " \033[33mCompiling webserv \033[m"
 	@ $(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
 	@ echo " \033[1;32m webserv compiled\033[m"
 
-build/%.o: %.cpp
-	@ mkdir -p build/
+$(BUILD_DIR)%.o: $(SRCS_DIR)%.cpp
+	@ mkdir -p $(BUILD_DIR)
 	@ $(CXX) $(CXXFLAGS) -c $< -o $@
 
 all: $(NAME)
 
 clean:
 	@ rm -f $(OBJS)
-	@ rm -df build
+	@ rm -df $(BUILD_DIR)
 	@ echo " \033[32m Object files cleaned\033[m"
 
 fclean: clean
