@@ -3,7 +3,7 @@ NAME = webserv
 SRCS_DIR = src/
 BUILD_DIR = build/
 
-SRCS = main.cpp
+SRCS = main.cpp Location.cpp Server.cpp
 
 SRCS := $(addprefix $(SRCS_DIR), $(SRCS))
 
