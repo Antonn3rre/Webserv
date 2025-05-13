@@ -9,9 +9,11 @@ SRCS := $(addprefix $(SRCS_DIR), $(SRCS))
 
 OBJS := $(addprefix $(BUILD_DIR), $(notdir $(SRCS:.cpp=.o)))
 
+DEP=$(OBJS:.o=.d)
+
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./inc
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./inc -MMD -MP
 
 $(NAME): $(OBJS)
 	@ echo " \033[33mCompiling webserv \033[m"
@@ -25,7 +27,7 @@ $(BUILD_DIR)%.o: $(SRCS_DIR)%.cpp
 all: $(NAME)
 
 clean:
-	@ rm -f $(OBJS)
+	@ rm -f $(OBJS) $(DEP)
 	@ rm -df $(BUILD_DIR)
 	@ echo " \033[32m Object files cleaned\033[m"
 
@@ -36,3 +38,5 @@ fclean: clean
 re: fclean all
 
 .PHONY: all fclean re clean
+
+-include $(DEP)
