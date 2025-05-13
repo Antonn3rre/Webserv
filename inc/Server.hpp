@@ -5,16 +5,14 @@
 #include <iostream>
 #include <string>
 
-class Server
-{
+class Server {
   public:
 	Server(char *);
 	Server(const Server &);
 	Server &operator=(const Server &);
 	~Server();
 
-	class FileProblemException : public std::exception
-	{
+	class FileProblemException : public std::exception {
 	  public:
 		FileProblemException(const std::string &message);
 		const char *what() const throw() { return _errorMessage.c_str(); }
