@@ -10,6 +10,7 @@ UseTab: ForIndentation
 TabWidth: 4
 IndentWidth: 4
 IndentCaseLabels: true
+AccessModifierOffset: 0
 
 # Column limit
 ColumnLimit: 100

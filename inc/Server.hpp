@@ -6,23 +6,23 @@
 #include <string>
 
 class Server {
-  public:
+	public:
 	Server(char *);
 	Server(const Server &);
 	Server &operator=(const Server &);
 	~Server();
 
 	class FileProblemException : public std::exception {
-	  public:
+		public:
 		FileProblemException(const std::string &message);
 		const char *what() const throw() { return _errorMessage.c_str(); }
 		virtual ~FileProblemException() throw();
 
-	  private:
+		private:
 		std::string _errorMessage;
 	};
 
-  private:
+	private:
 	std::string _listen;
 	//	std::list<std::string> server_names; // vector
 	//	std::map<int, std::string> error_page;
