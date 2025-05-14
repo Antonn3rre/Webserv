@@ -3,9 +3,15 @@ NAME = webserv
 SRCS_DIR = src/
 BUILD_DIR = build/
 
-SRCS = main.cpp Location.cpp Server.cpp AMessage.cpp AStartLine.cpp Header.cpp ResponseMessage.cpp RequestLine.cpp RequestMessage.cpp StatusLine.cpp
+SRCS_MAIN = main.cpp
 
-SRCS := $(addprefix $(SRCS_DIR), $(SRCS))
+SRCS_SERVER = Location.cpp Server.cpp 
+
+SRCS_MESSAGES = AMessage.cpp AStartLine.cpp Header.cpp ResponseMessage.cpp RequestLine.cpp RequestMessage.cpp StatusLine.cpp
+
+SRCS := $(addprefix $(SRCS_DIR)main/, $(SRCS_MAIN)) \
+		$(addprefix $(SRCS_DIR)server/, $(SRCS_SERVER)) \
+		$(addprefix $(SRCS_DIR)messages/, $(SRCS_MESSAGES)) \
 
 OBJS := $(addprefix $(BUILD_DIR), $(notdir $(SRCS:.cpp=.o)))
 
@@ -20,7 +26,7 @@ $(NAME): $(OBJS)
 	@ $(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
 	@ echo " \033[1;32m webserv compiled\033[m"
 
-$(BUILD_DIR)%.o: $(SRCS_DIR)%.cpp
+$(BUILD_DIR)%.o: $(SRCS_DIR)*/%.cpp
 	@ mkdir -p $(BUILD_DIR)
 	@ $(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -28,7 +34,7 @@ all: $(NAME)
 
 clean:
 	@ rm -f $(OBJS) $(DEP)
-	@ rm -df $(BUILD_DIR)
+	@ rm -rd $(BUILD_DIR)
 	@ echo " \033[32m Object files cleaned\033[m"
 
 fclean: clean
