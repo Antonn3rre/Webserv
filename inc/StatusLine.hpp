@@ -6,13 +6,14 @@
 
 class StatusLine : public AStartLine {
 	private:
-	unsigned short    _statusCode;
-	const std::string _reasonPhrase;
+	unsigned short _statusCode;
+	std::string    _reasonPhrase;
 
 	public:
-	StatusLine(const std::string &method, const std::string &requestUri);
+	StatusLine(const std::string &line);
+	// StatusLine(const std::string &method, const std::string &requestUri);
 
-	unsigned short    &getStatusCode() const;
+	unsigned short     getStatusCode() const;
 	const std::string &getReasonPhrase() const;
 
 	std::string str() const;

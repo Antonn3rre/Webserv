@@ -9,6 +9,7 @@ class AStartLine {
 
 	public:
 	AStartLine(const std::string &version);
+	virtual ~AStartLine();
 
 	const std::string &getHttpVersion() const;
 

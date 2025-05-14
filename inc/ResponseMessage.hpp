@@ -4,12 +4,16 @@
 #include "AMessage.hpp"
 #include "StatusLine.hpp"
 
-class RequestMessage : public AMessage {
+class ResponseMessage : public AMessage {
 	private:
-	StatusLine _startLine;
+	const StatusLine _startLine;
 
 	public:
-	RequestMessage();
+	ResponseMessage(const std::string &message);
+
+	const std::string &getHttpVersion() const;
+
+	std::string str() const;
 };
 
 #endif

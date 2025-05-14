@@ -10,7 +10,7 @@ class Header {
 		Request,
 		Response,
 		Entity,
-	} const _type;
+	} _type;
 	const std::string _name;
 	const std::string _value;
 

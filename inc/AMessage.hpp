@@ -11,10 +11,10 @@ class AMessage {
 	std::string         _body;
 
 	public:
-	AMessage(const std::string &message);
+	AMessage(const std::string &subMessage);
 
-	const std::string &getHttpVersion() const;
-	std::string        string() const;
+	virtual const std::string &getHttpVersion() const = 0;
+	virtual std::string        str() const = 0;
 };
 
 #endif

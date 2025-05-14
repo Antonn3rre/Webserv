@@ -6,10 +6,14 @@
 
 class RequestMessage : public AMessage {
 	private:
-	RequestLine _startLine;
+	const RequestLine _startLine;
 
 	public:
-	RequestMessage();
+	RequestMessage(const std::string &message);
+
+	const std::string &getHttpVersion() const;
+
+	std::string str() const;
 };
 
 #endif
