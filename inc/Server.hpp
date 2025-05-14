@@ -1,8 +1,8 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <fstream>
-#include <iostream>
+#include <deque>
+#include <map>
 #include <string>
 
 class Server {
@@ -12,24 +12,35 @@ class Server {
 	Server &operator=(const Server &);
 	~Server();
 
-	class FileProblemException : public std::exception {
+	class Exception : public std::exception {
 		public:
-		FileProblemException(const std::string &message);
+		Exception(const std::string &message);
 		const char *what() const throw() { return _errorMessage.c_str(); }
-		virtual ~FileProblemException() throw();
+		virtual ~Exception() throw();
 
 		private:
 		std::string _errorMessage;
 	};
 
 	private:
-	std::string _listen;
-	//	std::list<std::string> server_names; // vector
-	//	std::map<int, std::string> error_page;
-	std::string _host;
-	std::string _root;
-	//	std::list<std::string> index;
-	//	std::list<Location> location;
+	std::string                _listen;
+	std::deque<std::string>    _serverName;
+	std::map<int, std::string> _errorPage;
+	std::string                _clientMaxBodySize;
+	std::string                _host;
+	std::string                _root;
+	std::deque<std::string>    _index;
+	// std::deque<Location>        location;
+	//	manque CGI
+
+	void _parseListen(std::string &, std::fstream &);
+	void _parseServerName(std::string &, std::fstream &);
+	void _parseErrorPage(std::string &, std::fstream &);
+	void _parseClientMax(std::string &, std::fstream &);
+	void _parseHost(std::string &, std::fstream &);
+	void _parseRoot(std::string &, std::fstream &);
+	void _parseIndex(std::string &, std::fstream &);
+	void _parseLocation(std::string &, std::fstream &);
 };
 
 #endif // !SERVER_HPP
