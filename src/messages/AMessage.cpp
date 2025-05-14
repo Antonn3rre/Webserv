@@ -14,6 +14,6 @@ AMessage::AMessage(const std::string &subMessage) {
 	}
 
 	while (std::getline(sstream, line)) {
-		_body += line;
+		_body += line + "\n";
 	}
 }

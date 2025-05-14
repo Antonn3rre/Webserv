@@ -1,9 +1,9 @@
-#include "AMessage.hpp"
 #include "ResponseMessage.hpp"
+#include "AMessage.hpp"
 
 ResponseMessage::ResponseMessage(const std::string &message)
     : AMessage(message.substr(message.find('\n') + 1, std::string::npos)),
-      _startLine(message.substr(0, message.find('\n') - 1)) {}
+      _startLine(message.substr(0, message.find('\n'))) {}
 
 const std::string &ResponseMessage::getHttpVersion() const { return _startLine.getHttpVersion(); }
 

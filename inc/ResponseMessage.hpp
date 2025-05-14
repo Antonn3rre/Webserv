@@ -1,5 +1,5 @@
-#ifndef REQUESTMESSAGE_HPP
-#define REQUESTMESSAGE_HPP
+#ifndef RESPONSEMESSAGE_HPP
+#define RESPONSEMESSAGE_HPP
 
 #include "AMessage.hpp"
 #include "StatusLine.hpp"
