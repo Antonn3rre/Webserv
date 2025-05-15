@@ -22,27 +22,47 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./inc -MMD -MP
 
 $(NAME): $(OBJS)
-	@ echo " \033[33mCompiling webserv \033[m"
+	@ echo " \033[33mCompiling Webserv \033[m"
 	@ $(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
-	@ echo " \033[1;32m webserv compiled\033[m"
+	@ echo " \033[32m \033[1mWebserv\033[22m compiled\033[m"
 
 $(BUILD_DIR)%.o: $(SRCS_DIR)*/%.cpp
 	@ mkdir -p $(BUILD_DIR)
 	@ $(CXX) $(CXXFLAGS) -c $< -o $@
 
+TEST_NAME = test_webserv
+TEST_DIR = test/
+
+$(TEST_DIR)%.o: $(TEST_DIR)%.cpp
+	@ $(CXX) $(CXXFLAGS) -c $< -o $@
+
+TEST_SRCS := $(addprefix $(SRCS_DIR)server/, $(SRCS_SERVER)) \
+			 $(addprefix $(SRCS_DIR)messages/, $(SRCS_MESSAGES)) \
+
+TEST_OBJS := $(addprefix $(BUILD_DIR), $(notdir $(TEST_SRCS:.cpp=.o))) \
+			 $(TEST_DIR)test.o
+
+TEST_DEP=$(TEST_OBJS:.o=.d)
+
+test: $(TEST_OBJS)
+	@ echo " \033[33mCompiling Webserv tests\033[m"
+	@ $(CXX) $(CXXFLAGS) -o $(TEST_NAME) $(TEST_OBJS)
+	@ echo " \033[34m \033[1mWebserv\033[22m tests compiled\033[m"
+
 all: $(NAME)
 
 clean:
-	@ rm -f $(OBJS) $(DEP)
-	@ rm -rd $(BUILD_DIR)
+	@ rm -f $(OBJS) $(DEP) $(TEST_OBJS) $(TEST_DEP)
+	@ rm -rfd $(BUILD_DIR)
 	@ echo " \033[32m Object files cleaned\033[m"
 
 fclean: clean
-	@ rm -f $(NAME)
-	@ echo " \033[32m webserv cleaned\033[m"
+	@ rm -f $(NAME) $(TEST_NAME)
+	@ echo " \033[32m \033[1m Webserv\033[22m cleaned\033[m"
 
 re: fclean all
 
-.PHONY: all fclean re clean
+
+.PHONY: all fclean re clean test
 
 -include $(DEP)
