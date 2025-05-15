@@ -4,7 +4,14 @@
 
 RequestMessage::RequestMessage(const std::string &message)
     : AMessage(message.substr(message.find('\n') + 1, std::string::npos)),
-      _startLine(message.substr(0, message.find('\n'))) {}
+      _startLine(message.substr(0, message.find('\n'))) {
+	_setValidRequestHeaders();
+}
+
+RequestMessage::RequestMessage(const RequestLine &requestLine, const std::string &body)
+    : AMessage(body, std::vector<Header>()), _startLine(requestLine) {
+	_setValidRequestHeaders();
+}
 
 const std::string &RequestMessage::getHttpVersion() const { return _startLine.getHttpVersion(); }
 
@@ -19,4 +26,9 @@ std::string RequestMessage::str() const {
 	str += _body;
 
 	return str;
+}
+
+void RequestMessage::_setValidRequestHeaders() {
+	_validHeaders.push_back("Host");
+	_validHeaders.push_back("Cookie");
 }
