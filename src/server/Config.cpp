@@ -4,6 +4,26 @@
 #include <iostream>
 #include <ostream>
 
+
+#include <algorithm> // pour afficher les tests
+
+std::string readToken(std::fstream& file) {
+    std::string token;
+    char c;
+    while (file.get(c)) {
+        if (c == '\n') {
+            throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
+        }
+        if (std::isspace(c)) {
+			if (token.empty())
+				continue;
+			break; // fin du token
+        }
+        token += c;
+    }
+    return token;
+}
+
 Config::Config(const std::string &configFile) {
 	std::fstream file;
 	file.open(configFile.c_str(), std::fstream::in);
@@ -21,19 +41,19 @@ Config::Config(const std::string &configFile) {
 	    &Config::_parseClientMax, &Config::_parseHost,       &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
 	while (true) {
-		std::getline(file, str, ' '); // /!\ si tab au lieu de space, gros probleme
-		if (str.empty())
-			break;
-		// check ligne avec espaces
-		std::cout << "str = " << str << std::endl;
-		for (int i = 0; i < 7; i++) {
-			if (str == list[i]) {
-				(this->*functionPointer[i])(str, file);
+		token = readToken(file);
+		//std::cout << "token = |" << token << "|\n";
+		if (token.empty())
 				break;
+			for (int i = 0; i < 8; i++) {
+				if (token == list[i]) {
+					(this->*functionPointer[i])(token, file);
+					break;
+				}
+				if (i == 7)
+					throw Config::Exception("Problem parsing file");
 			}
-		}
-		// ajouter exception si pas reconnu
-		// throw Server::Exception("Problem parsing file");
+		token = "";
 	}
 	file.close();
 
