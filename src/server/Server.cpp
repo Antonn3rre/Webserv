@@ -24,4 +24,9 @@ void Server::startServer(void) {
 		std::cerr << "Failed to bind server socket." << std::endl;
 		exit(1);
 	}
+	if (listen(_msocket, 5) < 0) {
+		std::cerr << "Failed to listen on server socket." << std::endl;
+		exit(1);
+	}
+	std::cout << "Server started on port: " << _port << std::endl;
 }
