@@ -33,7 +33,7 @@ Config::Config(char *configFile) {
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
 	                      "host",   "root",        "index",      "location"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
-	    &Config::_parseListen,    &Config::_parseConfigName, &Config::_parseErrorPage,
+	    &Config::_parseListen,    &Config::_parseServerName, &Config::_parseErrorPage,
 	    &Config::_parseClientMax, &Config::_parseHost,       &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
 
@@ -76,7 +76,7 @@ Config::Config(const Config &former) { (void)former; }
 
 Config &Config::operator=(const Config &former) {
 	(void)former;
-return *this;
+	return *this;
 }
 
 Config::~Config() {}
@@ -107,7 +107,7 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
   _listen = trim(_listen);
 }
 
-void Config::_parseConfigName(std::string &str, std::fstream &file) {
+void Config::_parseServerName(std::string &str, std::fstream &file) {
 	int start = 0;
 	int end = 0;
 

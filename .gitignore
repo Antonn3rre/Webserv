@@ -1,3 +1,6 @@
 webserv
+test_webserv
 build/
 compile_flags.txt
+*.o
+*.d

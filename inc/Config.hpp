@@ -1,6 +1,7 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
+# include "Config.hpp"
 #include <deque>
 #include <map>
 #include <string>
@@ -34,7 +35,7 @@ class Config {
 	//	manque CGI
 
 	void _parseListen(std::string &, std::fstream &);
-	void _parseConfigName(std::string &, std::fstream &);
+	void _parseServerName(std::string &, std::fstream &);
 	void _parseErrorPage(std::string &, std::fstream &);
 	void _parseClientMax(std::string &, std::fstream &);
 	void _parseHost(std::string &, std::fstream &);
