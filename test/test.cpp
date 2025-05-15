@@ -1,3 +1,4 @@
+#include "Header.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "Server.hpp"
@@ -5,6 +6,8 @@
 #include <string>
 
 int main() {
+	std::cout << std::endl;
+
 	// Message Parsing Test
 	// {
 	// 	std::string requestStr = "GET /ip HTTP/1.1\nHost: httpbin.org\n\n{\n\tblabla\n\tasdasd\n}";
