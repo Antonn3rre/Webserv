@@ -1,7 +1,6 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-# include "Config.hpp"
 #include <deque>
 #include <map>
 #include <string>

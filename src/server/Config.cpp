@@ -103,8 +103,8 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 	_listen = trim(str);
 	if (_listen.length() - 1 != _listen.find_first_of(';') || _listen.length() == 1)
 		throw Config::Exception("Problem parse listen (;)");
-  _listen = _listen.substr(0, _listen.length() -1);
-  _listen = trim(_listen);
+	_listen = _listen.substr(0, _listen.length() -1);
+	_listen = trim(_listen);
 }
 
 void Config::_parseServerName(std::string &str, std::fstream &file) {
@@ -114,7 +114,7 @@ void Config::_parseServerName(std::string &str, std::fstream &file) {
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse server name");
-  str = trim(str);
+	str = trim(str);
 	if (str.length() - 1 != str.rfind(';'))
 		throw Config::Exception("Problem parse server name (;)");
 	while (str[end] != ';') {
@@ -155,8 +155,8 @@ void Config::_parseClientMax(std::string &str, std::fstream &file) {
 	_clientMaxBodySize = trim(str);
 	if (_clientMaxBodySize.length() - 1 != _clientMaxBodySize.find_first_of(';') || _clientMaxBodySize.length() == 1)
 		throw Config::Exception("Problem parse client max body size (;)");
-  _clientMaxBodySize = _clientMaxBodySize.substr(0, _clientMaxBodySize.length() -1);
-  _clientMaxBodySize = trim(_clientMaxBodySize);
+	_clientMaxBodySize = _clientMaxBodySize.substr(0, _clientMaxBodySize.length() -1);
+	_clientMaxBodySize = trim(_clientMaxBodySize);
 }
 
 void Config::_parseHost(std::string &str, std::fstream &file) {
@@ -166,8 +166,8 @@ void Config::_parseHost(std::string &str, std::fstream &file) {
 	_host = trim(str);
 	if (_host.length() - 1 != _host.find_first_of(';') || _host.length() == 1)
 		throw Config::Exception("Problem parse host (;)");
-  _host = _host.substr(0, _host.length() -1);
-  _host = trim(_host);
+	_host = _host.substr(0, _host.length() -1);
+	_host = trim(_host);
 }
 
 void Config::_parseRoot(std::string &str, std::fstream &file) {
@@ -177,8 +177,8 @@ void Config::_parseRoot(std::string &str, std::fstream &file) {
 	_root = trim(str);
 	if (_root.length() - 1 != _root.rfind(';'))
 		throw Config::Exception("Problem parse root (;)");
-  _root = _root.substr(0, _root.length() -1);
-  _root = trim(_root);
+	_root = _root.substr(0, _root.length() -1);
+	_root = trim(_root);
 }
 
 void Config::_parseIndex(std::string &str, std::fstream &file) {
@@ -188,7 +188,7 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse index");
-  str = trim(str);
+	str = trim(str);
 	if (str.length() - 1 != str.rfind(';'))
 		throw Config::Exception("Problem parse index (;)");
 	while (str[end] != ';') {
