@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <ostream>
+#include <sstream>
 
 
 #include <algorithm> // pour afficher les tests
@@ -131,21 +132,43 @@ void Config::_parseServerName(std::string &str, std::fstream &file) {
 }
 
 void Config::_parseErrorPage(std::string &str, std::fstream &file) {
-  (void)str;
-	(void)file;
-/*
-  int index;
-  str = 
-    try {
-        // Convert string to integer
-        int num = std::stoi(str);
-        std::cout << "The integer is: " << num << std::endl;
-    } catch (const std::invalid_argument&) {
-        std::cout << "Invalid input: The string is not a valid number." << std::endl;
-    } catch (const std::out_of_range&) {
-        std::cout << "Number out of range." << std::endl;
-    }
-*/
+
+  std::string page;
+
+  int start;
+  std::getline(file, str);
+	if (str.empty() || justSpaces(str))
+		throw Config::Exception("Problem parse error page");
+  str = trim(str);
+	if (str.empty() || str[str.length() - 1] != ';')
+		throw Config::Exception("Problem parse error page (;)");
+  str.erase(str.length() - 1);
+  if (str.empty())
+		throw Config::Exception("Problem parse error page");
+  
+  str = trim(str);
+  start = str.length() - 1;
+  while (start >= 0 && !isSpace(str[start]))
+    start--;
+  if (start == -1)
+		throw Config::Exception("Problem parse error page");
+  page = str.substr(start + 1, str.length() - start);
+
+//  std::cout << "page = |" << page << "|\n";
+
+  str = str.substr(0, start);
+  std::istringstream iss(str);
+  std::string token;
+
+  while(iss >> token) {
+    std::istringstream issNum(token);
+    int code;
+    if (!(issNum >> code) || code < 100 || code > 599)
+      throw Config::Exception("Problem parsing error page : wrong error code");
+    _errorPage[code] = page;
+//    std::cout << "code = " << code << " et erorpage[code] = " << _errorPage[code] << std::endl;
+  }
+
 }
 
 void Config::_parseClientMax(std::string &str, std::fstream &file) {
