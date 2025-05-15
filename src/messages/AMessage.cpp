@@ -17,3 +17,6 @@ AMessage::AMessage(const std::string &subMessage) {
 		_body += line + "\n";
 	}
 }
+
+AMessage::AMessage(const std::string &body, const std::vector<Header> &headers)
+    : _headers(headers), _body(body) {}

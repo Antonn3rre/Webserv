@@ -10,6 +10,7 @@ class ResponseMessage : public AMessage {
 
 	public:
 	ResponseMessage(const std::string &message);
+	ResponseMessage(const StatusLine &statusLine, const std::string &body);
 
 	const std::string &getHttpVersion() const;
 
