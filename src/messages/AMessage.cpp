@@ -20,3 +20,5 @@ AMessage::AMessage(const std::string &subMessage) {
 
 AMessage::AMessage(const std::string &body, const std::vector<Header> &headers)
     : _headers(headers), _body(body) {}
+
+void AMessage::addHeader(const Header &header) { _headers.push_back(header); }

@@ -15,7 +15,10 @@ class AMessage {
 	AMessage(const std::string &body, const std::vector<Header> &headers);
 
 	virtual const std::string &getHttpVersion() const = 0;
-	virtual std::string        str() const = 0;
+
+	void addHeader(const Header &header);
+
+	virtual std::string str() const = 0;
 };
 
 #endif

@@ -16,7 +16,7 @@ class Header {
 
 	public:
 	Header(const std::string &headerLine);
-	Header(HeaderType type, const std::string &name, const std::string &value);
+	Header(const std::string &name, const std::string &value);
 
 	HeaderType getType() const;
 
