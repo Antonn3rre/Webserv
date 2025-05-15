@@ -1,46 +1,6 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifdef SERVER_HPP
+# define SERVER_HPP
 
-#include <deque>
-#include <map>
-#include <string>
+class Server {}
 
-class Server {
-	public:
-	Server(char *);
-	Server(const Server &);
-	Server &operator=(const Server &);
-	~Server();
-
-	class Exception : public std::exception {
-		public:
-		Exception(const std::string &message);
-		const char *what() const throw() { return _errorMessage.c_str(); }
-		virtual ~Exception() throw();
-
-		private:
-		std::string _errorMessage;
-	};
-
-	private:
-	std::string                _listen;
-	std::deque<std::string>    _serverName;
-	std::map<int, std::string> _errorPage;
-	std::string                _clientMaxBodySize;
-	std::string                _host;
-	std::string                _root;
-	std::deque<std::string>    _index;
-	// std::deque<Location>        location;
-	//	manque CGI
-
-	void _parseListen(std::string &, std::fstream &);
-	void _parseServerName(std::string &, std::fstream &);
-	void _parseErrorPage(std::string &, std::fstream &);
-	void _parseClientMax(std::string &, std::fstream &);
-	void _parseHost(std::string &, std::fstream &);
-	void _parseRoot(std::string &, std::fstream &);
-	void _parseIndex(std::string &, std::fstream &);
-	void _parseLocation(std::string &, std::fstream &);
-};
-
-#endif // !SERVER_HPP
+#endif // SERVER_HPP
