@@ -9,11 +9,22 @@
 
 #include <algorithm> // pour afficher les tests
 
+std::string trim(std::string &str) {
+	size_t start = 0;
+	size_t end = str.length() - 1;
+
+	while (start <= end && isSpace(str[start]))
+		start++;
+	while (end > start && isSpace(str[end]))
+		end--;
+	return str.substr(start, end - start + 1);
+}
+
 std::string readToken(std::fstream& file) {
     std::string token;
     char c;
     while (file.get(c)) {
-        if (c == '\n') {
+        if (c == '\n' && !token.empty()) {
             throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
         }
         if (isSpace(c)) {
@@ -40,10 +51,18 @@ Config::Config(const std::string &configFile) {
 	    &Config::_parseClientMax, &Config::_parseHost,       &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
 
-	// manque 1er check de la ligne server {
+	std::string token = " ";
+  while (justSpaces(token)) {
+    if (!getline(file, token))
+      throw Config::Exception("Empty config file");
+  }
+  std::istringstream iss(token);
+  iss >> token;
+  if (token != "server{") {
+    if (token != "server" || !(iss >> token) || token != "{" || iss >> token)
+      throw Config::Exception("Server line wrong");
+  }
 
-
-	std::string token;
 	while (true) {
     token = readToken(file);
     //std::cout << "token = |" << token << "|\n";
@@ -57,7 +76,6 @@ Config::Config(const std::string &configFile) {
       if (i == 7)
         throw Config::Exception("Problem parsing file");
 		}
-    token = "";
 	}
 	file.close();
 
@@ -85,17 +103,6 @@ Config::~Config() {}
 Config::Exception::Exception(const std::string &message) : _errorMessage(message) {}
 
 Config::Exception::~Exception() throw() {}
-
-std::string trim(std::string &str) {
-	size_t start = 0;
-	size_t end = str.length() - 1;
-
-	while (start <= end && isSpace(str[start]))
-		start++;
-	while (end > start && isSpace(str[end]))
-		end--;
-	return str.substr(start, end - start + 1);
-}
 
 void Config::_parseListen(std::string &str, std::fstream &file) {
 	std::getline(file, str);
@@ -217,6 +224,14 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 void Config::_parseLocation(std::string &str, std::fstream &file) {
 	(void)str;
 	(void)file;
+  /*
+    try {
+    Location loc(str, file);
+    _location = loc;
+    }
+    catch (Location::Exception &e)
+      throw Config::Exception("Problem parse location");
+  */
 }
 
 std::string	Config::getHost(void) const { return _host; };
