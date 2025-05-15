@@ -34,7 +34,7 @@ class Config {
 	//	manque CGI
 
 	void _parseListen(std::string &, std::fstream &);
-	void _parseConfigName(std::string &, std::fstream &);
+	void _parseServerName(std::string &, std::fstream &);
 	void _parseErrorPage(std::string &, std::fstream &);
 	void _parseClientMax(std::string &, std::fstream &);
 	void _parseHost(std::string &, std::fstream &);

@@ -15,11 +15,12 @@ std::string readToken(std::fstream& file) {
             throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
         }
         if (isSpace(c)) {
-            break; // fin du token
-        }
+          if (token.empty())
+            continue;
+          break; // fin du token
+         }
         token += c;
     }
-
     return token;
 }
 
@@ -33,17 +34,17 @@ Config::Config(const std::string &configFile) {
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
 	                      "host",   "root",        "index",      "location"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
-	    &Config::_parseListen,    &Config::_parseConfigName, &Config::_parseErrorPage,
+	    &Config::_parseListen,    &Config::_parseServerName, &Config::_parseErrorPage,
 	    &Config::_parseClientMax, &Config::_parseHost,       &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
 
 	// manque 1er check de la ligne server {
 
 
-	std::string token = " ";
+	std::string token;
 	while (true) {
-    while (!token.empty() && ((token[0] >= 9 && token[0] <= 13) || token[0] == ' ') )
-      token = readToken(file);
+    token = readToken(file);
+    //std::cout << "token = |" << token << "|\n";
     if (token.empty())
 			break;
 		for (int i = 0; i < 8; i++) {
@@ -54,13 +55,12 @@ Config::Config(const std::string &configFile) {
       if (i == 7)
         throw Config::Exception("Problem parsing file");
 		}
-    token = ' ';
+    token = "";
 	}
 	file.close();
 
 
   // Affichage test
-/*
 	std::cout << "Listen = |" << _listen << "|" << std::endl;
   for(std::deque<std::string>::iterator it = _serverName.begin() ; it != _serverName.end() ; it++)
 	  std::cout << "Config name = " << *it << std::endl;
@@ -69,7 +69,6 @@ Config::Config(const std::string &configFile) {
 	  std::cout << "Index = " << *it << std::endl;
 	std::cout << "Client max = |" << _clientMaxBodySize << "|" << std::endl;
 	std::cout << "Host = |" << _host << "|" << std::endl;
-*/
 }
 
 Config::Config(const Config &former) { (void)former; }
@@ -107,13 +106,14 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
   _listen = trim(_listen);
 }
 
-void Config::_parseConfigName(std::string &str, std::fstream &file) {
+void Config::_parseServerName(std::string &str, std::fstream &file) {
 	int start = 0;
 	int end = 0;
 
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse server name");
+  str = trim(str);
 	if (str.length() - 1 != str.rfind(';'))
 		throw Config::Exception("Problem parse server name (;)");
 	while (str[end] != ';') {
@@ -130,8 +130,21 @@ void Config::_parseConfigName(std::string &str, std::fstream &file) {
 }
 
 void Config::_parseErrorPage(std::string &str, std::fstream &file) {
-	(void)str;
+  (void)str;
 	(void)file;
+/*
+  int index;
+  str = 
+    try {
+        // Convert string to integer
+        int num = std::stoi(str);
+        std::cout << "The integer is: " << num << std::endl;
+    } catch (const std::invalid_argument&) {
+        std::cout << "Invalid input: The string is not a valid number." << std::endl;
+    } catch (const std::out_of_range&) {
+        std::cout << "Number out of range." << std::endl;
+    }
+*/
 }
 
 void Config::_parseClientMax(std::string &str, std::fstream &file) {
@@ -174,6 +187,7 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse index");
+  str = trim(str);
 	if (str.length() - 1 != str.rfind(';'))
 		throw Config::Exception("Problem parse index (;)");
 	while (str[end] != ';') {
