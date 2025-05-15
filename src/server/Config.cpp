@@ -24,6 +24,8 @@ std::string readToken(std::fstream& file) {
     std::string token;
     char c;
     while (file.get(c)) {
+        if (c == '\n' && token == "}")
+          return token;
         if (c == '\n' && !token.empty()) {
             throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
         }
@@ -66,8 +68,14 @@ Config::Config(const std::string &configFile) {
 	while (true) {
     token = readToken(file);
     //std::cout << "token = |" << token << "|\n";
+    if (token == "}") {
+      if (!getline(file, token) || justSpaces(token))
+			  break;
+      else
+        throw Config::Exception("closing brackets too soon");
+    }
     if (token.empty())
-			break;
+      throw Config::Exception("Missing closing brackets");
 		for (int i = 0; i < 8; i++) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
