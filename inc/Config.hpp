@@ -1,6 +1,7 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
+# include "Config.hpp"
 #include <deque>
 #include <map>
 #include <string>
@@ -22,6 +23,8 @@ class Config {
 		std::string _errorMessage;
 	};
 
+	std::string	getHost(void) const;
+
 	private:
 	std::string                _listen;
 	std::deque<std::string>    _serverName;
@@ -41,6 +44,7 @@ class Config {
 	void _parseRoot(std::string &, std::fstream &);
 	void _parseIndex(std::string &, std::fstream &);
 	void _parseLocation(std::string &, std::fstream &);
+
 };
 
 #endif // !CONFIG_HPP

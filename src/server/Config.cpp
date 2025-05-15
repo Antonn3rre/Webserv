@@ -5,6 +5,7 @@
 #include <iostream>
 #include <ostream>
 
+
 #include <algorithm> // pour afficher les tests
 
 std::string readToken(std::fstream& file) {
@@ -75,7 +76,7 @@ Config::Config(const Config &former) { (void)former; }
 
 Config &Config::operator=(const Config &former) {
 	(void)former;
-return *this;
+	return *this;
 }
 
 Config::~Config() {}
@@ -207,3 +208,5 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 	(void)str;
 	(void)file;
 }
+
+std::string	Config::getHost(void) const { return _host; };
