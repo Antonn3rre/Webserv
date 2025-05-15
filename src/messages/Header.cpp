@@ -7,5 +7,7 @@ Header::Header(const std::string &headerLine)
 Header::Header(const std::string &name, const std::string &value) : _name(name), _value(value) {}
 
 Header::HeaderType Header::getType() const { return _type; }
+const std::string &Header::getName() const { return _name; }
+const std::string &Header::getValue() const { return _value; }
 
 std::string Header::str() const { return _name + ": " + _value; }
