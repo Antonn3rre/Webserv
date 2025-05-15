@@ -4,9 +4,9 @@
 #include <iostream>
 #include <ostream>
 
-Config::Config(char *configFile) {
+Config::Config(const std::string &configFile) {
 	std::fstream file;
-	file.open(configFile, std::fstream::in);
+	file.open(configFile.c_str(), std::fstream::in);
 	if (!file.is_open()) {
 		throw Config::Exception("Problem opening file");
 	}
@@ -172,3 +172,5 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 	(void)str;
 	(void)file;
 }
+
+std::string	Config::getHost(void) const { return _host; };
