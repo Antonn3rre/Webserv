@@ -1,5 +1,6 @@
 webserv
+test_webserv
 build/
 compile_flags.txt
-ubuntu_tester
-a.out
+*.o
+*.d
