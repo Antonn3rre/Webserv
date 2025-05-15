@@ -1,5 +1,5 @@
-#ifndef AHEADER_HPP
-#define AHEADER_HPP
+#ifndef HEADER_HPP
+#define HEADER_HPP
 
 #include <string>
 
