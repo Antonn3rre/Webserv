@@ -23,9 +23,9 @@ std::string readToken(std::fstream& file) {
     return token;
 }
 
-Config::Config(char *configFile) {
+Config::Config(const std::string &configFile) {
 	std::fstream file;
-	file.open(configFile, std::fstream::in);
+	file.open(configFile.c_str(), std::fstream::in);
 	if (!file.is_open()) {
 		throw Config::Exception("Problem opening file");
 	}

@@ -7,7 +7,7 @@
 
 class Config {
 	public:
-	Config(char *);
+	Config(const std::string &configFile);
 	Config(const Config &);
 	Config &operator=(const Config &);
 	~Config();
