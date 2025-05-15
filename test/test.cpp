@@ -1,5 +1,6 @@
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include "Server.hpp"
 #include <iostream>
 #include <string>
 
@@ -21,5 +22,9 @@ int main() {
 		std::cout << request.str();
 		std::cout << std::endl << std::endl;
 		std::cout << response.str();
+	}
+	{
+		Server test;
+		test.startServer();
 	}
 }
