@@ -109,26 +109,20 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 }
 
 void Config::_parseServerName(std::string &str, std::fstream &file) {
-	int start = 0;
-	int end = 0;
-
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse server name");
 	str = trim(str);
 	if (str.length() - 1 != str.rfind(';'))
 		throw Config::Exception("Problem parse server name (;)");
-	while (str[end] != ';') {
-		while (isSpace(str[start]))
-			start++;
-		end = start;
-		while (!isSpace(str[end]) && str[end] != ';')
-			end++;
-		if (end == start)
-			break;
-		_serverName.push_back(str.substr(start, end - start));
-		start = end;
-	}
+  str.erase(str.length() - 1);
+  if (str.empty())
+		throw Config::Exception("Problem parse server name");
+
+  std::istringstream iss(str);
+  while (iss >> str) {
+    _serverName.push_back(str);
+  }
 }
 
 void Config::_parseErrorPage(std::string &str, std::fstream &file) {
@@ -153,8 +147,6 @@ void Config::_parseErrorPage(std::string &str, std::fstream &file) {
   if (start == -1)
 		throw Config::Exception("Problem parse error page");
   page = str.substr(start + 1, str.length() - start);
-
-//  std::cout << "page = |" << page << "|\n";
 
   str = str.substr(0, start);
   std::istringstream iss(str);
@@ -205,8 +197,6 @@ void Config::_parseRoot(std::string &str, std::fstream &file) {
 }
 
 void Config::_parseIndex(std::string &str, std::fstream &file) {
-	int start = 0;
-	int end = 0;
 
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
@@ -214,17 +204,14 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 	str = trim(str);
 	if (str.length() - 1 != str.rfind(';'))
 		throw Config::Exception("Problem parse index (;)");
-	while (str[end] != ';') {
-		while (isSpace(str[start]))
-			start++;
-		end = start;
-		while (!isSpace(str[end]) && str[end] != ';')
-			end++;
-		if (end == start)
-			break;
-		_index.push_back(str.substr(start, end - start));
-		start = end;
-	}
+  str.erase(str.length() - 1);
+  if (str.empty())
+		throw Config::Exception("Problem parse index");
+
+  std::istringstream iss(str);
+  while (iss >> str) {
+    _index.push_back(str);
+  }
 }
 
 void Config::_parseLocation(std::string &str, std::fstream &file) {
