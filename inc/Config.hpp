@@ -1,16 +1,16 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef CONFIG_HPP
+#define CONFIG_HPP
 
 #include <deque>
 #include <map>
 #include <string>
 
-class Server {
+class Config {
 	public:
-	Server(char *);
-	Server(const Server &);
-	Server &operator=(const Server &);
-	~Server();
+	Config(char *);
+	Config(const Config &);
+	Config &operator=(const Config &);
+	~Config();
 
 	class Exception : public std::exception {
 		public:
@@ -34,7 +34,7 @@ class Server {
 	//	manque CGI
 
 	void _parseListen(std::string &, std::fstream &);
-	void _parseServerName(std::string &, std::fstream &);
+	void _parseConfigName(std::string &, std::fstream &);
 	void _parseErrorPage(std::string &, std::fstream &);
 	void _parseClientMax(std::string &, std::fstream &);
 	void _parseHost(std::string &, std::fstream &);
@@ -43,4 +43,4 @@ class Server {
 	void _parseLocation(std::string &, std::fstream &);
 };
 
-#endif // !SERVER_HPP
+#endif // !CONFIG_HPP
