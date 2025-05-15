@@ -1,6 +1,7 @@
 NAME = webserv
 
 SRCS_DIR = src/
+HEADERS_DIR = inc/
 BUILD_DIR = build/
 
 SRCS_MAIN = main.cpp
@@ -22,7 +23,9 @@ DEP=$(OBJS:.o=.d)
 
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./inc -MMD -MP
+INCLUDE_FLAGS = -I$(HEADERS_DIR) -I$(HEADERS_DIR)server -I$(HEADERS_DIR)messages -I$(HEADERS_DIR)utils
+
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 $(INCLUDE_FLAGS) -MMD -MP
 
 $(NAME): $(OBJS)
 	@ echo " \033[33mCompiling Webserv \033[m"
