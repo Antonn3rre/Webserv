@@ -9,9 +9,12 @@ SRCS_SERVER = Location.cpp Server.cpp
 
 SRCS_MESSAGES = AMessage.cpp AStartLine.cpp Header.cpp ResponseMessage.cpp RequestLine.cpp RequestMessage.cpp StatusLine.cpp
 
+SRCS_UTILS = utilsSpace.cpp
+
 SRCS := $(addprefix $(SRCS_DIR)main/, $(SRCS_MAIN)) \
 		$(addprefix $(SRCS_DIR)server/, $(SRCS_SERVER)) \
 		$(addprefix $(SRCS_DIR)messages/, $(SRCS_MESSAGES)) \
+		$(addprefix $(SRCS_DIR)utils/, $(SRCS_UTILS)) \
 
 OBJS := $(addprefix $(BUILD_DIR), $(notdir $(SRCS:.cpp=.o)))
 
