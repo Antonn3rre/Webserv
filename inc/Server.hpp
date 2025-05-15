@@ -1,6 +1,14 @@
-#ifdef SERVER_HPP
+#ifndef SERVER_HPP
 # define SERVER_HPP
 
-class Server {}
+# include "Config.hpp"
+
+class Server {
+	private:
+		Config	_config;
+
+	public:
+
+};
 
 #endif // SERVER_HPP
