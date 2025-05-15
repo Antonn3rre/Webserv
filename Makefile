@@ -38,6 +38,7 @@ $(TEST_DIR)%.o: $(TEST_DIR)%.cpp
 
 TEST_SRCS := $(addprefix $(SRCS_DIR)server/, $(SRCS_SERVER)) \
 			 $(addprefix $(SRCS_DIR)messages/, $(SRCS_MESSAGES)) \
+			$(addprefix $(SRCS_DIR)utils/, $(SRCS_UTILS))
 
 TEST_OBJS := $(addprefix $(BUILD_DIR), $(notdir $(TEST_SRCS:.cpp=.o))) \
 			 $(TEST_DIR)test.o
