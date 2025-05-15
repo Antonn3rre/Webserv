@@ -46,8 +46,9 @@ TEST_DEP=$(TEST_OBJS:.o=.d)
 
 test: $(TEST_OBJS)
 	@ echo " \033[33mCompiling Webserv tests\033[m"
-	@ $(CXX) $(CXXFLAGS) -o $(TEST_NAME) $(TEST_OBJS)
-	@ echo " \033[34m \033[1mWebserv\033[22m tests compiled\033[m"
+	 $(CXX) $(CXXFLAGS) -o $(TEST_NAME) $(TEST_OBJS)
+	@ echo " \033[34m \033[1mWebserv tests\033[22m compiled\033[m"
+	@ ./test_webserv
 
 all: $(NAME)
 
