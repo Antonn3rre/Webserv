@@ -5,27 +5,9 @@
 #include <iostream>
 #include <ostream>
 
-#include <algorithm> // pour afficher les tests
-
-std::string readToken(std::fstream& file) {
-    std::string token;
-    char c;
-    while (file.get(c)) {
-        if (c == '\n') {
-            throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
-        }
-        if (isSpace(c)) {
-            break; // fin du token
-        }
-        token += c;
-    }
-
-    return token;
-}
-
-Config::Config(char *configFile) {
+Config::Config(const std::string &configFile) {
 	std::fstream file;
-	file.open(configFile, std::fstream::in);
+	file.open(configFile.c_str(), std::fstream::in);
 	if (!file.is_open()) {
 		throw Config::Exception("Problem opening file");
 	}
@@ -193,3 +175,5 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 	(void)str;
 	(void)file;
 }
+
+std::string	Config::getHost(void) const { return _host; };

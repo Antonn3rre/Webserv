@@ -8,7 +8,7 @@
 
 class Config {
 	public:
-	Config(char *);
+	Config(const std::string &configFile);
 	Config(const Config &);
 	Config &operator=(const Config &);
 	~Config();
@@ -22,6 +22,8 @@ class Config {
 		private:
 		std::string _errorMessage;
 	};
+
+	std::string	getHost(void) const;
 
 	private:
 	std::string                _listen;
@@ -42,6 +44,7 @@ class Config {
 	void _parseRoot(std::string &, std::fstream &);
 	void _parseIndex(std::string &, std::fstream &);
 	void _parseLocation(std::string &, std::fstream &);
+
 };
 
 #endif // !CONFIG_HPP
