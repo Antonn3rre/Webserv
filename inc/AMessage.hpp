@@ -2,7 +2,9 @@
 #define AMESSAGE_HPP
 
 #include "Header.hpp"
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 class AMessage {
@@ -17,11 +19,12 @@ class AMessage {
 	virtual std::string str() const = 0;
 
 	protected:
-	std::vector<std::string> _validHeaders;
-	std::vector<Header>      _headers;
-	std::string              _body;
+	std::map<std::string, std::pair<Header::HeaderType, bool> > _knownHeaders;
+	std::vector<Header>                                         _headers;
+	std::string                                                 _body;
 
 	private:
+	void _insertKnownHeader(const std::string &name, Header::HeaderType type, bool isSupported);
 	void _setValidHeaders();
 };
 

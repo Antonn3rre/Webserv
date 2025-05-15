@@ -4,25 +4,27 @@
 #include <string>
 
 class Header {
-	private:
+	public:
+	Header(const std::string &headerLine);
+	Header(const std::string &name, const std::string &value);
+
 	enum HeaderType {
 		General,
 		Request,
 		Response,
 		Entity,
-	} _type;
-	const std::string _name;
-	const std::string _value;
-
-	public:
-	Header(const std::string &headerLine);
-	Header(const std::string &name, const std::string &value);
+	};
 
 	HeaderType         getType() const;
 	const std::string &getName() const;
 	const std::string &getValue() const;
 
 	std::string str() const;
+
+	private:
+	const std::string _name;
+	const std::string _value;
+	HeaderType        _type;
 };
 
 #endif

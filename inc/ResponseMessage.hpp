@@ -15,8 +15,6 @@ class ResponseMessage : public AMessage {
 
 	private:
 	const StatusLine _startLine;
-
-	void _setValidResponseHeaders();
 };
 
 #endif

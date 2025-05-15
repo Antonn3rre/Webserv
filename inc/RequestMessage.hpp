@@ -15,8 +15,6 @@ class RequestMessage : public AMessage {
 
 	private:
 	const RequestLine _startLine;
-
-	void _setValidRequestHeaders();
 };
 
 #endif

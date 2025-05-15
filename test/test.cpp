@@ -7,8 +7,7 @@
 #include <string>
 
 int main() {
-	std::cout << std::endl;
-
+	std::cout << std::endl << "\e[35mTESTS WEBSERV\e[0m" << std::endl << std::endl;
 	// Message Parsing Test
 	{
 		std::cout << "\e[33mTEST REQUEST MESSAGE PARSING\e[0m" << std::endl;
@@ -16,7 +15,7 @@ int main() {
 
 		RequestMessage request(requestStr);
 		std::cout << request.str();
-		std::cout << std::endl;
+		std::cout << std::endl << std::endl;
 
 		std::cout << "\e[33mTEST RESPONSE MESSAGE PARSING\e[0m" << std::endl;
 		std::string responseStr =
@@ -27,7 +26,7 @@ int main() {
 
 		ResponseMessage response(responseStr);
 		std::cout << response.str();
-		std::cout << std::endl;
+		std::cout << std::endl << std::endl;
 	}
 	// Reponse Message Creation
 	{
@@ -41,12 +40,14 @@ int main() {
 		response.addHeader(Header("Connection", "keep-alive"));
 		response.addHeader(Header("Server", "gunicorn/19.9.0"));
 		response.addHeader(Header("Access-Control-Allow-Origin", "*"));
-		response.addHeader(Header("Access-Control-Credentials", "true"));
+		response.addHeader(Header("Access-Control-Allow-Credentials", "true"));
 
 		std::cout << response.str();
-		std::cout << std::endl;
+		std::cout << std::endl << std::endl;
 	}
+	// Server Start
 	{
+		std::cout << "\e[33mTEST START SERVER\e[0m" << std::endl;
 		Server test;
 		test.startServer();
 	}
