@@ -1,16 +1,15 @@
 #include "utilsParsing.hpp"
-#include "utilsSpace.hpp"
 #include <cstddef>
 #include <fstream>
 #include <string>
 
-std::string trim(std::string &str) {
+std::string trim(const std::string &str) {
 	size_t start = 0;
 	size_t end = str.length() - 1;
 
-	while (start <= end && isSpace(str[start]))
+	while (start <= end && isspace(str[start]))
 		start++;
-	while (end > start && isSpace(str[end]))
+	while (end > start && isspace(str[end]))
 		end--;
 	return str.substr(start, end - start + 1);
 }
@@ -23,7 +22,7 @@ std::string readToken(std::fstream &file) {
 			return token;
 		if (c == '\n' && !token.empty())
 			return "";
-		if (isSpace(c)) {
+		if (isspace(c)) {
 			if (token.empty())
 				continue;
 			break; // fin du token

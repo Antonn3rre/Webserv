@@ -35,12 +35,12 @@ Config::Config(const std::string &configFile) {
 	while (true) {
 		token = readToken(file);
 		if (token.empty())
-			throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
+			throw Config::Exception("Unexpected newline");
 		// std::cout << "token = |" << token << "|\n";
 		if (token == "}") {
 			if (!getline(file, token) || justSpaces(token))
 				break;
-			throw Config::Exception("closing brackets too soon");
+			throw Config::Exception("Closing brackets too soon");
 		}
 		if (token.empty())
 			throw Config::Exception("Missing closing brackets");
@@ -130,7 +130,7 @@ void Config::_parseErrorPage(std::string &str, std::fstream &file) {
 
 	str = trim(str);
 	start = (int)str.length() - 1;
-	while (start >= 0 && !isSpace(str[start]))
+	while (start >= 0 && !isspace(str[start]))
 		start--;
 	if (start == -1)
 		throw Config::Exception("Problem parse error page");
