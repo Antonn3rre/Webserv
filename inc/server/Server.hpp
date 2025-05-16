@@ -4,6 +4,7 @@
 // # include "Config.hpp"
 # include "Client.hpp"
 # include <netinet/in.h>
+# include <sys/select.h>
 
 # define BACKLOG 5
 
@@ -13,6 +14,11 @@ class Server {
 		int		_msocket;
 		struct sockaddr_in	_server_addr;
 		Client				_client;
+		fd_set				_readfds;
+		size_t				_valread;
+		int					_maxfd;
+		int					_sd;
+		int					_activity;
 
 	public:
 		Server(void);

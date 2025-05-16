@@ -1,13 +1,16 @@
 #include "Server.hpp"
+#include "Client.hpp"
 #include "Config.hpp"
 #include <netinet/in.h>
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <iostream>
 #include <stdlib.h>
 #include <string>
+#include <vector>
 
-Server::Server(void) : _client_addr_size(sizeof(_client_addr)) {};
+Server::Server(void) : _sd(0) {};
 // Server::Server(void) : _config(Config("conf/default.conf")) {};
 
 // Server::Server(char *configFile) {};
@@ -37,9 +40,31 @@ void Server::startServer(void) {
 }
 
 void	Server::handleClient(void) {
-	_client_socket_fd = accept(_msocket, (struct sockaddr *)&_client_socket_fd, &_client_addr_size);
-	if (_client_socket_fd < 0) {
-		std::cerr << "Failed to accept client request." << std::endl;
-		exit(1);
+	while (true) {
+		std::cout << "Waiting for activity" << std::endl;
+		FD_ZERO(&_readfds);
+		FD_SET(_msocket, &_readfds);
+		_maxfd = _msocket;
+		for (std::vector<int>::iterator it = _client.clientList.begin(); it != _client.clientList.end(); it++) {
+			FD_SET(_sd, &_readfds);
+			if (_sd > _maxfd) _maxfd = _sd;
+		}
+		if (_sd > _maxfd) _maxfd = _sd;
+
+		_activity = select(_maxfd + 1, &_readfds, NULL, NULL, NULL);
+		if (_activity < 0) {
+			std::cerr << "Failed on select." << std::endl;
+			continue;
+		}
+
+		if (FD_ISSET(_msocket, &_readfds)) {
+			_client.client_fd = accept(_msocket, (struct sockaddr *) NULL, NULL);
+			if (_client.client_fd < 0) {
+				std::cerr << "Error on accept." << std::endl;
+				continue ;
+			}
+			_client.clientList.push_back(_client.client_fd);
+			std::cout << "New client connected." << std::endl;
+		}
 	}
 }
