@@ -19,11 +19,8 @@ Location::Location(std::string &token, std::fstream &file) : _autoindent(false) 
 	_name = token;
 	if (!(iss >> token) || token != "{" || iss >> token)
 		throw Location::Exception();
-
-	std::cout << "token = |" << token << "|\n";
 	while (true) {
 		token = readToken(file);
-		std::cout << "token = |" << token << "|\n";
 		if (token == "}")
 			break;
 		if (token.empty())
@@ -37,6 +34,11 @@ Location::Location(std::string &token, std::fstream &file) : _autoindent(false) 
 				throw Location::Exception();
 		}
 	}
+	//	std::cout << "Name = |" << _name << "|\n";
+	//	std::cout << "Root = |" << _root << "|\n";
+	//	std::cout << "autoindent = " << _autoindent << std::endl;
+	//	std::cout << "redirection [301] = " << _redirection[301] << std::endl;
+	//	std::cout << "methods[0] = " << _methods[0] << std::endl;
 }
 
 Location::Location(const Location &former) { *this = former; }
@@ -56,8 +58,8 @@ const char *Location::Exception::what() const throw() { return ("Problem parsing
 
 void Location::_parseRedirection(std::string &str, std::fstream &file) {
 	std::string page;
+	int         start;
 
-	int start;
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Location::Exception();
@@ -86,8 +88,6 @@ void Location::_parseRedirection(std::string &str, std::fstream &file) {
 		if (!(issNum >> code) || code < 100 || code > 599)
 			throw Location::Exception();
 		_redirection[code] = page;
-		//		std::cout << "code = " << code << " et redirection[code] = " << _redirection[code]
-		//		          << std::endl;
 	}
 }
 

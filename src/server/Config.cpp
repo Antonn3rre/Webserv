@@ -49,26 +49,28 @@ Config::Config(const std::string &configFile) {
 				(this->*functionPointer[i])(token, file);
 				break;
 			}
-			if (i == 7)
+			if (i == 7) {
+				std::cout << "problem = " << token << std::endl;
 				throw Config::Exception("Problem parsing file");
+			}
 		}
 	}
 	file.close();
+	/*
+	    // Affichage test
+	    std::cout << "Listen = |" << _listen << "|" << std::endl;
+	    for (std::deque<std::string>::iterator it = _serverName.begin(); it != _serverName.end();
+	   it++) std::cout << "Config name = " << *it << std::endl; std::cout << "Root = |" << _root <<
+	   "|" << std::endl; for (std::deque<std::string>::iterator it = _index.begin(); it !=
+	   _index.end(); it++) std::cout << "Index = " << *it << std::endl; std::cout << "Client max =
+	   |" << _clientMaxBodySize << "|" << std::endl; std::cout << "Host = |" << _host << "|" <<
+	   std::endl;
 
-	// Affichage test
-	std::cout << "Listen = |" << _listen << "|" << std::endl;
-	for (std::deque<std::string>::iterator it = _serverName.begin(); it != _serverName.end(); it++)
-		std::cout << "Config name = " << *it << std::endl;
-	std::cout << "Root = |" << _root << "|" << std::endl;
-	for (std::deque<std::string>::iterator it = _index.begin(); it != _index.end(); it++)
-		std::cout << "Index = " << *it << std::endl;
-	std::cout << "Client max = |" << _clientMaxBodySize << "|" << std::endl;
-	std::cout << "Host = |" << _host << "|" << std::endl;
-
-	std::cout << "Location : " << std::endl;
-	//	std::cout << "Root = |" << _location[0]._root << "|" << std::endl;
-	std::cout << "Root = |" << _location.front()._root << "|" << std::endl;
-	std::cout << "Nmae = |" << _location.front()._name << "|" << std::endl;
+	    std::cout << "Location : " << std::endl;
+	    //	std::cout << "Root = |" << _location[0]._root << "|" << std::endl;
+	    std::cout << "Root = |" << _location.front()._root << "|" << std::endl;
+	    std::cout << "Nmae = |" << _location.front()._name << "|" << std::endl;
+	*/
 }
 
 Config::Config(const Config &former) { (void)former; }
