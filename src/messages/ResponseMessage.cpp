@@ -1,9 +1,14 @@
 #include "ResponseMessage.hpp"
 #include "AMessage.hpp"
+#include "StatusLine.hpp"
+#include <vector>
 
 ResponseMessage::ResponseMessage(const std::string &message)
     : AMessage(message.substr(message.find('\n') + 1, std::string::npos)),
       _startLine(message.substr(0, message.find('\n'))) {}
+
+ResponseMessage::ResponseMessage(const StatusLine &statusLine, const std::string &body)
+    : AMessage(body, std::vector<Header>()), _startLine(statusLine) {}
 
 const std::string &ResponseMessage::getHttpVersion() const { return _startLine.getHttpVersion(); }
 

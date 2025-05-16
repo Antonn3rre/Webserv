@@ -1,6 +1,7 @@
 NAME = webserv
 
 SRCS_DIR = src/
+HEADERS_DIR = inc/
 BUILD_DIR = build/
 
 SRCS_MAIN = main.cpp
@@ -22,7 +23,9 @@ DEP=$(OBJS:.o=.d)
 
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./inc -MMD -MP
+INCLUDE_FLAGS = -I$(HEADERS_DIR) -I$(HEADERS_DIR)server -I$(HEADERS_DIR)messages -I$(HEADERS_DIR)utils
+
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 $(INCLUDE_FLAGS) -MMD -MP
 
 $(NAME): $(OBJS)
 	@ echo " \033[33mCompiling Webserv \033[m"
@@ -41,6 +44,7 @@ $(TEST_DIR)%.o: $(TEST_DIR)%.cpp
 
 TEST_SRCS := $(addprefix $(SRCS_DIR)server/, $(SRCS_SERVER)) \
 			 $(addprefix $(SRCS_DIR)messages/, $(SRCS_MESSAGES)) \
+		     $(addprefix $(SRCS_DIR)utils/, $(SRCS_UTILS)) \
 
 TEST_OBJS := $(addprefix $(BUILD_DIR), $(notdir $(TEST_SRCS:.cpp=.o))) \
 			 $(TEST_DIR)test.o
@@ -50,7 +54,8 @@ TEST_DEP=$(TEST_OBJS:.o=.d)
 test: $(TEST_OBJS)
 	@ echo " \033[33mCompiling Webserv tests\033[m"
 	@ $(CXX) $(CXXFLAGS) -o $(TEST_NAME) $(TEST_OBJS)
-	@ echo " \033[34m \033[1mWebserv\033[22m tests compiled\033[m"
+	@ echo " \033[34m \033[1mWebserv tests\033[22m compiled\033[m"
+	@ ./test_webserv
 
 all: $(NAME)
 
