@@ -32,8 +32,8 @@ class Config {
 	std::string                _host;
 	std::string                _root;
 	std::deque<std::string>    _index;
-	// std::deque<Location>        location;
-	//	manque CGI
+	// std::deque<Location>        _location;
+	//	manque CGI  (sera surement dans location)
 
 	void _parseListen(std::string &, std::fstream &);
 	void _parseServerName(std::string &, std::fstream &);
@@ -46,4 +46,4 @@ class Config {
 
 };
 
-#endif // !SERVER_HPP
+#endif // !CONFIG_HPP

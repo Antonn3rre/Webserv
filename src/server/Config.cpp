@@ -1,8 +1,43 @@
 #include "Config.hpp"
+#include "utilsSpace.hpp"
 #include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <ostream>
+#include <sstream>
+
+
+#include <algorithm> // pour afficher les tests
+
+std::string trim(std::string &str) {
+	size_t start = 0;
+	size_t end = str.length() - 1;
+
+	while (start <= end && isSpace(str[start]))
+		start++;
+	while (end > start && isSpace(str[end]))
+		end--;
+	return str.substr(start, end - start + 1);
+}
+
+std::string readToken(std::fstream& file) {
+    std::string token;
+    char c;
+    while (file.get(c)) {
+        if (c == '\n' && token == "}")
+          return token;
+        if (c == '\n' && !token.empty()) {
+            throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
+        }
+        if (isSpace(c)) {
+          if (token.empty())
+            continue;
+          break; // fin du token
+         }
+        token += c;
+    }
+    return token;
+}
 
 
 #include <algorithm> // pour afficher les tests
@@ -31,19 +66,39 @@ Config::Config(const std::string &configFile) {
 		throw Config::Exception("Problem opening file");
 	}
 
-	// manque 1er check de la ligne server {
-
-	std::string str;
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
 	                      "host",   "root",        "index",      "location"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
 	    &Config::_parseListen,    &Config::_parseServerName, &Config::_parseErrorPage,
 	    &Config::_parseClientMax, &Config::_parseHost,       &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
+
+	std::string token = " ";
+  while (justSpaces(token)) {
+    if (!getline(file, token))
+      throw Config::Exception("Empty config file");
+  }
+  std::istringstream iss(token);
+  iss >> token;
+  if (token != "server{") {
+    if (token != "server" || !(iss >> token) || token != "{" || iss >> token)
+      throw Config::Exception("Server line wrong");
+  }
+
 	while (true) {
-		token = readToken(file);
-		//std::cout << "token = |" << token << "|\n";
-		if (token.empty())
+    token = readToken(file);
+    //std::cout << "token = |" << token << "|\n";
+    if (token == "}") {
+      if (!getline(file, token) || justSpaces(token))
+			  break;
+      else
+        throw Config::Exception("closing brackets too soon");
+    }
+    if (token.empty())
+      throw Config::Exception("Missing closing brackets");
+		for (int i = 0; i < 8; i++) {
+			if (token == list[i]) {
+				(this->*functionPointer[i])(token, file);
 				break;
 			for (int i = 0; i < 8; i++) {
 				if (token == list[i]) {
@@ -53,16 +108,22 @@ Config::Config(const std::string &configFile) {
 				if (i == 7)
 					throw Config::Exception("Problem parsing file");
 			}
-		token = "";
+      if (i == 7)
+        throw Config::Exception("Problem parsing file");
+		}
 	}
 	file.close();
 
-	std::cout << "Listen = " << _listen << std::endl;
-	std::cout << "Server name = " << _serverName.front() << std::endl;
-	std::cout << "Server name = " << _serverName.back() << std::endl;
-	std::cout << "Root = " << _root << std::endl;
-	std::cout << "index = " << _index.front() << std::endl;
-	std::cout << "index = " << _index.back() << std::endl;
+
+  // Affichage test
+	std::cout << "Listen = |" << _listen << "|" << std::endl;
+  for(std::deque<std::string>::iterator it = _serverName.begin() ; it != _serverName.end() ; it++)
+	  std::cout << "Config name = " << *it << std::endl;
+	std::cout << "Root = |" << _root << "|" << std::endl;
+  for(std::deque<std::string>::iterator it = _index.begin() ; it != _index.end() ; it++)
+	  std::cout << "Index = " << *it << std::endl;
+	std::cout << "Client max = |" << _clientMaxBodySize << "|" << std::endl;
+	std::cout << "Host = |" << _host << "|" << std::endl;
 }
 
 Config::Config(const Config &former) { (void)former; }
@@ -78,119 +139,134 @@ Config::Exception::Exception(const std::string &message) : _errorMessage(message
 
 Config::Exception::~Exception() throw() {}
 
-int justSpaces(std::string str) {
-	int i = 0;
-	if (!str[i])
-		return (1);
-	while (str[i]) {
-		if (str[i] != ' ' && (str[i] < 9 || str[i] > 13))
-			return (0);
-		i++;
-	}
-	return (1);
-}
-
-std::string trim(std::string &str) {
-	size_t start = 0;
-	size_t end = str.length() - 1;
-
-	while (start <= end && str[start] == ' ')
-		start++;
-	while (end > start && str[end] == ' ')
-		end--;
-	return str.substr(start, end - start + 1);
-}
-
 void Config::_parseListen(std::string &str, std::fstream &file) {
 	std::getline(file, str);
-	// check space
-	if (str.empty())
+	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse listen");
 	_listen = trim(str);
-	if (_listen.length() - 1 != _listen.find_first_of(';'))
+	if (_listen.length() - 1 != _listen.find_first_of(';') || _listen.length() == 1)
 		throw Config::Exception("Problem parse listen (;)");
+	_listen = _listen.substr(0, _listen.length() -1);
+	_listen = trim(_listen);
 }
 
 void Config::_parseServerName(std::string &str, std::fstream &file) {
-	int start = 0;
-	int end = 0;
-
 	std::getline(file, str);
-	// check space
-	if (str.empty())
+	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse server name");
+	str = trim(str);
 	if (str.length() - 1 != str.rfind(';'))
 		throw Config::Exception("Problem parse server name (;)");
-	while (str[end] != ';') {
-		while (str[start] == ' ')
-			start++;
-		end = start;
-		while (str[end] != ' ' && str[end] != ';')
-			end++;
-		if (end == start)
-			break;
-		_serverName.push_back(str.substr(start, end - start));
-		start = end;
-	}
+  str.erase(str.length() - 1);
+  if (str.empty())
+		throw Config::Exception("Problem parse server name");
+
+  std::istringstream iss(str);
+  while (iss >> str) {
+    _serverName.push_back(str);
+  }
 }
 
 void Config::_parseErrorPage(std::string &str, std::fstream &file) {
-	(void)str;
-	(void)file;
+
+  std::string page;
+
+  int start;
+  std::getline(file, str);
+	if (str.empty() || justSpaces(str))
+		throw Config::Exception("Problem parse error page");
+  str = trim(str);
+	if (str.empty() || str[str.length() - 1] != ';')
+		throw Config::Exception("Problem parse error page (;)");
+  str.erase(str.length() - 1);
+  if (str.empty())
+		throw Config::Exception("Problem parse error page");
+  
+  str = trim(str);
+  start = str.length() - 1;
+  while (start >= 0 && !isSpace(str[start]))
+    start--;
+  if (start == -1)
+		throw Config::Exception("Problem parse error page");
+  page = str.substr(start + 1, str.length() - start);
+
+  str = str.substr(0, start);
+  std::istringstream iss(str);
+  std::string token;
+
+  while(iss >> token) {
+    std::istringstream issNum(token);
+    int code;
+    if (!(issNum >> code) || code < 100 || code > 599)
+      throw Config::Exception("Problem parsing error page : wrong error code");
+    _errorPage[code] = page;
+//    std::cout << "code = " << code << " et erorpage[code] = " << _errorPage[code] << std::endl;
+  }
+
 }
 
 void Config::_parseClientMax(std::string &str, std::fstream &file) {
 	std::getline(file, str);
-	// check space
-	if (str.empty())
+	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse client max body size");
 	_clientMaxBodySize = trim(str);
+	if (_clientMaxBodySize.length() - 1 != _clientMaxBodySize.find_first_of(';') || _clientMaxBodySize.length() == 1)
+		throw Config::Exception("Problem parse client max body size (;)");
+	_clientMaxBodySize = _clientMaxBodySize.substr(0, _clientMaxBodySize.length() -1);
+	_clientMaxBodySize = trim(_clientMaxBodySize);
 }
 
 void Config::_parseHost(std::string &str, std::fstream &file) {
 	std::getline(file, str);
-	// check space
-	if (str.empty())
+	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse host");
 	_host = trim(str);
+	if (_host.length() - 1 != _host.find_first_of(';') || _host.length() == 1)
+		throw Config::Exception("Problem parse host (;)");
+	_host = _host.substr(0, _host.length() -1);
+	_host = trim(_host);
 }
 
 void Config::_parseRoot(std::string &str, std::fstream &file) {
 	std::getline(file, str);
-	// check space
-	if (str.empty())
+	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse root");
 	_root = trim(str);
 	if (_root.length() - 1 != _root.rfind(';'))
 		throw Config::Exception("Problem parse root (;)");
+	_root = _root.substr(0, _root.length() -1);
+	_root = trim(_root);
 }
 
 void Config::_parseIndex(std::string &str, std::fstream &file) {
-	int start = 0;
-	int end = 0;
 
 	std::getline(file, str);
-	// check space
-	if (str.empty())
+	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse index");
+	str = trim(str);
 	if (str.length() - 1 != str.rfind(';'))
 		throw Config::Exception("Problem parse index (;)");
-	while (str[end] != ';') {
-		while (str[start] == ' ')
-			start++;
-		end = start;
-		while (str[end] != ' ' && str[end] != ';')
-			end++;
-		if (end == start)
-			break;
-		_index.push_back(str.substr(start, end - start));
-		start = end;
-	}
+  str.erase(str.length() - 1);
+  if (str.empty())
+		throw Config::Exception("Problem parse index");
+
+  std::istringstream iss(str);
+  while (iss >> str) {
+    _index.push_back(str);
+  }
 }
 
 void Config::_parseLocation(std::string &str, std::fstream &file) {
 	(void)str;
 	(void)file;
+  /*
+    try {
+    Location loc(str, file);
+    _location = loc;
+    }
+    catch (Location::Exception &e)
+      throw Config::Exception("Problem parse location");
+  */
 }
 
 std::string	Config::getHost(void) const { return _host; };
