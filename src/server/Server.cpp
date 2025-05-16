@@ -1,13 +1,13 @@
 #include "Server.hpp"
 #include "Client.hpp"
 #include "Config.hpp"
+#include "ResponseMessage.hpp"
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <iostream>
-#include <sstream>
 #include <stdlib.h>
 #include <string>
 #include <vector>
@@ -25,7 +25,7 @@ void Server::startServer(void) {
 		exit(1);
 	}
 	_server_addr.sin_family = AF_INET;
-	_server_addr.sin_port = htons(std::atoi("8080"));
+	_server_addr.sin_port = htons(std::atoi("4342"));
 	_server_addr.sin_addr.s_addr = htonl(INADDR_ANY); // INADDR_ANY: server listens on all available local interfaces
 
 	if (bind(_msocket, (struct sockaddr*)&_server_addr, sizeof(_server_addr)) < 0) {
@@ -37,7 +37,7 @@ void Server::startServer(void) {
 		std::cerr << "Failed to listen on server socket." << std::endl;
 		exit(1);
 	}
-	std::cout << "Server started on port: " << "8080" << std::endl;
+	std::cout << "Server started on port: " << "4342" << std::endl;
 	handleClient();
 }
 
@@ -69,7 +69,9 @@ void	Server::handleClient(void) {
 			std::cout << "New client connected." << std::endl;
 		}
 		handleMessage();
-		std::string answer = buildAnswer();
+		std::string tmp = buildAnswer();
+		write(_client.client_fd, tmp.c_str(), tmp.size());
+		// close(_client.client_fd);
 	}
 }
 
@@ -79,8 +81,11 @@ void	Server::handleMessage(void) {
 		_sd = _client.clientList[i];
 		if (FD_ISSET(_sd, &_readfds)) {
 			_valread = read(_sd, message, 1024);
-			if (_valread == 0) {
+			
+			if (_valread <= 0) {
 				std::cout << "Client disconnected" << std::endl;
+				close(_sd);
+				_client.clientList.erase(_client.clientList.begin() + i);
 			} else {
 				std::cout << "Message from the client :" << message << std::endl;
 			}
@@ -88,16 +93,31 @@ void	Server::handleMessage(void) {
 	}
 }
 
-std::string	Server::buildAnswer(std::string statuscode, std::string statusmsg, std::map<std::string, std::string> headers, std::string body,std::string mimetype) {
-    //TODO
-    // status code , status msg , headers , body ko response formate me frame krna hai.
-    headers["content-type"] = mimetype;
-    headers["content-length"] = body.length();
-    std::ostringstream buffer;
-    buffer << "HTTP/1.1 " << statuscode << " " << statusmsg << "\r\n";
-    for(std::map<std::string, std::string>::iterator x; x != headers.end(); x++){
-        buffer << x->first << ": " << x->second << "\r\n";
-    }
-    buffer << "\r\n" << body;
-    return buffer.str();
+std::string	Server::buildAnswer() {
+	std::string requestStr = "GET /ip HTTP/1.1\nHost: httpbin.org\n\n{\n\tblabla\n\tasdasd\n}";
+	std::string responseStr =
+		"HTTP/1.1 200 OK\nDate: Mon, 12 May 2025 16:29:56 GMT\nContent-Type: "
+		"application/json\nContent-Length: 31\nConnection: keep-alive\nServer: "
+		"gunicorn/19.9.0\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Credentials: "
+		"true\n\n{\n\t\"origin\": \"62.210.35.12\"\n} ";
+
+	std::string responseHtml =
+	"HTTP/1.1 200 OK\n"
+	"Date: Mon, 12 May 2025 16:29:56 GMT\n"
+	"Content-Type: text/html\n"
+	"Content-Length: 102\n"
+	"Connection: keep-alive\n"
+	"Server: gunicorn/19.9.0\n"
+	"Access-Control-Allow-Origin: *\n"
+	"Access-Control-Allow-Credentials: true\n"
+	"\n"
+	"<!DOCTYPE html>\n"
+	"<html>\n"
+	"<head><title>IP Info</title></head>\n"
+	"<body>\n"
+	"    <p>Your IP address is: 62.210.35.12</p>\n"
+	"</body>\n"
+	"</html>\n";
+	ResponseMessage response(responseHtml);
+    return response.str();
 }

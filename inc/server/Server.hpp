@@ -28,7 +28,7 @@ class Server {
 		void		startServer(void);
 		void		handleClient(void);
 		void		handleMessage(void);
-		std::string	buildAnswer(std::string statuscode, std::string statusmsg, std::map<std::string, std::string> headers, std::string body,std::string mimetype);
+		std::string	buildAnswer();
 };
 
 #endif // SERVER_HPP
