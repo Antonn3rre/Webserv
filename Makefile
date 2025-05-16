@@ -1,12 +1,12 @@
 NAME = webserv
 
 SRCS_DIR = src/
+HEADERS_DIR = inc/
 BUILD_DIR = build/
 
 SRCS_MAIN = main.cpp
 
-SRCS_SERVER = Location.cpp Server.cpp Config.cpp
-
+SRCS_SERVER = Location.cpp Server.cpp Client.cpp
 SRCS_MESSAGES = AMessage.cpp AStartLine.cpp Header.cpp ResponseMessage.cpp RequestLine.cpp RequestMessage.cpp StatusLine.cpp
 
 SRCS_UTILS = utilsSpace.cpp
@@ -22,7 +22,9 @@ DEP=$(OBJS:.o=.d)
 
 CXX = c++
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I./inc -MMD -MP
+INCLUDE_FLAGS = -I$(HEADERS_DIR) -I$(HEADERS_DIR)server -I$(HEADERS_DIR)messages -I$(HEADERS_DIR)utils
+
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 $(INCLUDE_FLAGS) -MMD -MP
 
 $(NAME): $(OBJS)
 	@ echo " \033[33mCompiling Webserv \033[m"
@@ -41,7 +43,7 @@ $(TEST_DIR)%.o: $(TEST_DIR)%.cpp
 
 TEST_SRCS := $(addprefix $(SRCS_DIR)server/, $(SRCS_SERVER)) \
 			 $(addprefix $(SRCS_DIR)messages/, $(SRCS_MESSAGES)) \
-			$(addprefix $(SRCS_DIR)utils/, $(SRCS_UTILS))
+		     $(addprefix $(SRCS_DIR)utils/, $(SRCS_UTILS)) \
 
 TEST_OBJS := $(addprefix $(BUILD_DIR), $(notdir $(TEST_SRCS:.cpp=.o))) \
 			 $(TEST_DIR)test.o

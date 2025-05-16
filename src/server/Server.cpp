@@ -5,7 +5,9 @@
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <iostream>
+#include <sstream>
 #include <stdlib.h>
 #include <string>
 #include <vector>
@@ -66,5 +68,36 @@ void	Server::handleClient(void) {
 			_client.clientList.push_back(_client.client_fd);
 			std::cout << "New client connected." << std::endl;
 		}
+		handleMessage();
+		std::string answer = buildAnswer();
 	}
+}
+
+void	Server::handleMessage(void) {
+	char	message[1024];
+	for (unsigned int i = 0; i < _client.clientList.size(); i++) {
+		_sd = _client.clientList[i];
+		if (FD_ISSET(_sd, &_readfds)) {
+			_valread = read(_sd, message, 1024);
+			if (_valread == 0) {
+				std::cout << "Client disconnected" << std::endl;
+			} else {
+				std::cout << "Message from the client :" << message << std::endl;
+			}
+		}
+	}
+}
+
+std::string	Server::buildAnswer(std::string statuscode, std::string statusmsg, std::map<std::string, std::string> headers, std::string body,std::string mimetype) {
+    //TODO
+    // status code , status msg , headers , body ko response formate me frame krna hai.
+    headers["content-type"] = mimetype;
+    headers["content-length"] = body.length();
+    std::ostringstream buffer;
+    buffer << "HTTP/1.1 " << statuscode << " " << statusmsg << "\r\n";
+    for(std::map<std::string, std::string>::iterator x; x != headers.end(); x++){
+        buffer << x->first << ": " << x->second << "\r\n";
+    }
+    buffer << "\r\n" << body;
+    return buffer.str();
 }

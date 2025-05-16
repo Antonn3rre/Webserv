@@ -4,6 +4,8 @@
 // # include "Config.hpp"
 # include "Client.hpp"
 # include <netinet/in.h>
+# include <string>
+# include <map>
 # include <sys/select.h>
 
 # define BACKLOG 5
@@ -23,8 +25,10 @@ class Server {
 	public:
 		Server(void);
 		// Server(char *configFile);
-		void	startServer(void);
-		void	handleClient(void);
+		void		startServer(void);
+		void		handleClient(void);
+		void		handleMessage(void);
+		std::string	buildAnswer(std::string statuscode, std::string statusmsg, std::map<std::string, std::string> headers, std::string body,std::string mimetype);
 };
 
 #endif // SERVER_HPP
