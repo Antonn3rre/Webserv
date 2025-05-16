@@ -1,6 +1,7 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
+#include "Location.hpp"
 #include <deque>
 #include <map>
 #include <string>
@@ -22,7 +23,7 @@ class Config {
 		std::string _errorMessage;
 	};
 
-	std::string	getHost(void) const;
+	std::string getHost(void) const;
 
 	private:
 	std::string                _listen;
@@ -32,7 +33,7 @@ class Config {
 	std::string                _host;
 	std::string                _root;
 	std::deque<std::string>    _index;
-	// std::deque<Location>        _location;
+	std::deque<Location>       _location;
 	//	manque CGI  (sera surement dans location)
 
 	void _parseListen(std::string &, std::fstream &);
@@ -43,7 +44,6 @@ class Config {
 	void _parseRoot(std::string &, std::fstream &);
 	void _parseIndex(std::string &, std::fstream &);
 	void _parseLocation(std::string &, std::fstream &);
-
 };
 
 #endif // !CONFIG_HPP
