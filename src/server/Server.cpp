@@ -113,9 +113,9 @@ std::string	Server::buildAnswer() {
 	"\n"
 	"<!DOCTYPE html>\n"
 	"<html>\n"
-	"<head><title>IP Info</title></head>\n"
+	"<head><title>First webserv</title></head>\n"
 	"<body>\n"
-	"    <p>Your IP address is: 62.210.35.12</p>\n"
+	"    <p>Hello World.</p>\n"
 	"</body>\n"
 	"</html>\n";
 	ResponseMessage response(responseHtml);
