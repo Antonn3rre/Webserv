@@ -32,6 +32,9 @@ class Server {
 	std::deque<std::string> getLocMethods(int) const;
 	std::string             getLocRoot(int) const;
 	bool                    getLocAutoindent(int) const;
+
+	// additionnal getter
+	unsigned int getNumOfLoc() const;
 };
 
 #endif // SERVER_HPP

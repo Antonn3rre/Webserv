@@ -52,3 +52,6 @@ std::deque<std::string> Server::getLocMethods(int index) const {
 }
 std::string Server::getLocRoot(int index) const { return _config.getLocRoot(index); }
 bool        Server::getLocAutoindent(int index) const { return _config.getLocAutoindent(index); }
+
+// additionnal getters
+unsigned int Server::getNumOfLoc() const { return _config.getNumOfLoc(); }

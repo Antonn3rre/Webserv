@@ -23,3 +23,5 @@ std::string RequestMessage::str() const {
 
 	return str;
 }
+const std::string &RequestMessage::getMethod() const { return _startLine.getMethod(); }
+const std::string &RequestMessage::getRequestUri() const { return _startLine.getRequestUri(); }

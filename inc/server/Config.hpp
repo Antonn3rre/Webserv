@@ -40,6 +40,9 @@ class Config {
 	std::string             getLocRoot(int) const;
 	bool                    getLocAutoindent(int) const;
 
+	// Addtionnal getter
+	unsigned int getNumOfLoc() const;
+
 	private:
 	std::string                _listen;
 	std::deque<std::string>    _serverName;

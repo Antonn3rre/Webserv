@@ -233,3 +233,6 @@ std::deque<std::string> Config::getLocMethods(int index) const {
 }
 std::string Config::getLocRoot(int index) const { return _location.at(index).getRoot(); }
 bool Config::getLocAutoindent(int index) const { return _location.at(index).getAutoindent(); }
+
+// additionnal getters
+unsigned int Config::getNumOfLoc() const { return _location.size(); }
