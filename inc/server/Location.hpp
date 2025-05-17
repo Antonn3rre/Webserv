@@ -17,7 +17,13 @@ class Location {
 		virtual const char *what() const throw();
 	};
 
-	//	private:
+	std::string             getName() const;
+	std::string             getRedirectionUri(int) const;
+	std::deque<std::string> getMethods() const;
+	std::string             getRoot() const;
+	bool                    getAutoindent() const;
+
+	private:
 	std::string                _name;
 	std::map<int, std::string> _redirection;
 	std::deque<std::string>    _methods;

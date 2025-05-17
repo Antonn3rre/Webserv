@@ -23,7 +23,22 @@ class Config {
 		std::string _errorMessage;
 	};
 
-	std::string getHost(void) const;
+	// Config getter
+	std::string             getListen() const;
+	std::deque<std::string> getServerName() const;
+	std::string             getErrorPage(int) const;
+	std::string             getClientMaxBodySize() const;
+	std::string             getHost() const;
+	std::string             getRoot() const;
+	std::deque<std::string> getIndex() const;
+	std::deque<Location>    getLocation() const;
+
+	// Location getter , int parameter is the index of the container
+	std::string             getLocName(int) const;
+	std::string             getLocRedirectionUri(int, int) const;
+	std::deque<std::string> getLocMethods(int) const;
+	std::string             getLocRoot(int) const;
+	bool                    getLocAutoindent(int) const;
 
 	private:
 	std::string                _listen;
@@ -34,7 +49,6 @@ class Config {
 	std::string                _root;
 	std::deque<std::string>    _index;
 	std::deque<Location>       _location;
-	//	manque CGI  (sera surement dans location)
 
 	void _parseListen(std::string &, std::fstream &);
 	void _parseServerName(std::string &, std::fstream &);
