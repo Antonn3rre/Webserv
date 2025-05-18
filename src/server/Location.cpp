@@ -57,9 +57,6 @@ Location::~Location() {}
 const char *Location::Exception::what() const throw() { return ("Problem parsing location"); }
 
 void Location::_parseRedirection(std::string &str, std::fstream &file) {
-	std::string page;
-	int         start;
-
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Location::Exception();
@@ -69,26 +66,13 @@ void Location::_parseRedirection(std::string &str, std::fstream &file) {
 	str.erase(str.length() - 1);
 	if (str.empty())
 		throw Location::Exception();
-
 	str = trim(str);
-	start = (int)str.length() - 1;
-	while (start >= 0 && !isSpace(str[start]))
-		start--;
-	if (start == -1)
+
+	std::istringstream issNum(str);
+	if (!(issNum >> _redirection.first) || _redirection.first < 100 || _redirection.first > 599)
 		throw Location::Exception();
-	page = str.substr(start + 1, str.length() - start);
-
-	str = str.substr(0, start);
-	std::istringstream iss(str);
-	std::string        token;
-
-	while (iss >> token) {
-		std::istringstream issNum(token);
-		int                code;
-		if (!(issNum >> code) || code < 100 || code > 599)
-			throw Location::Exception();
-		_redirection[code] = page;
-	}
+	if (!(issNum >> _redirection.second) || (issNum >> str))
+		throw Location::Exception();
 }
 
 void Location::_parseMethods(std::string &str, std::fstream &file) {
@@ -134,8 +118,8 @@ void Location::_parseIndent(std::string &str, std::fstream &file) {
 		throw Location::Exception();
 }
 
-const std::string &Location::getName() const { return _name; }
-const std::string &Location::getRedirectionUri(int num) const { return _redirection.at(num); }
-const std::deque<std::string> &Location::getMethods() const { return _methods; };
-const std::string             &Location::getRoot() const { return _root; };
-const bool                    &Location::getAutoindent() const { return _autoindent; };
+const std::string                 &Location::getName() const { return _name; }
+const std::pair<int, std::string> &Location::getRedirection() const { return _redirection; }
+const std::deque<std::string>     &Location::getMethods() const { return _methods; };
+const std::string                 &Location::getRoot() const { return _root; };
+const bool                        &Location::getAutoindent() const { return _autoindent; };

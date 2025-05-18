@@ -5,6 +5,7 @@
 #include <iostream>
 #include <ostream>
 #include <sstream>
+#include <string>
 
 Config::Config(const std::string &configFile) {
 	std::fstream file;
@@ -225,8 +226,8 @@ const std::deque<Location>    &Config::getLocation() const { return _location; }
 
 // Location getter , int parameter is the index of the container
 const std::string &Config::getLocName(int index) const { return _location.at(index).getName(); }
-const std::string &Config::getLocRedirectionUri(int index, int indexUri) const {
-	return _location.at(index).getRedirectionUri(indexUri);
+const std::pair<int, std::string> &Config::getLocRedirection(int index) const {
+	return _location.at(index).getRedirection();
 }
 const std::deque<std::string> &Config::getLocMethods(int index) const {
 	return _location.at(index).getMethods();

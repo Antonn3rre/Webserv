@@ -2,7 +2,6 @@
 #define LOCATION_HPP
 
 #include <deque>
-#include <map>
 #include <string>
 
 class Location {
@@ -17,18 +16,18 @@ class Location {
 		virtual const char *what() const throw();
 	};
 
-	const std::string             &getName() const;
-	const std::string             &getRedirectionUri(int) const;
-	const std::deque<std::string> &getMethods() const;
-	const std::string             &getRoot() const;
-	const bool                    &getAutoindent() const;
+	const std::string                 &getName() const;
+	const std::pair<int, std::string> &getRedirection() const;
+	const std::deque<std::string>     &getMethods() const;
+	const std::string                 &getRoot() const;
+	const bool                        &getAutoindent() const;
 
 	private:
-	std::string                _name;
-	std::map<int, std::string> _redirection;
-	std::deque<std::string>    _methods;
-	std::string                _root;
-	bool                       _autoindent;
+	std::string                 _name;
+	std::pair<int, std::string> _redirection; // std::pair<>
+	std::deque<std::string>     _methods;
+	std::string                 _root;
+	bool                        _autoindent;
 
 	void _parseRedirection(std::string &, std::fstream &);
 	void _parseMethods(std::string &, std::fstream &);

@@ -34,11 +34,11 @@ class Config {
 	const std::deque<Location>    &getLocation() const;
 
 	// Location getter , int parameter is the index of the container
-	const std::string             &getLocName(int) const;
-	const std::string             &getLocRedirectionUri(int, int) const;
-	const std::deque<std::string> &getLocMethods(int) const;
-	const std::string             &getLocRoot(int) const;
-	const bool                    &getLocAutoindent(int) const;
+	const std::string                 &getLocName(int) const;
+	const std::pair<int, std::string> &getLocRedirection(int index) const;
+	const std::deque<std::string>     &getLocMethods(int) const;
+	const std::string                 &getLocRoot(int) const;
+	const bool                        &getLocAutoindent(int) const;
 
 	// Addtionnal getter
 	int getNumOfLoc() const;

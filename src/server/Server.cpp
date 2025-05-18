@@ -44,8 +44,8 @@ const std::deque<Location>    &Server::getLocation() const { return _config.getL
 
 // Location getter , int parameter is the index of the container
 const std::string &Server::getLocName(int index) const { return _config.getLocName(index); }
-const std::string &Server::getLocRedirectionUri(int index, int indexUri) const {
-	return _config.getLocRedirectionUri(index, indexUri);
+const std::pair<int, std::string> &Server::getLocRedirection(int index) const {
+	return _config.getLocRedirection(index);
 }
 const std::deque<std::string> &Server::getLocMethods(int index) const {
 	return _config.getLocMethods(index);
