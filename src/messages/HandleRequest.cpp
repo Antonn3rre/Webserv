@@ -58,27 +58,30 @@ int checkMethods(std::deque<std::string> methods, const std::string &requestMeth
 	}
 	return (0);
 }
+std::string getCompletePath(const std::string &locRoot, const std::string &requestUri) {
+	if (locRoot.empty())
+		return (requestUri);
+	return locRoot + requestUri;
+}
 
 // return std::pair<code, page> ?
 std::pair<int, std::string> handleRequest(Server &server, RequestMessage &request) {
-	// iterer location de server pour attribuer le bon
-	// stocker resultat temporaire dans std pair avec index et nmb de char en commun ?
-	// check entre chaque /
+	// iterer location de server pour attribuer le bon ??
+
+	// Trouver l'index de la bonne location
 	int indexLoc = findRightLocIndex(server, request);
 
 	// si un return -> renvoye direct le bon code erreur + page
-	std::pair<int, std::string> redir = server.getLocRedirection(indexLoc);
-	if (redir.first != -1)
-		return (redir); // type de retour a revoir
+	std::pair<int, std::string> returnInfo = server.getLocRedirection(indexLoc);
+	if (returnInfo.first != -1)
+		return (returnInfo); // type de retour a revoir
 
 	// verif si method autorise
 	if (!checkMethods(server.getLocMethods(indexLoc), request.getMethod()))
 		throw Config::Exception("La methode n'est pas acceptee");
-	// -> sinon return error
-	// -> si methods existe pas ?? -> existera forcement avec les methodes par defaut (GET POST
-	// DELETE)
 
 	// recuperer uri et construire chemin avec root (si aucun root defini ?)
+	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
 
 	// check si dossier, si oui envoyer sur index
 	// Si pas d'index, check autoindent et faire en fonction
