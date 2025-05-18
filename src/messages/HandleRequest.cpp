@@ -83,7 +83,7 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	// recuperer uri et construire chemin avec root (si aucun root defini ?)
 	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
 
-	// check si dossier, si oui envoyer sur index
+	// check si dossier, si oui envoyer sur index   // voir differents comportements selon methode
 	// Si pas d'index, check autoindent et faire en fonction
 
 	// A PLACER : CGI

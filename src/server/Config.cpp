@@ -9,6 +9,7 @@
 
 Config::Config(const std::string &configFile) {
 	std::fstream file;
+	int          i;
 	file.open(configFile.c_str(), std::fstream::in);
 	if (!file.is_open()) {
 		throw Config::Exception("Problem opening file");
@@ -49,7 +50,7 @@ Config::Config(const std::string &configFile) {
 		}
 		if (token.empty())
 			throw Config::Exception("Missing closing brackets");
-		for (int i = 0; i < 8; i++) {
+		for (i = 0; i < 8; i++) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
 				break;
@@ -61,6 +62,15 @@ Config::Config(const std::string &configFile) {
 		}
 	}
 	file.close();
+
+	// check si location / existe bien
+	for (i = 0; i < getNumOfLoc(); i++) {
+		if (getLocName(i) == "/")
+			break;
+	}
+	if (i == getNumOfLoc())
+		throw Config::Exception("No / location");
+
 	/*
 	    // Affichage test
 	    std::cout << "Listen = |" << _listen << "|" << std::endl;
