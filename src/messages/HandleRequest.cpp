@@ -60,19 +60,23 @@ int checkMethods(std::deque<std::string> methods, const std::string &requestMeth
 }
 
 // return std::pair<code, page> ?
-void handleRequest(Server &server, RequestMessage &request) {
+std::pair<int, std::string> handleRequest(Server &server, RequestMessage &request) {
 	// iterer location de server pour attribuer le bon
 	// stocker resultat temporaire dans std pair avec index et nmb de char en commun ?
 	// check entre chaque /
 	int indexLoc = findRightLocIndex(server, request);
-	// Quand loc trouve, verifier si method autorise
+
+	// si un return -> renvoye direct le bon code erreur + page
+	std::pair<int, std::string> redir = server.getLocRedirection(indexLoc);
+	if (redir.first != -1)
+		return (redir); // type de retour a revoir
+
+	// verif si method autorise
 	if (!checkMethods(server.getLocMethods(indexLoc), request.getMethod()))
 		throw Config::Exception("La methode n'est pas acceptee");
 	// -> sinon return error
-	// -> si methods existe pas ??
-
-	//!\ check si return ou method a la priorite
-	// si un return -> renvoye direct le bon code erreur + page
+	// -> si methods existe pas ?? -> existera forcement avec les methodes par defaut (GET POST
+	// DELETE)
 
 	// recuperer uri et construire chemin avec root (si aucun root defini ?)
 
