@@ -17,7 +17,7 @@ Location::Location(std::string &token, std::fstream &file) : _autoindent(false) 
 	if (!(iss >> token))
 		throw Location::Exception();
 	_name = token;
-	if (!(iss >> token) || token != "{" || iss >> token)
+	if (_name[0] != '/' || !(iss >> token) || token != "{" || iss >> token)
 		throw Location::Exception();
 	while (true) {
 		token = readToken(file);
