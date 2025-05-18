@@ -24,24 +24,24 @@ class Config {
 	};
 
 	// Config getter
-	std::string             getListen() const;
-	std::deque<std::string> getServerName() const;
-	std::string             getErrorPage(int) const;
-	std::string             getClientMaxBodySize() const;
-	std::string             getHost() const;
-	std::string             getRoot() const;
-	std::deque<std::string> getIndex() const;
-	std::deque<Location>    getLocation() const;
+	const std::string             &getListen() const;
+	const std::deque<std::string> &getServerName() const;
+	const std::string             &getErrorPage(int) const;
+	const std::string             &getClientMaxBodySize() const;
+	const std::string             &getHost() const;
+	const std::string             &getRoot() const;
+	const std::deque<std::string> &getIndex() const;
+	const std::deque<Location>    &getLocation() const;
 
 	// Location getter , int parameter is the index of the container
-	std::string             getLocName(int) const;
-	std::string             getLocRedirectionUri(int, int) const;
-	std::deque<std::string> getLocMethods(int) const;
-	std::string             getLocRoot(int) const;
-	bool                    getLocAutoindent(int) const;
+	const std::string             &getLocName(int) const;
+	const std::string             &getLocRedirectionUri(int, int) const;
+	const std::deque<std::string> &getLocMethods(int) const;
+	const std::string             &getLocRoot(int) const;
+	const bool                    &getLocAutoindent(int) const;
 
 	// Addtionnal getter
-	unsigned int getNumOfLoc() const;
+	int getNumOfLoc() const;
 
 	private:
 	std::string                _listen;

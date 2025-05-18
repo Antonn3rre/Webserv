@@ -134,8 +134,8 @@ void Location::_parseIndent(std::string &str, std::fstream &file) {
 		throw Location::Exception();
 }
 
-std::string             Location::getName() const { return _name; }
-std::string             Location::getRedirectionUri(int num) const { return _redirection.at(num); }
-std::deque<std::string> Location::getMethods() const { return _methods; };
-std::string             Location::getRoot() const { return _root; };
-bool                    Location::getAutoindent() const { return _autoindent; };
+const std::string &Location::getName() const { return _name; }
+const std::string &Location::getRedirectionUri(int num) const { return _redirection.at(num); }
+const std::deque<std::string> &Location::getMethods() const { return _methods; };
+const std::string             &Location::getRoot() const { return _root; };
+const bool                    &Location::getAutoindent() const { return _autoindent; };

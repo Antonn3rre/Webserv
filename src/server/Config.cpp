@@ -214,25 +214,27 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 	}
 }
 
-std::string             Config::getListen() const { return _listen; }
-std::deque<std::string> Config::getServerName() const { return _serverName; }
-std::string             Config::getErrorPage(int index) const { return _errorPage.at(index); }
-std::string             Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
-std::string             Config::getHost() const { return _host; }
-std::string             Config::getRoot() const { return _root; }
-std::deque<std::string> Config::getIndex() const { return _index; }
-std::deque<Location>    Config::getLocation() const { return _location; }
+const std::string             &Config::getListen() const { return _listen; }
+const std::deque<std::string> &Config::getServerName() const { return _serverName; }
+const std::string &Config::getErrorPage(int index) const { return _errorPage.at(index); }
+const std::string &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
+const std::string &Config::getHost() const { return _host; }
+const std::string &Config::getRoot() const { return _root; }
+const std::deque<std::string> &Config::getIndex() const { return _index; }
+const std::deque<Location>    &Config::getLocation() const { return _location; }
 
 // Location getter , int parameter is the index of the container
-std::string Config::getLocName(int index) const { return _location.at(index).getName(); }
-std::string Config::getLocRedirectionUri(int index, int indexUri) const {
+const std::string &Config::getLocName(int index) const { return _location.at(index).getName(); }
+const std::string &Config::getLocRedirectionUri(int index, int indexUri) const {
 	return _location.at(index).getRedirectionUri(indexUri);
 }
-std::deque<std::string> Config::getLocMethods(int index) const {
+const std::deque<std::string> &Config::getLocMethods(int index) const {
 	return _location.at(index).getMethods();
 }
-std::string Config::getLocRoot(int index) const { return _location.at(index).getRoot(); }
-bool Config::getLocAutoindent(int index) const { return _location.at(index).getAutoindent(); }
+const std::string &Config::getLocRoot(int index) const { return _location.at(index).getRoot(); }
+const bool        &Config::getLocAutoindent(int index) const {
+    return _location.at(index).getAutoindent();
+}
 
 // additionnal getters
-unsigned int Config::getNumOfLoc() const { return _location.size(); }
+int Config::getNumOfLoc() const { return (int)_location.size(); }
