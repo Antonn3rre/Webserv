@@ -5,9 +5,11 @@
 #include <iostream>
 #include <ostream>
 #include <sstream>
+#include <string>
 
 Config::Config(const std::string &configFile) {
 	std::fstream file;
+	int          i;
 	file.open(configFile.c_str(), std::fstream::in);
 	if (!file.is_open()) {
 		throw Config::Exception("Problem opening file");
@@ -20,11 +22,14 @@ Config::Config(const std::string &configFile) {
 	    &Config::_parseClientMax, &Config::_parseHost,       &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
 
+	// mettre dans un check empty
 	std::string token = " ";
 	while (justSpaces(token)) {
 		if (!getline(file, token))
 			throw Config::Exception("Empty config file");
 	}
+
+	// mettre dans un check first line
 	std::istringstream iss(token);
 	iss >> token;
 	if (token != "server{") {
@@ -32,6 +37,7 @@ Config::Config(const std::string &configFile) {
 			throw Config::Exception("Server line wrong");
 	}
 
+	// mettre dans un parse body
 	while (true) {
 		token = readToken(file);
 		if (token.empty())
@@ -44,7 +50,7 @@ Config::Config(const std::string &configFile) {
 		}
 		if (token.empty())
 			throw Config::Exception("Missing closing brackets");
-		for (int i = 0; i < 8; i++) {
+		for (i = 0; i < 8; i++) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
 				break;
@@ -56,6 +62,15 @@ Config::Config(const std::string &configFile) {
 		}
 	}
 	file.close();
+
+	// check si location / existe bien
+	for (i = 0; i < getNumOfLoc(); i++) {
+		if (getLocName(i) == "/")
+			break;
+	}
+	if (i == getNumOfLoc())
+		throw Config::Exception("No / location");
+
 	/*
 	    // Affichage test
 	    std::cout << "Listen = |" << _listen << "|" << std::endl;
@@ -210,4 +225,27 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 	}
 }
 
-std::string Config::getHost(void) const { return _host; };
+const std::string             &Config::getListen() const { return _listen; }
+const std::deque<std::string> &Config::getServerName() const { return _serverName; }
+const std::string &Config::getErrorPage(int index) const { return _errorPage.at(index); }
+const std::string &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
+const std::string &Config::getHost() const { return _host; }
+const std::string &Config::getRoot() const { return _root; }
+const std::deque<std::string> &Config::getIndex() const { return _index; }
+const std::deque<Location>    &Config::getLocation() const { return _location; }
+
+// Location getter , int parameter is the index of the container
+const std::string &Config::getLocName(int index) const { return _location.at(index).getName(); }
+const std::pair<int, std::string> &Config::getLocRedirection(int index) const {
+	return _location.at(index).getRedirection();
+}
+const std::deque<std::string> &Config::getLocMethods(int index) const {
+	return _location.at(index).getMethods();
+}
+const std::string &Config::getLocRoot(int index) const { return _location.at(index).getRoot(); }
+const bool        &Config::getLocAutoindent(int index) const {
+    return _location.at(index).getAutoindent();
+}
+
+// additionnal getters
+int Config::getNumOfLoc() const { return (int)_location.size(); }
