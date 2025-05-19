@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-Server::Server(void) : _sd(0) {};
+Server::Server(void) : _config(Config("conf/default.conf")), _sd(0) {};
 // Server::Server(void) : _config(Config("conf/default.conf")) {};
 
 // Server::Server(char *configFile) {};

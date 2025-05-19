@@ -3,7 +3,7 @@
 
 #include <string>
 
-std::string trim(std::string &);
+std::string trim(const std::string &str);
 std::string readToken(std::fstream &);
 
 #endif

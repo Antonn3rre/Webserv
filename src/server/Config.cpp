@@ -10,23 +10,6 @@
 
 #include <algorithm> // pour afficher les tests
 
-std::string readToken(std::fstream& file) {
-    std::string token;
-    char c;
-    while (file.get(c)) {
-        if (c == '\n') {
-            throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
-        }
-        if (std::isspace(c)) {
-			if (token.empty())
-				continue;
-			break; // fin du token
-        }
-        token += c;
-    }
-    return token;
-}
-
 Config::Config(const std::string &configFile) {
 	std::fstream file;
 	int          i;
@@ -85,6 +68,7 @@ Config::Config(const std::string &configFile) {
 			if (i == 7) {
 				std::cout << "problem = " << token << std::endl;
 				throw Config::Exception("Problem parsing file");
+			}
 			}
 		}
 	}

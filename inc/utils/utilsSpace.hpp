@@ -4,6 +4,6 @@
 #include <string>
 
 int isSpace(char c);
-int justSpaces(std::string str);
+int justSpaces(const std::string &str);
 
 #endif // !UTILSSPACE_HPP
