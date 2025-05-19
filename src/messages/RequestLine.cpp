@@ -1,6 +1,8 @@
 #include "RequestLine.hpp"
+#include "AMessage.hpp"
 #include "AStartLine.hpp"
 #include <cstddef>
+#include <map>
 #include <string>
 
 RequestLine::RequestLine(const std::string &line)
@@ -9,6 +11,12 @@ RequestLine::RequestLine(const std::string &line)
 
 	_method = line.substr(0, spacePos);
 	_requestUri = line.substr(spacePos + 1, line.find(' ', spacePos + 1) - spacePos - 1);
+	std::map<std::string, bool>::iterator headerEntry = _validMethods.find(_method);
+	if (headerEntry != _validMethods.end()) {
+		if (!headerEntry->second)
+			throw AMessage::Unsupported("method", _method);
+	} else
+		throw AMessage::InvalidData("method", _method);
 }
 
 RequestLine::RequestLine(const std::string &httpVersion, const std::string &method,
@@ -21,4 +29,16 @@ const std::string &RequestLine::getRequestUri() const { return _requestUri; }
 
 std::string RequestLine::str() const {
 	return _method + " " + _requestUri + " " + getHttpVersion();
+}
+void RequestLine::_setValidMethods() {
+	// SUPPORTED
+	_validMethods.insert(std::pair<std::string, bool>("GET", true));
+	_validMethods.insert(std::pair<std::string, bool>("POST", true));
+	_validMethods.insert(std::pair<std::string, bool>("DELETE", true));
+
+	// UNSUPPORTED
+	_validMethods.insert(std::pair<std::string, bool>("HEAD", false));
+	_validMethods.insert(std::pair<std::string, bool>("CONNECT", false));
+	_validMethods.insert(std::pair<std::string, bool>("TRACE", false));
+	_validMethods.insert(std::pair<std::string, bool>("OPTIONS", false));
 }

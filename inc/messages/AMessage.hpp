@@ -2,6 +2,7 @@
 #define AMESSAGE_HPP
 
 #include "Header.hpp"
+#include <exception>
 #include <map>
 #include <string>
 #include <utility>
@@ -18,8 +19,33 @@ class AMessage {
 
 	virtual std::string str() const = 0;
 
+	class MessageError : public std::exception {
+		public:
+		MessageError(const std::string &error, const std::string &argument);
+		const char *what() const throw();
+		virtual ~MessageError() throw();
+
+		private:
+		std::string _message;
+	};
+
+	class SyntaxError : public MessageError {
+		public:
+		SyntaxError(const std::string &error, const std::string &badSyntax);
+	};
+
+	class Unsupported : public MessageError {
+		public:
+		Unsupported(const std::string &name, const std::string &value);
+	};
+
+	class InvalidData : public MessageError {
+		public:
+		InvalidData(const std::string &name, const std::string &value);
+	};
+
 	protected:
-	std::map<std::string, std::pair<Header::HeaderType, bool> > _knownHeaders;
+	std::map<std::string, std::pair<Header::HeaderType, bool> > _validHeaders;
 	std::vector<Header>                                         _headers;
 	std::string                                                 _body;
 

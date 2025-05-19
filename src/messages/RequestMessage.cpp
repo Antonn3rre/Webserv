@@ -3,7 +3,9 @@
 #include <vector>
 
 RequestMessage::RequestMessage(const std::string &message)
-    : AMessage(message.substr(message.find('\n') + 1, std::string::npos)),
+    : AMessage(message.substr(message.find('\n') + 1,
+                              std::string::npos)), // FIXME: if there is only one line, sends the
+                                                   // startline as the header+body
       _startLine(message.substr(0, message.find('\n'))) {}
 
 RequestMessage::RequestMessage(const RequestLine &requestLine, const std::string &body)

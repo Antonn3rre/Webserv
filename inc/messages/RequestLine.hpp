@@ -2,6 +2,7 @@
 #define REQUESTLINE_HPP
 
 #include "AStartLine.hpp"
+#include <map>
 #include <string>
 
 class RequestLine : public AStartLine {
@@ -16,8 +17,11 @@ class RequestLine : public AStartLine {
 	std::string str() const;
 
 	private:
-	std::string _method;
-	std::string _requestUri;
+	std::string                 _method;
+	std::string                 _requestUri;
+	std::map<std::string, bool> _validMethods;
+
+	void _setValidMethods();
 };
 
 #endif

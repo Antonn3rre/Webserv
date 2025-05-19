@@ -1,6 +1,5 @@
 #include "AMessage.hpp"
 #include "Header.hpp"
-#include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
@@ -33,21 +32,38 @@ AMessage::AMessage(const std::string &body, const std::vector<Header> &headers) 
 		addHeader(*it);
 }
 
+AMessage::MessageError::MessageError(const std::string &error, const std::string &argument) {
+	_message = "HTTP message error: " + error + ": " + argument;
+}
+
+AMessage::MessageError::~MessageError() throw() {}
+
+const char *AMessage::MessageError::what() const throw() { return _message.c_str(); }
+
+AMessage::SyntaxError::SyntaxError(const std::string &error, const std::string &badSyntax)
+    : MessageError("bad syntax: " + error, badSyntax) {}
+
+AMessage::Unsupported::Unsupported(const std::string &name, const std::string &value)
+    : MessageError("unsupported " + name, value) {}
+
+AMessage::InvalidData::InvalidData(const std::string &name, const std::string &value)
+    : MessageError("invalid " + name, value) {}
+
 void AMessage::addHeader(const Header &header) {
 	std::map<std::string, std::pair<Header::HeaderType, bool> >::iterator headerEntry =
-	    _knownHeaders.find(header.getName());
-	if (headerEntry != _knownHeaders.end()) {
+	    _validHeaders.find(header.getName());
+	if (headerEntry != _validHeaders.end()) {
 		if (headerEntry->second.second)
 			_headers.push_back(header);
 		else
-			std::cout << "Unsupported header: " << header.getName() << std::endl;
+			throw Unsupported("header", header.getName());
 	} else
-		std::cout << "Invalid header: " << header.getName() << std::endl;
+		throw InvalidData("header", header.getName());
 }
 
 void AMessage::_insertKnownHeader(const std::string &name, Header::HeaderType type,
                                   bool isSupported) {
-	_knownHeaders.insert(std::pair<std::string, std::pair<Header::HeaderType, bool> >(
+	_validHeaders.insert(std::pair<std::string, std::pair<Header::HeaderType, bool> >(
 	    name, std::pair<Header::HeaderType, bool>(type, isSupported)));
 }
 
