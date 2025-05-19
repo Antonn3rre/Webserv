@@ -1,3 +1,4 @@
+#include "Config.hpp"
 #include "Header.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
@@ -56,8 +57,18 @@ int main() {
 	}
 	// Server Start
 	{
-		std::cout << "\e[33mTEST START SERVER\e[0m" << std::endl;
-		Server test;
-		test.startServer();
+		// std::cout << "\e[33mTEST START SERVER\e[0m" << std::endl;
+		// Server test;
+		// test.startServer();
+	}
+	// Config test
+	{
+		std::cout << "\e[33mTEST CONFIG\e[0m" << std::endl;
+		try {
+			Config config("conf/defaultWithoutCommentaries.conf");
+			std::cout << config.getErrorPage(503) << std::endl << std::endl;
+		} catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+		}
 	}
 }

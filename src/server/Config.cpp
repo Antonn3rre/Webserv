@@ -1,16 +1,19 @@
 #include "Config.hpp"
 #include "utilsParsing.hpp"
 #include "utilsSpace.hpp"
+#include <algorithm> // pour afficher les tests
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <ostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
-
-
-#include <algorithm> // pour afficher les tests
+#include <utility>
 
 Config::Config(const std::string &configFile) {
+	_setDefaultConfig();
+
 	std::fstream file;
 	int          i;
 	file.open(configFile.c_str(), std::fstream::in);
@@ -57,18 +60,18 @@ Config::Config(const std::string &configFile) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
 				break;
-			for (int i = 0; i < 8; i++) {
-				if (token == list[i]) {
-					(this->*functionPointer[i])(token, file);
-					break;
+				for (int i = 0; i < 8; i++) {
+					if (token == list[i]) {
+						(this->*functionPointer[i])(token, file);
+						break;
+					}
+					if (i == 7)
+						throw Config::Exception("Problem parsing file");
 				}
-				if (i == 7)
+				if (i == 7) {
+					std::cout << "problem = " << token << std::endl;
 					throw Config::Exception("Problem parsing file");
-			}
-			if (i == 7) {
-				std::cout << "problem = " << token << std::endl;
-				throw Config::Exception("Problem parsing file");
-			}
+				}
 			}
 		}
 	}
@@ -171,7 +174,7 @@ void Config::_parseErrorPage(std::string &str, std::fstream &file) {
 		int                code;
 		if (!(issNum >> code) || code < 100 || code > 599)
 			throw Config::Exception("Problem parsing error page : wrong error code");
-		_errorPage[code] = page;
+		_errorPages[code] = page;
 		//    std::cout << "code = " << code << " et erorpage[code] = " << _errorPage[code] <<
 		//    std::endl;
 	}
@@ -236,12 +239,34 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 	}
 }
 
+void Config::_setDefaultErrorPages() {
+	std::stringstream pageNameStream;
+	std::string       pageName;
+
+	for (int i = 400; i <= 505; ++i) {
+		pageNameStream.str("");
+		pageNameStream << "error" << i << ".html";
+		pageName = pageNameStream.str();
+		_errorPages.insert(std::pair<int, std::string>(i, pageName));
+		if (i == 417)
+			i = 499;
+	}
+}
+
+void Config::_setDefaultConfig() { _setDefaultErrorPages(); }
+
 const std::string             &Config::getListen() const { return _listen; }
 const std::deque<std::string> &Config::getServerName() const { return _serverName; }
-const std::string &Config::getErrorPage(int index) const { return _errorPage.at(index); }
-const std::string &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
-const std::string &Config::getHost() const { return _host; }
-const std::string &Config::getRoot() const { return _root; }
+const std::string             &Config::getErrorPage(int index) const {
+    std::map<int, std::string>::const_iterator it = _errorPages.find(index);
+    if (it != _errorPages.end())
+        return it->second;
+    std::cerr << "Error page " << index << " does not exist" << std::endl;
+    throw std::out_of_range("");
+}
+const std::string             &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
+const std::string             &Config::getHost() const { return _host; }
+const std::string             &Config::getRoot() const { return _root; }
 const std::deque<std::string> &Config::getIndex() const { return _index; }
 const std::deque<Location>    &Config::getLocation() const { return _location; }
 

@@ -26,7 +26,7 @@ class Config {
 	// Config getter
 	const std::string             &getListen() const;
 	const std::deque<std::string> &getServerName() const;
-	const std::string             &getErrorPage(int) const;
+	const std::string             &getErrorPage(int index) const;
 	const std::string             &getClientMaxBodySize() const;
 	const std::string             &getHost() const;
 	const std::string             &getRoot() const;
@@ -46,7 +46,7 @@ class Config {
 	private:
 	std::string                _listen;
 	std::deque<std::string>    _serverName;
-	std::map<int, std::string> _errorPage;
+	std::map<int, std::string> _errorPages;
 	std::string                _clientMaxBodySize;
 	std::string                _host;
 	std::string                _root;
@@ -61,6 +61,9 @@ class Config {
 	void _parseRoot(std::string &, std::fstream &);
 	void _parseIndex(std::string &, std::fstream &);
 	void _parseLocation(std::string &, std::fstream &);
+
+	void _setDefaultErrorPages();
+	void _setDefaultConfig();
 };
 
 #endif // !CONFIG_HPP
