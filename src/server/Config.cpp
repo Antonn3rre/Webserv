@@ -7,6 +7,26 @@
 #include <sstream>
 #include <string>
 
+
+#include <algorithm> // pour afficher les tests
+
+std::string readToken(std::fstream& file) {
+    std::string token;
+    char c;
+    while (file.get(c)) {
+        if (c == '\n') {
+            throw Config::Exception("Erreur : saut de ligne inattendu dans un token !");
+        }
+        if (std::isspace(c)) {
+			if (token.empty())
+				continue;
+			break; // fin du token
+        }
+        token += c;
+    }
+    return token;
+}
+
 Config::Config(const std::string &configFile) {
 	std::fstream file;
 	int          i;
@@ -54,6 +74,13 @@ Config::Config(const std::string &configFile) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
 				break;
+			for (int i = 0; i < 8; i++) {
+				if (token == list[i]) {
+					(this->*functionPointer[i])(token, file);
+					break;
+				}
+				if (i == 7)
+					throw Config::Exception("Problem parsing file");
 			}
 			if (i == 7) {
 				std::cout << "problem = " << token << std::endl;

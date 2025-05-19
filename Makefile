@@ -6,8 +6,7 @@ BUILD_DIR = build/
 
 SRCS_MAIN = main.cpp
 
-SRCS_SERVER = Location.cpp Config.cpp
-
+SRCS_SERVER = Location.cpp Server.cpp Client.cpp
 SRCS_MESSAGES = AMessage.cpp AStartLine.cpp Header.cpp ResponseMessage.cpp RequestLine.cpp RequestMessage.cpp StatusLine.cpp
 
 SRCS_UTILS = utilsSpace.cpp utilsParsing.cpp
