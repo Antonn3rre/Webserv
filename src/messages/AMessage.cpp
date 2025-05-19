@@ -1,5 +1,6 @@
 #include "AMessage.hpp"
 #include "Header.hpp"
+#include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
@@ -56,7 +57,8 @@ void AMessage::addHeader(const Header &header) {
 		if (headerEntry->second.second)
 			_headers.push_back(header);
 		else
-			throw Unsupported("header", header.getName());
+			// throw Unsupported("header", header.getName());
+			std::cerr << "Warning: unsupported header: " << header.getName() << std::endl;
 	} else
 		throw InvalidData("header", header.getName());
 }

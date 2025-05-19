@@ -3,6 +3,7 @@
 #include "ResponseMessage.hpp"
 #include "Server.hpp"
 #include "StatusLine.hpp"
+#include <exception>
 #include <iostream>
 #include <string>
 
@@ -13,9 +14,13 @@ int main() {
 		std::cout << "\e[33mTEST REQUEST MESSAGE PARSING\e[0m" << std::endl;
 		std::string requestStr = "GET /ip HTTP/1.1\nHost: httpbin.org\n\n{\n\tblabla\n\tasdasd\n}";
 
-		RequestMessage request(requestStr);
-		std::cout << request.str();
-		std::cout << std::endl << std::endl;
+		try {
+			RequestMessage request(requestStr);
+			std::cout << request.str();
+			std::cout << std::endl << std::endl;
+		} catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+		}
 
 		std::cout << "\e[33mTEST RESPONSE MESSAGE PARSING\e[0m" << std::endl;
 		std::string responseStr =
@@ -24,9 +29,13 @@ int main() {
 		    "gunicorn/19.9.0\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Credentials: "
 		    "true\n\n{\n\t\"origin\": \"62.210.35.12\"\n}";
 
-		ResponseMessage response(responseStr);
-		std::cout << response.str();
-		std::cout << std::endl << std::endl;
+		try {
+			ResponseMessage response(responseStr);
+			std::cout << response.str();
+			std::cout << std::endl << std::endl;
+		} catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+		}
 	}
 	// Reponse Message Creation
 	{
