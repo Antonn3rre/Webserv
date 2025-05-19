@@ -1,9 +1,14 @@
 // include si class
-#include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "Server.hpp"
+#include <cerrno>
 #include <deque>
+#include <dirent.h>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <utility>
 
 int findRightLocIndex(Server &server, RequestMessage &request) {
 	std::pair<int, int> commonWord;
@@ -64,6 +69,23 @@ std::string getCompletePath(const std::string &locRoot, const std::string &reque
 	return locRoot + requestUri;
 }
 
+int checkUrl(const std::string &url) {
+	if (access(url.c_str(), F_OK)) {
+		if (stat(url.c_str(), NULL) == -1) {
+			if (errno == EINVAL)
+				return (403);
+			if (errno == ELOOP)
+				return (508);
+			if (errno == EFAULT || errno == EBADF || errno == ENOMEM || errno == EOVERFLOW)
+				return (500);
+			if (errno == ENOENT || errno == ENOTDIR)
+				return (404);
+		}
+		return (0); // c'est un dir
+	}
+	return (1); // file
+}
+
 // return std::pair<code, page> ?
 std::pair<int, std::string> handleRequest(Server &server, RequestMessage &request) {
 	// iterer location de server pour attribuer le bon ??
@@ -78,7 +100,7 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 
 	// verif si method autorise
 	if (!checkMethods(server.getLocMethods(indexLoc), request.getMethod()))
-		throw Config::Exception("La methode n'est pas acceptee");
+		throw AMessage::Unsupported("method", request.getMethod());
 
 	// recuperer uri et construire chemin avec root (si aucun root defini ?)
 	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
@@ -86,5 +108,14 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	// check si dossier, si oui envoyer sur index   // voir differents comportements selon methode
 	// Si pas d'index, check autoindent et faire en fonction
 
-	// A PLACER : CGI
+	// checkUrl -> return 0 si dir, 1 si file, error code si error
+	int resultCheckUrl = checkUrl(returnInfo.second);
+	if (resultCheckUrl > 1)
+		return std::make_pair(resultCheckUrl, server.getErrorPage(resultCheckUrl));
+
+	// Si POST -> check si execution possible
+	// Si DELETE -> check si suppression possible
+
+	// A PLACER : CGI + Differentes fonctions methods
+	return (returnInfo);
 }
