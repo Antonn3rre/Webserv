@@ -86,6 +86,29 @@ int checkUrl(const std::string &url) {
 	return (1); // file
 }
 
+int checkRights(int type, const std::string &url, const std::string &method) {
+	if (type == 1) { // file
+		if (method == "GET") {
+			if (access(url.c_str(), W_OK)) {
+				return (403);
+			}
+		} else if (access(url.c_str(), X_OK)) {
+			return (403);
+		}
+	} else { // dir
+		     // pas fini!!!
+	}
+	return (0);
+}
+
+int indexWork(Server &server, std::string &url, int indexLoc) {
+	// recuperer index
+
+	if (!server.getLocAutoindent(indexLoc))
+		return (0);
+	return (1);
+}
+
 // return std::pair<code, page> ?
 std::pair<int, std::string> handleRequest(Server &server, RequestMessage &request) {
 	// iterer location de server pour attribuer le bon ??
@@ -102,18 +125,27 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	if (!checkMethods(server.getLocMethods(indexLoc), request.getMethod()))
 		throw AMessage::Unsupported("method", request.getMethod());
 
-	// recuperer uri et construire chemin avec root (si aucun root defini ?)
+	// recuperer uri et construire chemin avec ro  (si aucun root defini ?)
 	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
 
 	// check si dossier, si oui envoyer sur index   // voir differents comportements selon methode
 	// Si pas d'index, check autoindent et faire en fonction
-
 	// checkUrl -> return 0 si dir, 1 si file, error code si error
 	int resultCheckUrl = checkUrl(returnInfo.second);
 	if (resultCheckUrl > 1)
 		return std::make_pair(resultCheckUrl, server.getErrorPage(resultCheckUrl));
 
-	// Si POST -> check si execution possible
+	// Si dossier -> envoye sur index ou autoindent
+	if (!resultCheckUrl && !indexWork(server, returnInfo.second, indexLoc))
+		return (); // erreur si pas d'index et autoindent off
+
+	// Verifier si les droits sont les bons selon la methode
+	int resultRights = checkRights(resultCheckUrl, returnInfo.second, request.getMethod());
+	if (resultRights)
+		return std::make_pair(resultRights, server.getErrorPage(resultRights));
+
+	// Si GET -> check si lecture possible
+	// Si POST -> check si modification possible
 	// Si DELETE -> check si suppression possible
 
 	// A PLACER : CGI + Differentes fonctions methods
