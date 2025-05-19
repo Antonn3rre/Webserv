@@ -2,22 +2,27 @@
 #include "Client.hpp"
 #include "Config.hpp"
 #include "ResponseMessage.hpp"
-#include <netinet/in.h>
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #include <iostream>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <vector>
 
-Server::Server(void) : _config(Config("conf/default.conf")), _sd(0) {};
+Server::Server() : _config(Config("conf/default.conf")), _sd(0){};
 // Server::Server(void) : _config(Config("conf/default.conf")) {};
 
 // Server::Server(char *configFile) {};
 // Server::Server(char *configFile) : _config(Config(configFile)) {};
+
+Server::ServerError::ServerError(const std::string &error, const std::string &argument)
+    : _message("Server error: " + error + ": " + argument) {}
+const char *Server::ServerError::what() const throw() { return _message.c_str(); }
+
+Server::ServerError::~ServerError() throw() {}
 
 void Server::startServer(void) {
 	_msocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -25,11 +30,13 @@ void Server::startServer(void) {
 		std::cerr << "Failed to create server socket." << std::endl;
 		exit(1);
 	}
-	_server_addr.sin_family = AF_INET;
-	_server_addr.sin_port = htons(std::atoi("4342"));
-	_server_addr.sin_addr.s_addr = htonl(INADDR_ANY); // INADDR_ANY: server listens on all available local interfaces
+	_serverAddr.sin_family = AF_INET;
+	_serverAddr.sin_port = htons(std::atoi("4342"));
+	_serverAddr.sin_addr.s_addr =
+	    htonl(INADDR_ANY); // INADDR_ANY: server listens on all available local interfaces
 
-	if (bind(_msocket, (struct sockaddr*)&_server_addr, sizeof(_server_addr)) < 0) {
+	if (bind(_msocket, reinterpret_cast<struct sockaddr *>(&_serverAddr), sizeof(_serverAddr)) <
+	    0) {
 		std::cerr << "Failed to bind server socket." << std::endl;
 		exit(1);
 	}
@@ -42,17 +49,20 @@ void Server::startServer(void) {
 	handleClient();
 }
 
-void	Server::handleClient(void) {
+void Server::handleClient(void) {
 	while (true) {
 		std::cout << "Waiting for activity" << std::endl;
 		FD_ZERO(&_readfds);
 		FD_SET(_msocket, &_readfds);
 		_maxfd = _msocket;
-		for (std::vector<int>::iterator it = _client.clientList.begin(); it != _client.clientList.end(); it++) {
+		for (std::vector<int>::iterator it = _client.clientList.begin();
+		     it != _client.clientList.end(); ++it) {
 			FD_SET(_sd, &_readfds);
-			if (_sd > _maxfd) _maxfd = _sd;
+			if (_sd > _maxfd)
+				_maxfd = _sd;
 		}
-		if (_sd > _maxfd) _maxfd = _sd;
+		if (_sd > _maxfd)
+			_maxfd = _sd;
 
 		_activity = select(_maxfd + 1, &_readfds, NULL, NULL, NULL);
 		if (_activity < 0) {
@@ -61,10 +71,11 @@ void	Server::handleClient(void) {
 		}
 
 		if (FD_ISSET(_msocket, &_readfds)) {
-			_client.client_fd = accept(_msocket, (struct sockaddr *) NULL, NULL);
+			_client.client_fd =
+			    static_cast<int16_t>(accept(_msocket, (struct sockaddr *)NULL, NULL));
 			if (_client.client_fd < 0) {
 				std::cerr << "Error on accept." << std::endl;
-				continue ;
+				continue;
 			}
 			_client.clientList.push_back(_client.client_fd);
 			std::cout << "New client connected." << std::endl;
@@ -76,13 +87,13 @@ void	Server::handleClient(void) {
 	}
 }
 
-void	Server::handleMessage(void) {
-	char	message[1024];
+void Server::handleMessage(void) {
+	char message[1024];
 	for (unsigned int i = 0; i < _client.clientList.size(); i++) {
 		_sd = _client.clientList[i];
 		if (FD_ISSET(_sd, &_readfds)) {
 			_valread = read(_sd, message, 1024);
-			
+
 			if (_valread <= 0) {
 				std::cout << "Client disconnected" << std::endl;
 				close(_sd);
@@ -94,33 +105,32 @@ void	Server::handleMessage(void) {
 	}
 }
 
-std::string	Server::buildAnswer() {
+std::string Server::buildAnswer() {
 	std::string requestStr = "GET /ip HTTP/1.1\nHost: httpbin.org\n\n{\n\tblabla\n\tasdasd\n}";
 	std::string responseStr =
-		"HTTP/1.1 200 OK\nDate: Mon, 12 May 2025 16:29:56 GMT\nContent-Type: "
-		"application/json\nContent-Length: 31\nConnection: keep-alive\nServer: "
-		"gunicorn/19.9.0\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Credentials: "
-		"true\n\n{\n\t\"origin\": \"62.210.35.12\"\n} ";
+	    "HTTP/1.1 200 OK\nDate: Mon, 12 May 2025 16:29:56 GMT\nContent-Type: "
+	    "application/json\nContent-Length: 31\nConnection: keep-alive\nServer: "
+	    "gunicorn/19.9.0\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Credentials: "
+	    "true\n\n{\n\t\"origin\": \"62.210.35.12\"\n} ";
 
-	std::string responseHtml =
-	"HTTP/1.1 200 OK\n"
-	"Date: Mon, 12 May 2025 16:29:56 GMT\n"
-	"Content-Type: text/html\n"
-	"Content-Length: 102\n"
-	"Connection: keep-alive\n"
-	"Server: gunicorn/19.9.0\n"
-	"Access-Control-Allow-Origin: *\n"
-	"Access-Control-Allow-Credentials: true\n"
-	"\n"
-	"<!DOCTYPE html>\n"
-	"<html>\n"
-	"<head><title>First webserv</title></head>\n"
-	"<body>\n"
-	"    <p>Hello World.</p>\n"
-	"</body>\n"
-	"</html>\n";
+	std::string     responseHtml = "HTTP/1.1 200 OK\n"
+	                               "Date: Mon, 12 May 2025 16:29:56 GMT\n"
+	                               "Content-Type: text/html\n"
+	                               "Content-Length: 102\n"
+	                               "Connection: keep-alive\n"
+	                               "Server: gunicorn/19.9.0\n"
+	                               "Access-Control-Allow-Origin: *\n"
+	                               "Access-Control-Allow-Credentials: true\n"
+	                               "\n"
+	                               "<!DOCTYPE html>\n"
+	                               "<html>\n"
+	                               "<head><title>First webserv</title></head>\n"
+	                               "<body>\n"
+	                               "    <p>Hello World.</p>\n"
+	                               "</body>\n"
+	                               "</html>\n";
 	ResponseMessage response(responseHtml);
-    return response.str();
+	return response.str();
 }
 
 // Config getter
