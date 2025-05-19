@@ -3,6 +3,9 @@
 #include "RequestMessage.hpp"
 #include "Server.hpp"
 #include <deque>
+#include <fstream>
+#include <ios>
+#include <sstream>
 #include <string>
 
 int findRightLocIndex(Server &server, RequestMessage &request) {
@@ -51,8 +54,8 @@ int findRightLocIndex(Server &server, RequestMessage &request) {
 	return commonWord.first;
 }
 
-int checkMethods(std::deque<std::string> methods, const std::string &requestMethod) {
-	for (std::deque<std::string>::iterator it = methods.begin(); it != methods.end(); it++) {
+int checkMethods(const std::deque<std::string> &methods, const std::string &requestMethod) {
+	for (std::deque<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
 		if (*it == requestMethod)
 			return (1);
 	}
@@ -62,6 +65,27 @@ std::string getCompletePath(const std::string &locRoot, const std::string &reque
 	if (locRoot.empty())
 		return (requestUri);
 	return locRoot + requestUri;
+}
+
+std::string loadFile(const std::string &filename) {
+	std::ifstream     file(filename.c_str());
+	std::string       line;
+	std::stringstream bodyStream;
+
+	while (std::getline(file, line))
+		bodyStream << line;
+	return bodyStream.str();
+}
+
+void saveFile(const std::string &filename, const std::string &body) {
+	std::ofstream file;
+	file.open(filename.c_str(), std::ios::trunc);
+
+	std::stringstream bodyStream(body);
+	std::string       line;
+
+	while (std::getline(bodyStream, line))
+		file << line;
 }
 
 // return std::pair<code, page> ?
