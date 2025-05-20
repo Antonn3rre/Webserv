@@ -70,23 +70,48 @@ std::string getCompletePath(const std::string &locRoot, const std::string &reque
 }
 
 int checkUrl(const std::string &url) {
-	if (access(url.c_str(), F_OK)) {
-		if (stat(url.c_str(), NULL) == -1) {
-			if (errno == EINVAL)
-				return (403);
-			if (errno == ELOOP)
-				return (508);
-			if (errno == EFAULT || errno == EBADF || errno == ENOMEM || errno == EOVERFLOW)
-				return (500);
-			if (errno == ENOENT || errno == ENOTDIR)
-				return (404);
-		}
-		return (0); // c'est un dir
+	struct stat st;
+
+	if (stat(url.c_str(), &st) == -1) {
+		if (errno == EINVAL | errno == EACCES)
+			return (403);
+		if (errno == ELOOP)
+			return (508);
+		if (errno == ENOENT || errno == ENOTDIR)
+			return (404);
+		return (500);
 	}
-	return (1); // file
+	if (S_ISDIR(st.st_mode))
+		return (0); // c'est un dir
+	if (S_ISREG(st.st_mode))
+		return (1); // c'est un file
+	return (403);
+}
+
+// recuperer index
+int indexWork(Server &server, std::string &url, int indexLoc) {
+	std::string testIndex;
+
+	// Si deque vide, begin == end
+	std::deque<std::string> index = server.getIndex();
+	for (std::deque<std::string>::iterator it = index.begin(); it != index.end(); it++) {
+		testIndex = url + *it;
+		if (!access(testIndex.c_str(), F_OK)) {
+			url = testIndex;
+			return (1);
+		}
+	}
+	if (!server.getLocAutoindent(indexLoc))
+		return (0);
+
+	// ajouter liste autoindent
+	return (0); // a changer en 1 quand fonction finie
 }
 
 int checkRights(int type, const std::string &url, const std::string &method) {
+	// Si GET -> check si lecture possible
+	// Si POST -> check si modification possible
+	// Si DELETE -> check si suppression possible
 	if (type == 1) { // file
 		if (method == "GET") {
 			if (access(url.c_str(), W_OK)) {
@@ -99,14 +124,6 @@ int checkRights(int type, const std::string &url, const std::string &method) {
 		     // pas fini!!!
 	}
 	return (0);
-}
-
-int indexWork(Server &server, std::string &url, int indexLoc) {
-	// recuperer index
-
-	if (!server.getLocAutoindent(indexLoc))
-		return (0);
-	return (1);
 }
 
 // return std::pair<code, page> ?
@@ -131,23 +148,21 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	// check si dossier, si oui envoyer sur index   // voir differents comportements selon methode
 	// Si pas d'index, check autoindent et faire en fonction
 	// checkUrl -> return 0 si dir, 1 si file, error code si error
+	// /!\ pas securise (on peut chercher ../../../../../etc/passwd)
 	int resultCheckUrl = checkUrl(returnInfo.second);
-	if (resultCheckUrl > 1)
+	if (resultCheckUrl > 2)
 		return std::make_pair(resultCheckUrl, server.getErrorPage(resultCheckUrl));
 
-	// Si dossier -> envoye sur index ou autoindent
-	if (!resultCheckUrl && !indexWork(server, returnInfo.second, indexLoc))
-		return (); // erreur si pas d'index et autoindent off
+	// Si dossier -> envoye sur index ou autoindent   // /!\ a faire seulement si GET
+	if (!resultCheckUrl && request.getMethod() == "GET" &&
+	    !indexWork(server, returnInfo.second, indexLoc))
+		return std::make_pair(403, server.getErrorPage(403));
+	// return si pas d'index et autoindent off
 
-	// Verifier si les droits sont les bons selon la methode
+	// Verifier si les droits sont les bons selon la methode + CGI
 	int resultRights = checkRights(resultCheckUrl, returnInfo.second, request.getMethod());
 	if (resultRights)
 		return std::make_pair(resultRights, server.getErrorPage(resultRights));
 
-	// Si GET -> check si lecture possible
-	// Si POST -> check si modification possible
-	// Si DELETE -> check si suppression possible
-
-	// A PLACER : CGI + Differentes fonctions methods
 	return (returnInfo);
 }
