@@ -13,7 +13,8 @@ int main() {
 	// Message Parsing Test
 	{
 		std::cout << "\e[33mTEST REQUEST MESSAGE PARSING\e[0m" << std::endl;
-		std::string requestStr = "GET /ip HTTP/1.1\nHost: httpbin.org\n\n{\n\tblabla\n\tasdasd\n}";
+		std::string requestStr =
+		    "GET /ip HTTP/1.1\r\nHost: httpbin.org\r\n\r\n{\r\n\tblabla\r\n\tasdasd\r\n}";
 
 		try {
 			RequestMessage request(requestStr);
@@ -25,10 +26,11 @@ int main() {
 
 		std::cout << "\e[33mTEST RESPONSE MESSAGE PARSING\e[0m" << std::endl;
 		std::string responseStr =
-		    "HTTP/1.1 200 OK\nDate: Mon, 12 May 2025 16:29:56 GMT\nContent-Type: "
-		    "application/json\nContent-Length: 31\nConnection: keep-alive\nServer: "
-		    "gunicorn/19.9.0\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Credentials: "
-		    "true\n\n{\n\t\"origin\": \"62.210.35.12\"\n}";
+		    "HTTP/1.1 200 OK\r\nDate: Mon, 12 May 2025 16:29:56 GMT\r\nContent-Type: "
+		    "application/json\r\nContent-Length: 31\r\nConnection: keep-alive\r\nServer: "
+		    "gunicorn/19.9.0\r\nAccess-Control-Allow-Origin: "
+		    "*\r\nAccess-Control-Allow-Credentials: "
+		    "true\r\n\r\n{\r\n\t\"origin\": \"62.210.35.12\"\r\n}";
 
 		try {
 			ResponseMessage response(responseStr);

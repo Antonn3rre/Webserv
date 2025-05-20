@@ -15,7 +15,7 @@ AMessage::AMessage(const std::string &subMessage) {
 
 	_setValidHeaders();
 
-	while (std::getline(sstream, line) && line != "") {
+	while (std::getline(sstream, line) && line != "\r") {
 		addHeader(Header(line));
 	}
 
