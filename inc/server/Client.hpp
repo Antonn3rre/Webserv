@@ -3,6 +3,7 @@
 
 # include <vector>
 # include <stdint.h>
+# include <netinet/in.h>
 
 class Client {
 	public:

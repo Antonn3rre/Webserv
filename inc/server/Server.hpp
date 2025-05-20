@@ -7,10 +7,12 @@
 #include <sys/socket.h>
 
 #define BACKLOG 5
+#define MAX_EVENTS 1000
+#define TIME_OUT 3000
 
 class Server {
 	private:
-	Config             _config;
+	// Config             _config;
 	int                _msocket;
 	struct sockaddr_in _serverAddr;
 	Client             _client;
@@ -24,9 +26,9 @@ class Server {
 	Server();
 	Server(char *configFile);
 	void        startServer(void);
-	void        handleClient(void);
+	void        handleClients(void);
 	void        handleMessage(void);
-	std::string buildAnswer();
+	std::string buildAnswer(unsigned char i);
 
 	class ServerError : public std::exception {
 		public:
