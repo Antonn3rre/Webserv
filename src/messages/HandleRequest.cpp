@@ -110,18 +110,21 @@ int indexWork(Server &server, std::string &url, int indexLoc) {
 
 int checkRights(int type, const std::string &url, const std::string &method) {
 	// Si GET -> check si lecture possible
-	// Si POST -> check si modification possible
-	// Si DELETE -> check si suppression possible
-	if (type == 1) { // file
-		if (method == "GET") {
-			if (access(url.c_str(), W_OK)) {
-				return (403);
-			}
-		} else if (access(url.c_str(), X_OK)) {
+	// Si POST ou DELETE-> check si modification possible
+
+	if (method == "GET") {
+		if (access(url.c_str(), R_OK))
 			return (403);
-		}
+		return (0);
+	}
+	if (type == 1) { // file
+		if (access(url.c_str(), W_OK))
+			return (403);
 	} else { // dir
-		     // pas fini!!!
+		struct stat st;
+		stat(url.c_str(), &st);
+		if (!(st.st_mode & S_IWUSR))
+			return (403);
 	}
 	return (0);
 }
@@ -145,12 +148,12 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	// recuperer uri et construire chemin avec ro  (si aucun root defini ?)
 	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
 
-	// check si dossier, si oui envoyer sur index   // voir differents comportements selon methode
-	// Si pas d'index, check autoindent et faire en fonction
-	// checkUrl -> return 0 si dir, 1 si file, error code si error
+	// check si dossier, si oui envoyer sur index   // voir differents comportements selon
+	// methode Si pas d'index, check autoindent et faire en fonction checkUrl -> return 0 si
+	// dir, 1 si file, error code si error
 	// /!\ pas securise (on peut chercher ../../../../../etc/passwd)
 	int resultCheckUrl = checkUrl(returnInfo.second);
-	if (resultCheckUrl > 2)
+	if (resultCheckUrl > 1)
 		return std::make_pair(resultCheckUrl, server.getErrorPage(resultCheckUrl));
 
 	// Si dossier -> envoye sur index ou autoindent   // /!\ a faire seulement si GET
@@ -159,7 +162,12 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 		return std::make_pair(403, server.getErrorPage(403));
 	// return si pas d'index et autoindent off
 
-	// Verifier si les droits sont les bons selon la methode + CGI
+	// check si CGI dans ce cas la, pas de droits a verif je return direct
+	// Pour l'instant on check pas, on executera avec python3, a voir ensuite
+	if (server.getLocName(indexLoc).find("cgi-bin") != std::string::npos)
+		return std::make_pair(1, returnInfo.second);
+
+	// Verifier si les droits sont les bons selon la methode
 	int resultRights = checkRights(resultCheckUrl, returnInfo.second, request.getMethod());
 	if (resultRights)
 		return std::make_pair(resultRights, server.getErrorPage(resultRights));
