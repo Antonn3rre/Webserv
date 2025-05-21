@@ -1,4 +1,5 @@
 // include si class
+#include "AMessage.hpp"
 #include "RequestMessage.hpp"
 #include "Server.hpp"
 #include <cerrno>
@@ -155,6 +156,18 @@ void saveFile(const std::string &filename, const std::string &body) {
 
 	while (std::getline(bodyStream, line))
 		file << line;
+}
+
+void executeCgi(const std::string &uri) {
+	if (access(uri.c_str(), F_OK) == -1)
+		throw AMessage::InvalidData("cgi, does not exist", uri);
+	if (access(uri.c_str(), X_OK) == -1)
+		throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
+	int pid = fork();
+	if (pid == 0) {
+		char **argv = {NULL};
+		execve(uri.c_str(), argv, NULL);
+	}
 }
 
 // return std::pair<code, page> ?
