@@ -12,6 +12,9 @@ ResponseMessage::ResponseMessage(const StatusLine &statusLine, const std::string
 
 const std::string &ResponseMessage::getHttpVersion() const { return _startLine.getHttpVersion(); }
 
+unsigned short     ResponseMessage::getStatusCode() const { return _startLine.getStatusCode(); }
+const std::string &ResponseMessage::getReasonPhrase() const { return _startLine.getReasonPhrase(); }
+
 std::string ResponseMessage::str() const {
 	std::string str = _startLine.str();
 	str += "\r\n";
