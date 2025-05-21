@@ -3,6 +3,7 @@
 #include "RequestMessage.hpp"
 #include "Server.hpp"
 #include <cerrno>
+#include <cstdlib>
 #include <deque>
 #include <dirent.h>
 #include <fstream>
@@ -81,7 +82,7 @@ int checkUrl(std::string &url) {
 	}
 
 	if (stat(url.c_str(), &st) == -1) {
-		if (errno == EINVAL | errno == EACCES)
+		if (errno == EINVAL || errno == EACCES)
 			return (403);
 		if (errno == ELOOP)
 			return (508);
@@ -102,7 +103,7 @@ int indexWork(Server &server, std::string &url, int indexLoc) {
 
 	// Si deque vide, begin == end
 	std::deque<std::string> index = server.getIndex();
-	for (std::deque<std::string>::iterator it = index.begin(); it != index.end(); it++) {
+	for (std::deque<std::string>::iterator it = index.begin(); it != index.end(); ++it) {
 		testIndex = url + *it;
 		if (!access(testIndex.c_str(), F_OK)) {
 			url = testIndex;
@@ -158,16 +159,33 @@ void saveFile(const std::string &filename, const std::string &body) {
 		file << line;
 }
 
-void executeCgi(const std::string &uri) {
+std::string executeCgi(const std::string &uri) {
 	if (access(uri.c_str(), F_OK) == -1)
 		throw AMessage::InvalidData("cgi, does not exist", uri);
 	if (access(uri.c_str(), X_OK) == -1)
 		throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
+	int pipefd[2];
+
+	pipe(pipefd);
+
 	int pid = fork();
 	if (pid == 0) {
 		char **argv = {NULL};
+		dup2(pipefd[1], STDOUT_FILENO);
+		close(pipefd[1]);
+		close(pipefd[0]);
 		execve(uri.c_str(), argv, NULL);
+		std::cerr << "execve error" << std::endl;
+		exit(EXIT_FAILURE);
 	}
+	ssize_t     bytesRead = 0;
+	std::string output;
+	char       *buffer = {0};
+	while (bytesRead >= 0) {
+		bytesRead = read(pipefd[0], buffer, 1024);
+		output += buffer;
+	}
+	return output;
 }
 
 // return std::pair<code, page> ?
