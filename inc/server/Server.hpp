@@ -11,9 +11,11 @@
 
 class Server {
 	private:
-	Config      _config;
-	int         _lsockfd;
-	int         _epollfd;
+	Config _config;
+	int    _lsockfd;
+	int    _epollfd;
+
+	void        _shutdown();
 	std::string _buildAnswer(void);
 
 	public:

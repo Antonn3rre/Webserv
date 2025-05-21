@@ -140,3 +140,5 @@ std::string Server::_buildAnswer() {
 	// ResponseMessage response(ss.str());
 	return ss.str();
 }
+
+void Server::_shutdown() { close(_lsockfd); }
