@@ -1,12 +1,16 @@
 // include si class
-#include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "Server.hpp"
+#include <cerrno>
 #include <deque>
-#include <fstream>
-#include <ios>
-#include <sstream>
+#include <dirent.h>
+#include <iostream>
+#include <ostream>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <utility>
 
 int findRightLocIndex(Server &server, RequestMessage &request) {
 	std::pair<int, int> commonWord;
@@ -102,13 +106,34 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 
 	// verif si method autorise
 	if (!checkMethods(server.getLocMethods(indexLoc), request.getMethod()))
-		throw Config::Exception("La methode n'est pas acceptee");
+		return std::make_pair(405, server.getErrorPage(405));
 
-	// recuperer uri et construire chemin avec root (si aucun root defini ?)
+	// recuperer uri et construire chemin avec ro  (si aucun root defini ?)
 	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
 
-	// check si dossier, si oui envoyer sur index   // voir differents comportements selon methode
-	// Si pas d'index, check autoindent et faire en fonction
+	// check si dossier, si oui envoyer sur index   // voir differents comportements selon
+	// methode Si pas d'index, check autoindent et faire en fonction checkUrl -> return 0 si
+	// dir, 1 si file, error code si error
+	// /!\ pas securise (on peut chercher ../../../../../etc/passwd)
+	int resultCheckUrl = checkUrl(returnInfo.second);
+	if (resultCheckUrl > 1)
+		return std::make_pair(resultCheckUrl, server.getErrorPage(resultCheckUrl));
 
-	// A PLACER : CGI
+	// Si dossier -> envoye sur index ou autoindent   // /!\ a faire seulement si GET
+	if (!resultCheckUrl && request.getMethod() == "GET" &&
+	    !indexWork(server, returnInfo.second, indexLoc))
+		return std::make_pair(403, server.getErrorPage(403));
+	// return si pas d'index et autoindent off
+
+	// check si CGI dans ce cas la, pas de droits a verif je return direct
+	// Pour l'instant on check pas, on executera avec python3, a voir ensuite
+	if (server.getLocName(indexLoc).find("cgi-bin") != std::string::npos)
+		return std::make_pair(1, returnInfo.second);
+
+	// Verifier si les droits sont les bons selon la methode
+	int resultRights = checkRights(resultCheckUrl, returnInfo.second, request.getMethod());
+	if (resultRights)
+		return std::make_pair(resultRights, server.getErrorPage(resultRights));
+
+	return (returnInfo);
 }
