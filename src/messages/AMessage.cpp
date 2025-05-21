@@ -59,8 +59,9 @@ void AMessage::addHeader(const Header &header) {
 		else
 			// throw Unsupported("header", header.getName());
 			std::cerr << "Warning: unsupported header: " << header.getName() << std::endl;
-	} else
-		throw InvalidData("header", header.getName());
+	}
+	// } else
+	// 	throw InvalidData("header", header.getName());
 }
 
 void AMessage::_insertKnownHeader(const std::string &name, Header::HeaderType type,
