@@ -3,8 +3,10 @@
 #include "Config.hpp"
 #include <arpa/inet.h>
 #include "ResponseMessage.hpp"
+#include <asm-generic/socket.h>
 #include <cerrno>
 #include <climits>
+#include <csignal>
 #include <cstdio>
 #include <cstring>
 #include <netinet/in.h>
@@ -32,7 +34,7 @@ int setnonblocking(int sock)
     int result;
     int flags;
 
-    flags = ::fcntl(sock, F_GETFL, 0);
+    flags = fcntl(sock, F_GETFL, 0);
 
     if (flags == -1)
     {
@@ -50,19 +52,25 @@ void Server::startServer(void) {
 	socklen_t			clilen;
 	struct sockaddr_in	serv_addr, cli_addr;
 	int	n;
-	char buffer[1000];
+	int	on = 1;
+	char buffer[100000];
 
 	struct epoll_event ev, events[MAX_EVENTS];
 	int nfds;
 
 	newsockfd = -1;
+	signal(SIGPIPE, SIG_IGN);
 
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		std::cerr << "Error on socket." << std::endl;
 		exit (1);
 	}
+
+	// allow the socket to be reusable
+	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on));
+
 	bzero((char *) &serv_addr, sizeof(serv_addr));
-	portno = 8080;
+	portno = 4342;
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(portno);
@@ -81,37 +89,36 @@ void Server::startServer(void) {
 	for (;;) {
 		nfds = epoll_wait(epollfd, events, MAX_EVENTS, TIME_OUT);
 
-		for (int i = 0; i < nfds; i++) {
+		for (int i = 0; i < nfds; ++i) {
 			if (events[i].data.fd == sockfd) {
 				newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
 				if (newsockfd < 0) {
 					std::cerr << "Error on bind." << std::endl;
-					exit (1);
+					break ;
 				}
-				setnonblocking(newsockfd);
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = newsockfd;
+				setnonblocking(ev.data.fd);
 				epoll_ctl(epollfd, EPOLL_CTL_ADD, newsockfd, &ev);
 			} else {
-				bzero(buffer, 1000);
-				n = read(events[i].data.fd, buffer, 1000);
+				bzero(buffer, 100000);
+				n = read(events[i].data.fd, buffer, 100000);
 				if (n < 0) {
 					std::cerr << "Error on read." << std::endl;
-					exit (1);
+					close(events[i].data.fd);
+					break ;
 				}
+				std::cout<< buffer<< std::endl;
 				std::string tmp = buildAnswer(129);
 				n = write(events[i].data.fd, tmp.c_str(), tmp.length());
 				if (n < 0) {
-					std::cerr << "Error on write." << strerror(errno) << std::endl;
-					exit (1);
+					std::cerr << "Error on write => " << strerror(errno) << std::endl;
+					close(events[i].data.fd);
 				}
 			}
-			// if (newsockfd != -1)
-			// 	close(newsockfd);
 		}
 	}
 	close(sockfd);
-	// handleClients();
 }
 
 void	Server::handleClients(void) {
@@ -165,7 +172,7 @@ std::string	Server::buildAnswer(unsigned char i) {
 	<< "\r\n"
 	<< body;
 
-	ResponseMessage response(ss.str());
+	// ResponseMessage response(ss.str());
     return ss.str();
 }
 
