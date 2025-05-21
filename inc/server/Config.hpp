@@ -68,6 +68,7 @@ class Config {
 
 	void _setDefaultErrorPages();
 	void _setDefaultConfig();
+	void _setDefaultLocation();
 };
 
 #endif // !CONFIG_HPP

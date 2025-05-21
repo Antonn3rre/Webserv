@@ -6,7 +6,8 @@
 #include <sstream>
 #include <string>
 
-Location::Location(std::string &token, std::fstream &file) : _autoindent(false) {
+Location::Location(std::string &token, std::fstream &file)
+    : _redirection(-1, ""), _autoindent(false) {
 	std::string list[] = {"return", "allow_methods", "root", "autoindent"};
 	void (Location::*functionPointer[])(std::string &, std::fstream &) = {
 	    &Location::_parseRedirection, &Location::_parseMethods, &Location::_parseRoot,
@@ -117,6 +118,14 @@ void Location::_parseIndent(std::string &str, std::fstream &file) {
 	else
 		throw Location::Exception();
 }
+
+void Location::setDefaultMethods() {
+	_methods.push_back("GET");
+	_methods.push_back("DELETE");
+	_methods.push_back("POST");
+}
+
+void Location::setDefaultRoot(const std::string &root) { _root = root; }
 
 const std::string                 &Location::getName() const { return _name; }
 const std::pair<int, std::string> &Location::getRedirection() const { return _redirection; }
