@@ -1,5 +1,4 @@
 #include "Server.hpp"
-#include "Client.hpp"
 #include "Config.hpp"
 #include "ResponseMessage.hpp"
 #include <arpa/inet.h>
@@ -22,10 +21,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Server::Server(void){};
-// Server::Server(void) : _config(Config("conf/default.conf")), _sd(0) {};
+Server::Server(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
 
-// Server::Server(char *configFile) {};
 // Server::Server(char *configFile) : _config(Config(configFile)) {};
 
 int setnonblocking(int sock) {
@@ -45,8 +42,7 @@ int setnonblocking(int sock) {
 }
 
 void Server::startServer(void) {
-	int                newsockfd = -1;
-	int                portno;
+	int                clientfd = -1;
 	socklen_t          clilen;
 	struct sockaddr_in servAddr;
 	struct sockaddr_in cliAddr;
@@ -57,56 +53,56 @@ void Server::startServer(void) {
 	struct epoll_event events[MAX_EVENTS];
 	int                nfds;
 
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd == -1) {
+	_lsockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (_lsockfd == -1) {
 		std::cerr << "Error on socket." << std::endl;
 		exit(1);
 	}
 
 	// allow the socket to be reusable
-	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+	setsockopt(_lsockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
 	bzero(&servAddr, sizeof(servAddr));
-	portno = 4342;
 	servAddr.sin_family = AF_INET;
 	servAddr.sin_addr.s_addr = INADDR_ANY;
-	servAddr.sin_port = htons(portno);
-	if (bind(sockfd, reinterpret_cast<struct sockaddr *>(&servAddr), sizeof(servAddr)) < 0) {
-		std::cerr << "Error on bind." << std::endl;
+	servAddr.sin_port = htons(_config.getPort());
+	if (bind(_lsockfd, reinterpret_cast<struct sockaddr *>(&servAddr), sizeof(servAddr)) < 0) {
+		std::cerr << "Error on bind listen." << std::endl;
 		exit(1);
 	}
-	listen(sockfd, 5);
+	listen(_lsockfd, 5);
 	clilen = sizeof(cliAddr);
 
-	int epollfd = epoll_create(MAX_EVENTS);
+	_epollfd = epoll_create(MAX_EVENTS);
 	ev.events = EPOLLIN;
-	ev.data.fd = sockfd;
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, sockfd, &ev);
+	ev.data.fd = _lsockfd;
+	epoll_ctl(_epollfd, EPOLL_CTL_ADD, _lsockfd, &ev);
 
+	std::cout << "Server launch on port: " << _config.getPort() << std::endl;
 	for (;;) {
-		nfds = epoll_wait(epollfd, events, MAX_EVENTS, TIME_OUT);
+		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
 
 		for (int i = 0; i < nfds; ++i) {
-			if (events[i].data.fd == sockfd) {
-				newsockfd = accept(sockfd, reinterpret_cast<struct sockaddr *>(&cliAddr), &clilen);
-				if (newsockfd < 0) {
-					std::cerr << "Error on bind." << std::endl;
-					break;
+			if (events[i].data.fd == _lsockfd) {
+				clientfd = accept(_lsockfd, reinterpret_cast<struct sockaddr *>(&cliAddr), &clilen);
+				if (clientfd < 0) {
+					std::cerr << "Error on bind clients." << std::endl;
+					continue;
 				}
 				ev.events = EPOLLIN | EPOLLET;
-				ev.data.fd = newsockfd;
+				ev.data.fd = clientfd;
 				setnonblocking(ev.data.fd);
-				epoll_ctl(epollfd, EPOLL_CTL_ADD, newsockfd, &ev);
+				epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
 			} else {
 				bzero(buffer, 100000);
 				n = read(events[i].data.fd, buffer, 100000);
 				if (n < 0) {
 					std::cerr << "Error on read." << std::endl;
 					close(events[i].data.fd);
-					break;
+					continue;
 				}
 				std::cout << buffer << std::endl;
-				std::string tmp = buildAnswer(129);
+				std::string tmp = buildAnswer();
 				n = send(events[i].data.fd, tmp.c_str(), tmp.length(), MSG_NOSIGNAL);
 				if (n < 0) {
 					std::cerr << "Error on write => " << strerror(errno) << std::endl;
@@ -115,38 +111,12 @@ void Server::startServer(void) {
 			}
 		}
 	}
-	close(sockfd);
+	close(_lsockfd);
 }
 
 void Server::handleClients(void) {}
 
-std::string Server::buildAnswer(unsigned char i) {
-	std::string requestStr = "GET /ip HTTP/1.1\nHost: httpbin.org\n\n{\n\tblabla\n\tasdasd\n}";
-	std::string responseStr =
-	    "HTTP/1.1 200 OK\nDate: Mon, 12 May 2025 16:29:56 GMT\nContent-Type: "
-	    "application/json\nContent-Length: 31\nConnection: keep-alive\nServer: "
-	    "gunicorn/19.9.0\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Credentials: "
-	    "true\n\n{\n\t\"origin\": \"62.210.35.12\"\n} ";
-	(void)i;
-	// std::stringstream ss;
-	// ss.str("");
-	// ss << "HTTP/1.1 200 OK\r\n"
-	// "Date: Mon, 12 May 2025 16:29:56 GMT\r\n"
-	// "Content-Type: text/html\r\n"
-	// "Content-Length: 104\r\n"
-	// "Connection: keep-alive\r\n"
-	// "Server: gunicorn/19.9.0\r\n"
-	// "Access-Control-Allow-Origin: *\r\n"
-	// "Access-Control-Allow-Credentials: true\r\n"
-	// "\r\n"
-	// "<!DOCTYPE html>\n"
-	// "<html>\n"
-	// "<head><title>First webserv</title></head>\n"
-	// "<body>\n"
-	// "    <p>Hello World.</p>\n"
-	// "</body>\n"
-	// "</html>\n";
-
+std::string Server::buildAnswer() {
 	std::string body = "<!DOCTYPE html>\r\n"
 	                   "<html>\r\n"
 	                   "<head><title>First webserv</title></head>\r\n"
@@ -171,26 +141,26 @@ std::string Server::buildAnswer(unsigned char i) {
 	return ss.str();
 }
 
-// // Config getter
-// const std::string             &Server::getListen() const { return _config.getListen(); }
-// const std::deque<std::string> &Server::getServerName() const { return _config.getServerName(); }
-// const std::string &Server::getErrorPage(int index) const { return _config.getErrorPage(index); }
-// const std::string &Server::getClientMaxBodySize() const { return _config.getClientMaxBodySize();
-// } const std::string &Server::getHost() const { return _config.getHost(); } const std::string
-// &Server::getRoot() const { return _config.getRoot(); } const std::deque<std::string>
-// &Server::getIndex() const { return _config.getIndex(); } const std::deque<Location>
-// &Server::getLocation() const { return _config.getLocation(); }
-//
-// // Location getter , int parameter is the index of the container
-// const std::string &Server::getLocName(int index) const { return _config.getLocName(index); }
-// const std::pair<int, std::string> &Server::getLocRedirection(int index) const {
-// 	return _config.getLocRedirection(index);
-// }
-// const std::deque<std::string> &Server::getLocMethods(int index) const {
-// 	return _config.getLocMethods(index);
-// }
-// const std::string &Server::getLocRoot(int index) const { return _config.getLocRoot(index); }
-// const bool &Server::getLocAutoindent(int index) const { return _config.getLocAutoindent(index); }
-//
-// // additionnal getters
-// unsigned int Server::getNumOfLoc() const { return _config.getNumOfLoc(); }
+// Config getter
+const std::string             &Server::getListen() const { return _config.getListen(); }
+const std::deque<std::string> &Server::getServerName() const { return _config.getServerName(); }
+const std::string &Server::getErrorPage(int index) const { return _config.getErrorPage(index); }
+const std::string &Server::getClientMaxBodySize() const { return _config.getClientMaxBodySize(); }
+const std::string &Server::getHost() const { return _config.getHost(); }
+const std::string &Server::getRoot() const { return _config.getRoot(); }
+const std::deque<std::string> &Server::getIndex() const { return _config.getIndex(); }
+const std::deque<Location>    &Server::getLocation() const { return _config.getLocation(); }
+
+// Location getter , int parameter is the index of the container
+const std::string &Server::getLocName(int index) const { return _config.getLocName(index); }
+const std::pair<int, std::string> &Server::getLocRedirection(int index) const {
+	return _config.getLocRedirection(index);
+}
+const std::deque<std::string> &Server::getLocMethods(int index) const {
+	return _config.getLocMethods(index);
+}
+const std::string &Server::getLocRoot(int index) const { return _config.getLocRoot(index); }
+const bool &Server::getLocAutoindent(int index) const { return _config.getLocAutoindent(index); }
+
+// additionnal getters
+unsigned int Server::getNumOfLoc() const { return _config.getNumOfLoc(); }
