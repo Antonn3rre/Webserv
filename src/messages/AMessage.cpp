@@ -134,3 +134,5 @@ void AMessage::_setValidHeaders() {
 	_insertKnownHeader("Retry-After", Header::Response, false);
 	_insertKnownHeader("Vary", Header::Response, false);
 }
+
+const std::string &AMessage::getBody() const { return _body; }
