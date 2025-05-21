@@ -6,7 +6,6 @@
 #include <dirent.h>
 #include <fstream>
 #include <iostream>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
