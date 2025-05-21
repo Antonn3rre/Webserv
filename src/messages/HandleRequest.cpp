@@ -4,6 +4,8 @@
 #include <cerrno>
 #include <deque>
 #include <dirent.h>
+#include <iostream>
+#include <ostream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -69,8 +71,12 @@ std::string getCompletePath(const std::string &locRoot, const std::string &reque
 	return locRoot + requestUri;
 }
 
-int checkUrl(const std::string &url) {
+int checkUrl(std::string &url) {
 	struct stat st;
+
+	if (url[0] == '/') {
+		url = url.substr(1, url.size() - 1);
+	}
 
 	if (stat(url.c_str(), &st) == -1) {
 		if (errno == EINVAL | errno == EACCES)
@@ -143,7 +149,7 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 
 	// verif si method autorise
 	if (!checkMethods(server.getLocMethods(indexLoc), request.getMethod()))
-		throw AMessage::Unsupported("method", request.getMethod());
+		return std::make_pair(405, server.getErrorPage(405));
 
 	// recuperer uri et construire chemin avec ro  (si aucun root defini ?)
 	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
