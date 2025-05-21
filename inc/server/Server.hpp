@@ -6,13 +6,13 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#define BACKLOG 5
+#define BACKLOG    5
 #define MAX_EVENTS 1000
-#define TIME_OUT 3000
+#define TIME_OUT   3000
 
 class Server {
 	private:
-	// Config             _config;
+	Config             _config;
 	int                _msocket;
 	struct sockaddr_in _serverAddr;
 	Client             _client;
@@ -23,7 +23,7 @@ class Server {
 	int                _activity;
 
 	public:
-	Server();
+	//	Server();
 	Server(char *configFile);
 	void        startServer(void);
 	void        handleClients(void);

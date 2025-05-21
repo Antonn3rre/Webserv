@@ -84,7 +84,7 @@ Config::Config(const std::string &configFile) {
 	}
 	if (i == getNumOfLoc())
 		throw Config::Exception("No / location");
-
+	_setDefaultLocation();
 	/*
 	    // Affichage test
 	    std::cout << "Listen = |" << _listen << "|" << std::endl;
@@ -254,6 +254,14 @@ void Config::_setDefaultErrorPages() {
 }
 
 void Config::_setDefaultConfig() { _setDefaultErrorPages(); }
+void Config::_setDefaultLocation() {
+	for (std::deque<Location>::iterator it = _location.begin(); it != _location.end(); it++) {
+		if ((*it).getMethods().empty())
+			(*it).setDefaultMethods();
+		if ((*it).getRoot().empty())
+			(*it).setDefaultRoot(getRoot());
+	}
+}
 
 const std::string             &Config::getListen() const { return _listen; }
 const std::deque<std::string> &Config::getServerName() const { return _serverName; }
