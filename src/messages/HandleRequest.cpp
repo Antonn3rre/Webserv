@@ -4,8 +4,10 @@
 #include <cerrno>
 #include <deque>
 #include <dirent.h>
+#include <fstream>
 #include <iostream>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -69,6 +71,70 @@ std::string getCompletePath(const std::string &locRoot, const std::string &reque
 	if (locRoot.empty())
 		return (requestUri);
 	return locRoot + requestUri;
+}
+
+int checkUrl(std::string &url) {
+	struct stat st;
+
+	if (url[0] == '/') {
+		url = url.substr(1, url.size() - 1);
+	}
+
+	if (stat(url.c_str(), &st) == -1) {
+		if (errno == EINVAL | errno == EACCES)
+			return (403);
+		if (errno == ELOOP)
+			return (508);
+		if (errno == ENOENT || errno == ENOTDIR)
+			return (404);
+		return (500);
+	}
+	if (S_ISDIR(st.st_mode))
+		return (0); // c'est un dir
+	if (S_ISREG(st.st_mode))
+		return (1); // c'est un file
+	return (403);
+}
+
+// recuperer index
+int indexWork(Server &server, std::string &url, int indexLoc) {
+	std::string testIndex;
+
+	// Si deque vide, begin == end
+	std::deque<std::string> index = server.getIndex();
+	for (std::deque<std::string>::iterator it = index.begin(); it != index.end(); it++) {
+		testIndex = url + *it;
+		if (!access(testIndex.c_str(), F_OK)) {
+			url = testIndex;
+			return (1);
+		}
+	}
+	if (!server.getLocAutoindent(indexLoc))
+		return (0);
+
+	// ajouter liste autoindent
+	return (0); // a changer en 1 quand fonction finie
+}
+
+int checkRights(int type, const std::string &url, const std::string &method) {
+	// Si GET -> check si lecture possible
+	// Si POST ou DELETE-> check si modification possible
+
+	if (method == "GET") {
+		if (access(url.c_str(), R_OK))
+			return (403);
+		return (0);
+	}
+	if (type == 1) { // file
+		if (access(url.c_str(), W_OK))
+			return (403);
+	} else { // dir
+		struct stat st;
+		stat(url.c_str(), &st);
+		if (!(st.st_mode & S_IWUSR))
+			return (403);
+	}
+	return (0);
 }
 
 std::string loadFile(const std::string &filename) {
