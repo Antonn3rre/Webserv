@@ -21,13 +21,13 @@ std::string readPage(const std::string &page) {
 ResponseMessage createResponse(Server &server, RequestMessage &request,
                                std::pair<int, std::string> &handled) {
 	std::string body;
-	StatusLine  stLine(request.getHttpVersion(), handled.first, "TEST");
+	StatusLine  stLine(request.getHttpVersion(), handled.first, "OK");
 	(void)server;
 
 	if (handled.first == 1) {
 		body = "CGI";
 		// envoyer dans CGI
-	} else if (handled.first != -1 || request.getMethod() == "GET") {
+	} else if (handled.first != 200 || request.getMethod() == "GET") {
 		// -1 a changer, la ca veut dire que c'est un code erreur
 		body = readPage(handled.second);
 	}

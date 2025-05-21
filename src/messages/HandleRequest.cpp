@@ -201,5 +201,6 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	if (resultRights)
 		return std::make_pair(resultRights, server.getErrorPage(resultRights));
 
+	returnInfo.first = 200;
 	return (returnInfo);
 }
