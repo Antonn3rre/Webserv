@@ -14,7 +14,7 @@ class Server {
 	Config      _config;
 	int         _lsockfd;
 	int         _epollfd;
-	std::string buildAnswer(void);
+	std::string _buildAnswer(void);
 
 	public:
 	Server();

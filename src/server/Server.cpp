@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Server::Server(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
+Server::Server(void) : _config(Config("conf/defaultWithoutCommentaries.conf")){};
 
 // Server::Server(char *configFile) : _config(Config(configFile)) {};
 
@@ -102,7 +102,7 @@ void Server::startServer(void) {
 					continue;
 				}
 				std::cout << buffer << std::endl;
-				std::string tmp = buildAnswer();
+				std::string tmp = _buildAnswer();
 				n = send(events[i].data.fd, tmp.c_str(), tmp.length(), MSG_NOSIGNAL);
 				if (n < 0) {
 					std::cerr << "Error on write => " << strerror(errno) << std::endl;
@@ -116,7 +116,7 @@ void Server::startServer(void) {
 
 void Server::handleClients(void) {}
 
-std::string Server::buildAnswer() {
+std::string Server::_buildAnswer() {
 	std::string body = "<!DOCTYPE html>\r\n"
 	                   "<html>\r\n"
 	                   "<head><title>First webserv</title></head>\r\n"
@@ -140,27 +140,3 @@ std::string Server::buildAnswer() {
 	// ResponseMessage response(ss.str());
 	return ss.str();
 }
-
-// Config getter
-const std::string             &Server::getListen() const { return _config.getListen(); }
-const std::deque<std::string> &Server::getServerName() const { return _config.getServerName(); }
-const std::string &Server::getErrorPage(int index) const { return _config.getErrorPage(index); }
-const std::string &Server::getClientMaxBodySize() const { return _config.getClientMaxBodySize(); }
-const std::string &Server::getHost() const { return _config.getHost(); }
-const std::string &Server::getRoot() const { return _config.getRoot(); }
-const std::deque<std::string> &Server::getIndex() const { return _config.getIndex(); }
-const std::deque<Location>    &Server::getLocation() const { return _config.getLocation(); }
-
-// Location getter , int parameter is the index of the container
-const std::string &Server::getLocName(int index) const { return _config.getLocName(index); }
-const std::pair<int, std::string> &Server::getLocRedirection(int index) const {
-	return _config.getLocRedirection(index);
-}
-const std::deque<std::string> &Server::getLocMethods(int index) const {
-	return _config.getLocMethods(index);
-}
-const std::string &Server::getLocRoot(int index) const { return _config.getLocRoot(index); }
-const bool &Server::getLocAutoindent(int index) const { return _config.getLocAutoindent(index); }
-
-// additionnal getters
-unsigned int Server::getNumOfLoc() const { return _config.getNumOfLoc(); }
