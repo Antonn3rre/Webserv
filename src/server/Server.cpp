@@ -21,9 +21,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Server::Server(void) : _config(Config("conf/defaultWithoutCommentaries.conf")){};
+// Server::Server(void) {};
+//   Server::Server(void) : _config(Config("conf/default.conf")), _sd(0) {};
 
-// Server::Server(char *configFile) : _config(Config(configFile)) {};
+// Server::Server(char *configFile) {};
+Server::Server(char *configFile) : _config(Config(configFile)) {};
 
 int setnonblocking(int sock) {
 	int result;

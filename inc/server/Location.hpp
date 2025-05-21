@@ -22,6 +22,9 @@ class Location {
 	const std::string                 &getRoot() const;
 	const bool                        &getAutoindent() const;
 
+	void setDefaultMethods();
+	void setDefaultRoot(const std::string &);
+
 	private:
 	std::string                 _name;
 	std::pair<int, std::string> _redirection; // std::pair<>
