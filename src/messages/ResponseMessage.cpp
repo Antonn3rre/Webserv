@@ -14,6 +14,9 @@ const std::string &ResponseMessage::getHttpVersion() const { return _startLine.g
 
 unsigned short     ResponseMessage::getStatusCode() const { return _startLine.getStatusCode(); }
 const std::string &ResponseMessage::getReasonPhrase() const { return _startLine.getReasonPhrase(); }
+const std::string &ResponseMessage::getReasonPhrase(unsigned short code) const {
+	return _startLine.getReasonPhrase(code);
+}
 
 std::string ResponseMessage::str() const {
 	std::string str = _startLine.str();

@@ -2,6 +2,7 @@
 #define STATUSLINE_HPP
 
 #include "AStartLine.hpp"
+#include <map>
 #include <string>
 
 class StatusLine : public AStartLine {
@@ -12,12 +13,16 @@ class StatusLine : public AStartLine {
 
 	unsigned short     getStatusCode() const;
 	const std::string &getReasonPhrase() const;
+	const std::string &getReasonPhrase(unsigned short) const;
 
 	std::string str() const;
 
 	private:
-	unsigned short _statusCode;
-	std::string    _reasonPhrase;
+	unsigned short             _statusCode;
+	std::string                _reasonPhrase;
+	std::map<int, std::string> _knownReasonPhrases;
+
+	void _setKnownReasonPhrases();
 };
 
 #endif
