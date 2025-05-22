@@ -4,6 +4,7 @@
 #include "Server.hpp"
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
 #include <deque>
 #include <dirent.h>
 #include <fstream>
@@ -165,26 +166,29 @@ std::string executeCgi(const std::string &uri) {
 	if (access(uri.c_str(), X_OK) == -1)
 		throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
 	int pipefd[2];
-
 	pipe(pipefd);
 
 	int pid = fork();
 	if (pid == 0) {
+		close(pipefd[0]);
 		char **argv = {NULL};
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
-		close(pipefd[0]);
 		execve(uri.c_str(), argv, NULL);
 		std::cerr << "execve error" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	ssize_t     bytesRead = 0;
+	close(pipefd[1]);
+	ssize_t     bytesRead;
 	std::string output;
-	char       *buffer = {0};
-	while (bytesRead >= 0) {
+	char        buffer[1024];
+	bzero(buffer, 1024);
+	do {
 		bytesRead = read(pipefd[0], buffer, 1024);
-		output += buffer;
-	}
+		std::string bufStr(buffer);
+		output += bufStr.substr(0, bytesRead);
+	} while (bytesRead == 1024);
+	close(pipefd[0]);
 	return output;
 }
 

@@ -13,8 +13,8 @@ std::string getCompletePath(const std::string &locRoot, const std::string &reque
 std::pair<int, std::string> handleRequest(Server &server, RequestMessage &request);
 int                         checkUrl(const std::string &url);
 int                         indexWork(Server &server, std::string &url, int indexLoc);
-int  checkRights(int type, const std::string &url, const std::string &method);
-void executeCgi(const std::string &uri);
+int         checkRights(int type, const std::string &url, const std::string &method);
+std::string executeCgi(const std::string &uri);
 
 ResponseMessage createResponse(Server &server, RequestMessage &request,
                                std::pair<int, std::string> &handled);
