@@ -1,5 +1,6 @@
 // include si class
 #include "AMessage.hpp"
+#include "Location.hpp"
 #include "RequestMessage.hpp"
 #include "Server.hpp"
 #include <cerrno>
@@ -8,6 +9,7 @@
 #include <deque>
 #include <dirent.h>
 #include <fstream>
+#include <ios>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -15,6 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 
 int findRightLocIndex(Server &server, RequestMessage &request) {
 	std::pair<int, int> commonWord;
@@ -32,8 +35,7 @@ int findRightLocIndex(Server &server, RequestMessage &request) {
 			defaultLoc = i;
 			continue;
 		}
-		if (server.getLocName(i).size() == request.getRequestUri().size() &&
-		    server.getLocName(i) == request.getRequestUri())
+		if (server.getLocName(i) == request.getRequestUri())
 			return (i);
 		while (locPos < server.getLocName(i).size() && uriPos < request.getRequestUri().size()) {
 			size_t      locNext = server.getLocName(i).find('/', locPos);
@@ -62,17 +64,27 @@ int findRightLocIndex(Server &server, RequestMessage &request) {
 	return commonWord.first;
 }
 
+const Location &findURILocation(const std::vector<Location> &locations,
+                                const RequestMessage        &request) {
+	const std::string &uri = request.getRequestUri();
+	const Location    *longestValidLoc = NULL;
+	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end();
+	     ++it) {
+		std::string path = uri.substr(0, it->getName().length());
+		if (it->getName() == path && it->getName().length() > longestValidLoc->getName().length())
+			longestValidLoc = &*it;
+	}
+	if (longestValidLoc)
+		return *longestValidLoc;
+	throw AMessage::InvalidData("requested URI does not correspond to any location", uri);
+}
+
 int checkMethods(const std::deque<std::string> &methods, const std::string &requestMethod) {
 	for (std::deque<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
 		if (*it == requestMethod)
 			return (1);
 	}
 	return (0);
-}
-std::string getCompletePath(const std::string &locRoot, const std::string &requestUri) {
-	if (locRoot.empty())
-		return (requestUri);
-	return locRoot + requestUri;
 }
 
 int checkUrl(std::string &url) {
@@ -140,24 +152,17 @@ int checkRights(int type, const std::string &url, const std::string &method) {
 }
 
 std::string loadFile(const std::string &filename) {
-	std::ifstream     file(filename.c_str());
-	std::string       line;
-	std::stringstream bodyStream;
+	std::ifstream      file(filename.c_str(), std::ios::binary);
+	std::ostringstream bodyStream;
 
-	while (std::getline(file, line))
-		bodyStream << line;
+	bodyStream << file.rdbuf();
 	return bodyStream.str();
 }
 
 void saveFile(const std::string &filename, const std::string &body) {
 	std::ofstream file;
-	file.open(filename.c_str(), std::ios::trunc);
-
-	std::stringstream bodyStream(body);
-	std::string       line;
-
-	while (std::getline(bodyStream, line))
-		file << line;
+	file.open(filename.c_str(), std::ios::trunc | std::ios::binary);
+	file << body;
 }
 
 std::string executeCgi(const std::string &uri) {
@@ -190,6 +195,12 @@ std::string executeCgi(const std::string &uri) {
 	} while (bytesRead == 1024);
 	close(pipefd[0]);
 	return output;
+}
+
+std::string getCompletePath(const std::string &locRoot, const std::string &requestUri) {
+	if (locRoot.empty())
+		return (requestUri);
+	return locRoot + requestUri;
 }
 
 // return std::pair<code, page> ?
