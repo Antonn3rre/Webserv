@@ -81,7 +81,7 @@ int checkUrl(std::string &url) {
 	}
 
 	if (stat(url.c_str(), &st) == -1) {
-		if (errno == EINVAL | errno == EACCES)
+		if (errno == EINVAL || errno == EACCES)
 			return (403);
 		if (errno == ELOOP)
 			return (508);
