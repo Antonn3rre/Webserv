@@ -20,7 +20,7 @@ class StatusLine : public AStartLine {
 	private:
 	unsigned short             _statusCode;
 	std::string                _reasonPhrase;
-	std::map<int, std::string> _knownReasonPhrases;
+	std::map<unsigned short, std::string> _knownReasonPhrases;
 
 	void _setKnownReasonPhrases();
 };

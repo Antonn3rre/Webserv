@@ -22,7 +22,7 @@ ResponseMessage createResponse(Server &server, RequestMessage &request,
                                std::pair<int, std::string> &handled) {
 	std::string body;
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));
-	StatusLine stLine(request.getHttpVersion(), handled.first, "OK");
+	StatusLine stLine(request.getHttpVersion(), handled.first, "");
 	(void)server;
 
 	if (handled.first == 1) {
