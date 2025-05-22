@@ -16,11 +16,15 @@ StatusLine::StatusLine(const std::string &line) : AStartLine(line.substr(0, line
 
 StatusLine::StatusLine(const std::string &httpVersion, unsigned short statusCode,
                        const std::string &reasonPhrase)
+    : AStartLine(httpVersion), _statusCode(statusCode), _reasonPhrase(reasonPhrase) {}
+
+
+StatusLine::StatusLine(const std::string &httpVersion, unsigned short statusCode)
     : AStartLine(httpVersion), _statusCode(statusCode) { 
-  (void)reasonPhrase;
   _setKnownReasonPhrases();
   _reasonPhrase = getReasonPhrase(_statusCode);
 }
+
 
 void StatusLine::_setKnownReasonPhrases() {
 	// 400-417    500-505   200

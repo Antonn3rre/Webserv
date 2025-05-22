@@ -10,6 +10,7 @@ class StatusLine : public AStartLine {
 	StatusLine(const std::string &line);
 	StatusLine(const std::string &httpVersion, unsigned short statusCode,
 	           const std::string &reasonPhrase);
+StatusLine(const std::string &httpVersion, unsigned short statusCode);
 
 	unsigned short     getStatusCode() const;
 	const std::string &getReasonPhrase() const;
