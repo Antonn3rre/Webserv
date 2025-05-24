@@ -1,9 +1,9 @@
+#include "Application.hpp"
 #include "Config.hpp"
 #include "HandleRequest.hpp"
 #include "Header.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
-#include "Server.hpp"
 #include "StatusLine.hpp"
 #include <cstdlib>
 #include <cstring>
@@ -63,11 +63,12 @@ int main() {
 	// Server Start
 	{
 		std::cout << "\e[33mTEST START SERVER\e[0m" << std::endl;
-		Server test;
+		Application test;
 		test.startServer();
 	}
 	// CGI execution
-	{}
+	{
+	}
 	// Config test
 	// {
 	// 	std::cout << "\e[33mTEST CONFIG\e[0m" << std::endl;
