@@ -70,6 +70,8 @@ int checkMethods(const std::deque<std::string> &methods, const std::string &requ
 std::string getCompletePath(const std::string &locRoot, const std::string &requestUri) {
 	if (locRoot.empty())
 		return (requestUri);
+	if (*(locRoot.rbegin()) == '/')
+		return (locRoot.substr(0, locRoot.size() - 1) + requestUri);
 	return locRoot + requestUri;
 }
 
