@@ -20,10 +20,13 @@ const Location &findURILocation(const std::deque<Location> &locations,
 	const Location    *longestValidLoc = NULL;
 
 	for (std::deque<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+		if (it->getName().length() > uri.length())
+			continue;
 		std::string path = uri.substr(0, it->getName().length());
 		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
 			continue;
-		if (it->getName() == path && it->getName().length() > longestValidLoc->getName().length())
+		if (it->getName() == path &&
+		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
 			longestValidLoc = &*it;
 	}
 	if (longestValidLoc)
