@@ -5,9 +5,6 @@
 
 class Header {
 	public:
-	Header(const std::string &headerLine);
-	Header(const std::string &name, const std::string &value);
-
 	enum HeaderType {
 		General,
 		Request,
@@ -15,9 +12,15 @@ class Header {
 		Entity,
 	};
 
-	HeaderType         getType() const;
+	Header(const std::string &headerLine);
+	Header(const std::string &name, const std::string &value);
+	Header(const std::string &name, HeaderType type, bool isSupported, bool isDuplicateAllowed);
+
+	const HeaderType  &getType() const;
 	const std::string &getName() const;
 	const std::string &getValue() const;
+	const bool        &isSupported() const;
+	const bool        &isDuplicateAllowed() const;
 
 	std::string str() const;
 
@@ -25,6 +28,8 @@ class Header {
 	const std::string _name;
 	const std::string _value;
 	HeaderType        _type;
+	bool              _isSupported;
+	bool              _isDuplicateAllowed;
 };
 
 #endif

@@ -49,14 +49,16 @@ class AMessage {
 	};
 
 	protected:
-	std::map<std::string, std::pair<Header::HeaderType, bool> > _validHeaders;
-	std::vector<Header>                                         _headers;
-	std::string                                                 _body;
+	std::map<std::string, Header> _validHeaders;
+	std::vector<Header>           _headers;
+	std::string                   _body;
 
 	private:
-	void _insertKnownHeader(const std::string &name, Header::HeaderType type, bool isSupported);
+	void _insertKnownHeader(const std::string &name, Header::HeaderType type, bool isSupported,
+	                        bool isDuplicateAllowed);
 	bool _isHeaderValid(const std::string &headerName) const;
 	void _setValidHeaders();
+	void _checkDuplicateHeaders() const;
 };
 
 #endif
