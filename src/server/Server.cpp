@@ -1,6 +1,6 @@
 #include "Server.hpp"
 #include "Config.hpp"
-#include "ResponseMessage.hpp"
+#include "HandleRequest.hpp"
 #include <arpa/inet.h>
 #include <asm-generic/socket.h>
 #include <cerrno>
@@ -21,37 +21,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Server::Server(void) : _config(Config("conf/defaultWithoutCommentaries.conf")){};
+Server::Server(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
 
 // Server::Server(char *configFile) : _config(Config(configFile)) {};
 
-int setnonblocking(int sock) {
-	int result;
-	int flags;
-
-	flags = fcntl(sock, F_GETFL, 0);
-
-	if (flags == -1) {
-		return -1; // error
-	}
-
-	flags |= O_NONBLOCK;
-
-	result = fcntl(sock, F_SETFL, flags);
-	return result;
-}
-
-void Server::startServer(void) {
-	int                clientfd = -1;
-	socklen_t          clilen;
-	struct sockaddr_in servAddr;
-	struct sockaddr_in cliAddr;
-	ssize_t            bytes;
-	char               buffer[100000];
+void Server::_initServer() {
 	struct epoll_event ev;
-	struct epoll_event events[MAX_EVENTS];
-	int                nfds;
-
+	struct sockaddr_in servAddr;
 	_lsockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (_lsockfd == -1) {
 		std::cerr << "Error on socket." << std::endl;
@@ -66,55 +42,85 @@ void Server::startServer(void) {
 	servAddr.sin_family = AF_INET;
 	servAddr.sin_addr.s_addr = INADDR_ANY;
 	servAddr.sin_port = htons(_config.getPort());
-	if (bind(_lsockfd, reinterpret_cast<struct sockaddr *>(&servAddr), sizeof(servAddr)) < 0) {
-		std::cerr << "Error on bind listen." << std::endl;
+	if (bind(_lsockfd, reinterpret_cast<struct sockaddr *>(&servAddr), sizeof(servAddr)) == -1) {
+		std::cerr << "Error on the primary bind." << std::endl;
 		exit(1);
 	}
-	listen(_lsockfd, 5);
-	clilen = sizeof(cliAddr);
+	if (listen(_lsockfd, 5) == -1) {
+		std::cerr << "Error on listen." << std::endl;
+		exit(1);
+	}
 
 	_epollfd = epoll_create(MAX_EVENTS);
 	ev.events = EPOLLIN;
 	ev.data.fd = _lsockfd;
-	epoll_ctl(_epollfd, EPOLL_CTL_ADD, _lsockfd, &ev);
+	if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, _lsockfd, &ev) == -1) {
+		std::cerr << "Error on epoll_ctl." << std::endl;
+		exit(1);
+	}
+}
 
-	std::cout << "Server launch on port: " << _config.getPort() << std::endl;
-	for (;;) {
+void Server::_printAtLaunch(void) {
+	std::cout << "Server launch at this address: http://" << _config.getAddress() << ":"
+	          << _config.getPort() << "/" << std::endl;
+}
+
+bool Server::_listenClientResponse(struct epoll_event &event, char *buffer) {
+	bzero(buffer, 8192);
+	if (read(event.data.fd, buffer, 8192) < 0) {
+		std::cerr << "Error on read." << std::endl;
+		close(event.data.fd);
+		return (1);
+	}
+	std::cout << buffer << std::endl;
+	return (0);
+}
+
+void Server::_sendAnswer(std::string answer, struct epoll_event &event) {
+	if (send(event.data.fd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
+		std::cerr << "Error on write => " << strerror(errno) << std::endl;
+		close(event.data.fd);
+	}
+}
+
+void Server::_serverLoop() {
+	struct epoll_event ev;
+	int                clientfd = -1;
+	int                nfds;
+	struct epoll_event events[MAX_EVENTS];
+	char               buffer[8192];
+
+	while (true) {
 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
 
 		for (int i = 0; i < nfds; ++i) {
 			if (events[i].data.fd == _lsockfd) {
-				clientfd = accept(_lsockfd, reinterpret_cast<struct sockaddr *>(&cliAddr), &clilen);
+				// reinterpreter_cast into `struct sockaddr *` and &clilen for the last parameter
+				// (see code in the epoll's man) for accept parameters
+				clientfd = accept(_lsockfd, NULL, NULL);
 				if (clientfd < 0) {
-					std::cerr << "Error on bind clients." << std::endl;
+					std::cerr << "Error on accept clients." << std::endl;
 					continue;
 				}
 				ev.events = EPOLLIN | EPOLLET;
 				ev.data.fd = clientfd;
-				setnonblocking(ev.data.fd);
 				epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
 			} else {
-				bzero(buffer, 100000);
-				bytes = read(events[i].data.fd, buffer, 100000);
-				if (bytes < 0) {
-					std::cerr << "Error on read." << std::endl;
-					close(events[i].data.fd);
+				if (_listenClientResponse(events[i], buffer))
 					continue;
-				}
-				std::cout << buffer << std::endl;
-				std::string tmp = _buildAnswer();
-				bytes = send(events[i].data.fd, tmp.c_str(), tmp.length(), MSG_NOSIGNAL);
-				if (bytes < 0) {
-					std::cerr << "Error on write => " << strerror(errno) << std::endl;
-					close(events[i].data.fd);
-				}
+				std::string answer = _buildAnswer();
+				_sendAnswer(answer, events[i]);
 			}
 		}
 	}
-	close(_lsockfd);
 }
 
-void Server::handleClients(void) {}
+void Server::startServer(void) {
+	_initServer();
+	_printAtLaunch();
+	_serverLoop();
+	close(_lsockfd); // to put in the signal handler
+}
 
 std::string Server::_buildAnswer() {
 	std::string body =
@@ -138,6 +144,8 @@ std::string Server::_buildAnswer() {
 	    "<img "
 	    "src=\"https://media1.tenor.com/m/WckcGq81cjYAAAAd/herv%C3%A9-regnier-tiktok.gif\"></img>"
 	    "</div>\r\n"
+	    "<div><img "
+	    "src=\"./website/img/IMG_3935.JPG\"></img></div>"
 	    "</body>\r\n"
 	    "</html>\r\n";
 
@@ -157,7 +165,5 @@ std::string Server::_buildAnswer() {
 	return ss.str();
 }
 
-void Server::_shutdown() { close(_lsockfd); }
-
 // Config getter
-const Config	&Server::getConfig(void) const { return _config; };
+const Config &Server::getConfig(void) const { return _config; };

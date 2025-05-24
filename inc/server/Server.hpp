@@ -15,15 +15,17 @@ class Server {
 	int    _lsockfd;
 	int    _epollfd;
 
-	void        _shutdown();
+	void        _initServer();
+	void        _printAtLaunch(void);
+	bool        _listenClientResponse(struct epoll_event &events, char *buffer);
+	void        _sendAnswer(std::string answer, struct epoll_event &event);
+	void        _serverLoop();
 	std::string _buildAnswer(void);
 
 	public:
 	Server();
 	Server(char *configFile);
 	void startServer(void);
-	void handleClients(void);
-	void handleMessage(void);
 
 	class ServerError : public std::exception {
 		public:
@@ -36,7 +38,7 @@ class Server {
 	};
 
 	// Config getter
-	const Config	&getConfig(void) const;
+	const Config &getConfig(void) const;
 };
 
 #endif // SERVER_HPP
