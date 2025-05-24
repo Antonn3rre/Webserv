@@ -98,7 +98,7 @@ int checkUrl(std::string &url) {
 	return (403);
 }
 
-// recuperer index
+// recuperer index , return 0 si error, 1 si index, 2 si list a generer
 int indexWork(Server &server, std::string &url, int indexLoc) {
 	std::string testIndex;
 
@@ -114,8 +114,7 @@ int indexWork(Server &server, std::string &url, int indexLoc) {
 	if (!server.getLocAutoindent(indexLoc))
 		return (0);
 
-	// ajouter liste autoindent
-	return (0); // a changer en 1 quand fonction finie
+	return (2); // liste autoindent a generer
 }
 
 int checkRights(int type, const std::string &url, const std::string &method) {
@@ -178,6 +177,7 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 
 	// recuperer uri et construire chemin avec ro  (si aucun root defini ?)
 	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
+	returnInfo.first = 200;
 
 	// check si dossier, si oui envoyer sur index   // voir differents comportements selon
 	// methode Si pas d'index, check autoindent et faire en fonction checkUrl -> return 0 si
@@ -187,10 +187,14 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	if (resultCheckUrl > 1)
 		return std::make_pair(resultCheckUrl, server.getErrorPage(resultCheckUrl));
 
-	// Si dossier -> envoye sur index ou autoindent   // /!\ a faire seulement si GET
-	if (!resultCheckUrl && request.getMethod() == "GET" &&
-	    !indexWork(server, returnInfo.second, indexLoc))
-		return std::make_pair(403, server.getErrorPage(403));
+	// Si dossier -> envoye sur index ou autoindent
+	if (!resultCheckUrl && request.getMethod() == "GET") {
+		int resultIndex = indexWork(server, returnInfo.second, indexLoc);
+		if (!resultIndex)
+			return std::make_pair(403, server.getErrorPage(403));
+		if (resultIndex == 2)
+			returnInfo.first = 2; // si list a generer
+	}
 	// return si pas d'index et autoindent off
 
 	// check si CGI dans ce cas la, pas de droits a verif je return direct
@@ -203,6 +207,5 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	if (resultRights)
 		return std::make_pair(resultRights, server.getErrorPage(resultRights));
 
-	returnInfo.first = 200;
 	return (returnInfo);
 }
