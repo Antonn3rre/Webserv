@@ -39,8 +39,37 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 StatusLine RequestHandler::_generateStatusLine(unsigned short status) {
 	return StatusLine("HTTP/1.1", status);
 }
+
 void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMessage &request) {
+	// headerValue = _checkHost(request, "");
+	_addContentLengthHeader(response);
+	_addConnectionHeader(request, response);
+	response.addHeader(Header("Server", "webserv"));
+}
+
+void RequestHandler::_addConnectionHeader(const RequestMessage &request,
+                                          ResponseMessage      &response) {
 	std::pair<std::string, bool> headerValue;
+
+	headerValue = request.getHeaderValue("Connection");
+	if (headerValue.first == "close")
+		// TODO: Close the client socket after sending request
+		response.addHeader(Header("Connection", "close"));
+	else
+		response.addHeader(Header("Connection", "keep-alive"));
+}
+
+void RequestHandler::_addContentLengthHeader(ResponseMessage &response) {
+	std::ostringstream lengthStream;
+	lengthStream << response.getBody().length();
+	response.addHeader(Header("Content-Length", lengthStream.str()));
+}
+
+std::string RequestHandler::_deleteRequest(const std::string &page) {
+	std::string body = _loadFile(page);
+	std::remove(page.c_str());
+	// add check ?
+	return (body);
 }
 
 std::string RequestHandler::_executeCgi(const std::string &uri) {
@@ -98,7 +127,7 @@ void RequestHandler::_saveFile(const std::string &filename, const std::string &b
 	file << body;
 }
 
-bool RequestHandler::_checkHost(const RequestMessage &request, const std::string &host) {
+bool RequestHandler::_checkHostHeader(const RequestMessage &request, const std::string &host) {
 	std::pair<std::string, bool> hostValue = request.getHeaderValue("Host");
 
 	if (!hostValue.second)
