@@ -1,5 +1,6 @@
 #include "RequestHandler.hpp"
 #include "AMessage.hpp"
+#include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
@@ -10,14 +11,14 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 RequestHandler::RequestHandler() {}
 
-ResponseMessage RequestHandler::generateResponse(const Server         &server,
+ResponseMessage RequestHandler::generateResponse(const Config         &config,
                                                  const RequestMessage &request) {
 	unsigned short status;
 

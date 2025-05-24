@@ -1,17 +1,18 @@
 #ifndef REQUESTHANDLER_HPP
 #define REQUESTHANDLER_HPP
 
+#include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
-#include "Server.hpp"
 #include "StatusLine.hpp"
 
 class RequestHandler {
 	public:
-	static ResponseMessage generateResponse(const Server &server, const RequestMessage &request);
+	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
 
 	private:
 	RequestHandler();
+
 	static std::string _executeCgi(const std::string &uri);
 	static std::string _getCompletePath(const std::string &locRoot, const std::string &requestUri);
 

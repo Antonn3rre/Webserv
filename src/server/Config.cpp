@@ -60,20 +60,10 @@ Config::Config(const std::string &configFile) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
 				break;
-				for (int i = 0; i < 8; i++) {
-					if (token == list[i]) {
-						(this->*functionPointer[i])(token, file);
-						break;
-					}
-					if (i == 7)
-						throw Config::Exception("Problem parsing file");
-				}
-				if (i == 7) {
-					std::cout << "problem = " << token << std::endl;
-					throw Config::Exception("Problem parsing file");
-				}
 			}
 		}
+		if (i == 8)
+			throw Config::Exception("Problem parsing file");
 	}
 	file.close();
 
