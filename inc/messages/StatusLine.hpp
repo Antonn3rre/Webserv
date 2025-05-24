@@ -8,13 +8,10 @@
 class StatusLine : public AStartLine {
 	public:
 	StatusLine(const std::string &line);
-	StatusLine(const std::string &httpVersion, unsigned short statusCode,
-	           const std::string &reasonPhrase);
 	StatusLine(const std::string &httpVersion, unsigned short statusCode);
 
 	unsigned short     getStatusCode() const;
 	const std::string &getReasonPhrase() const;
-	const std::string &getReasonPhrase(unsigned short) const;
 
 	std::string str() const;
 
@@ -23,7 +20,8 @@ class StatusLine : public AStartLine {
 	std::string                           _reasonPhrase;
 	std::map<unsigned short, std::string> _knownReasonPhrases;
 
-	void _setKnownReasonPhrases();
+	void               _setKnownReasonPhrases();
+	static std::string _getReasonPhrase(unsigned short status);
 };
 
 #endif

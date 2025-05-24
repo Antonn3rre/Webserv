@@ -14,51 +14,97 @@ StatusLine::StatusLine(const std::string &line) : AStartLine(line.substr(0, line
 	_reasonPhrase = line.substr(endPos + 1, std::string::npos);
 }
 
-StatusLine::StatusLine(const std::string &httpVersion, unsigned short statusCode,
-                       const std::string &reasonPhrase)
-    : AStartLine(httpVersion), _statusCode(statusCode), _reasonPhrase(reasonPhrase) {}
-
 StatusLine::StatusLine(const std::string &httpVersion, unsigned short statusCode)
     : AStartLine(httpVersion), _statusCode(statusCode) {
-	_setKnownReasonPhrases();
-	_reasonPhrase = getReasonPhrase(_statusCode);
+	_reasonPhrase = _getReasonPhrase(_statusCode);
 }
 
-void StatusLine::_setKnownReasonPhrases() {
-	// 400-417    500-505   200
-	_knownReasonPhrases.insert(std::make_pair(200, "OK"));
-	_knownReasonPhrases.insert(std::make_pair(201, "Created"));
-	_knownReasonPhrases.insert(std::make_pair(400, "Bad Request"));
-	_knownReasonPhrases.insert(std::make_pair(401, "Unauthorized"));
-	_knownReasonPhrases.insert(std::make_pair(402, "Payment Required"));
-	_knownReasonPhrases.insert(std::make_pair(403, "Forbidden"));
-	_knownReasonPhrases.insert(std::make_pair(404, "Not Found"));
-	_knownReasonPhrases.insert(std::make_pair(405, "Method Not Allowed"));
-	_knownReasonPhrases.insert(std::make_pair(406, "Not Acceptable"));
-	_knownReasonPhrases.insert(std::make_pair(407, "Proxy Authentification Required"));
-	_knownReasonPhrases.insert(std::make_pair(408, "Request Timeout"));
-	_knownReasonPhrases.insert(std::make_pair(409, "Conflict"));
-	_knownReasonPhrases.insert(std::make_pair(410, "Gone"));
-	_knownReasonPhrases.insert(std::make_pair(411, "Length Required"));
-	_knownReasonPhrases.insert(std::make_pair(412, "Precondition Failed"));
-	_knownReasonPhrases.insert(std::make_pair(413, "Content Too Large"));
-	_knownReasonPhrases.insert(std::make_pair(414, "URI Too Long"));
-	_knownReasonPhrases.insert(std::make_pair(415, "Unsupported Media Type"));
-	_knownReasonPhrases.insert(std::make_pair(416, "Range Not Satisfiable"));
-	_knownReasonPhrases.insert(std::make_pair(417, "Expectation Failed"));
-	_knownReasonPhrases.insert(std::make_pair(500, "Internal Servor Error"));
-	_knownReasonPhrases.insert(std::make_pair(501, "Not Implemented"));
-	_knownReasonPhrases.insert(std::make_pair(502, "Bad Gateway"));
-	_knownReasonPhrases.insert(std::make_pair(503, "Service Unavailable"));
-	_knownReasonPhrases.insert(std::make_pair(504, "Gateway Timeout"));
-	_knownReasonPhrases.insert(std::make_pair(505, "HTTP Version Not Supported"));
+std::string StatusLine::_getReasonPhrase(unsigned short status) {
+	switch (status) {
+		case 200:
+			return "OK";
+		case 201:
+			return "Created";
+		case 202:
+			return "Accepted";
+		case 203:
+			return "Non-authoritative Information";
+		case 204:
+			return "No Content";
+		case 205:
+			return "Reset Content";
+		case 206:
+			return "Partial Content";
+		case 300:
+			return "Multiple Choices";
+		case 301:
+			return "Moved Permanently";
+		case 302:
+			return "Found";
+		case 303:
+			return "See Other";
+		case 304:
+			return "Not Modified";
+		case 305:
+			return "Use Proxy";
+		case 306:
+			return "Unused";
+		case 307:
+			return "Temporary Redirect";
+		case 400:
+			return "Bad Request";
+		case 401:
+			return "Unauthorized";
+		case 402:
+			return "Payment Required";
+		case 403:
+			return "Forbidden";
+		case 404:
+			return "Not Found";
+		case 405:
+			return "Method Not Allowed";
+		case 406:
+			return "Not Acceptable";
+		case 407:
+			return "Proxy Authentication Required";
+		case 408:
+			return "Request Timeout";
+		case 409:
+			return "Conflict";
+		case 410:
+			return "Gone";
+		case 411:
+			return "Length Required";
+		case 412:
+			return "Precondition failed";
+		case 413:
+			return "Request Entity Too Large";
+		case 414:
+			return "Request-url Too Long";
+		case 415:
+			return "Unsupported Media Type";
+		case 416:
+			return "Requested Rangee Not Satisfiable";
+		case 417:
+			return "Expectation Failed";
+		case 500:
+			return "Internal Server Error";
+		case 501:
+			return "Not Implemented";
+		case 502:
+			return "Bad Gateway";
+		case 503:
+			return "Service Unavailable";
+		case 504:
+			return "Gateway Timeout";
+		case 505:
+			return "HTTP Version Not Supported";
+		default:
+			throw std::invalid_argument("Invalid status in Request Handler");
+	}
 }
 
 unsigned short StatusLine::getStatusCode() const { return _statusCode; }
-
-const std::string &StatusLine::getReasonPhrase(unsigned short code) const {
-	return _knownReasonPhrases.at(code);
-}
 
 const std::string &StatusLine::getReasonPhrase() const { return _reasonPhrase; }
 

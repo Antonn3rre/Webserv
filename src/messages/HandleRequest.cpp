@@ -1,89 +1,28 @@
-// include si class
 #include "AMessage.hpp"
+#include "Config.hpp"
 #include "Location.hpp"
 #include "RequestMessage.hpp"
-#include "Config.hpp"
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <deque>
 #include <dirent.h>
-#include <fstream>
-#include <ios>
-#include <iostream>
 #include <iterator>
-#include <sstream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>
-#include <vector>
 
-// Check si hostname du header est le meme que dans la config
-int checkHost(std::vector<Header> &headers, const std::string &host) {
-	for (std::vector<Header>::iterator it = headers.begin(); it != headers.end(); it++) {
-		if (it->getName() == "Host") {
-			if (it->getValue() == host)
-				return (1);
-			return (0);
-		}
-	}
-	return (0); // pas le bon hostname
-}
-
-int findRightLocIndex(Config &config, RequestMessage &request) {
-	std::pair<int, int> commonWord;
-	commonWord.first = -1;
-	int defaultLoc;
-
-	for (int i = 0; i < (int)config.getNumOfLoc(); i++) {
-		size_t locPos = 0;
-		size_t uriPos = 0;
-		int    word = 0;
-		bool   mismatch = false;
-		if (config.getLocName(i).size() > request.getRequestUri().size())
-			continue;
-		if (config.getLocName(i) == "/") {
-			defaultLoc = i;
-			continue;
-		}
-		if (config.getLocName(i) == request.getRequestUri())
-			return (i);
-		while (locPos < config.getLocName(i).size() && uriPos < request.getRequestUri().size()) {
-			size_t      locNext = config.getLocName(i).find('/', locPos);
-			std::string locSegment = config.getLocName(i).substr(locPos, locNext - locPos);
-
-			size_t      uriNext = request.getRequestUri().find('/', uriPos);
-			std::string uriSegment = request.getRequestUri().substr(uriPos, uriNext - uriPos);
-
-			if (locSegment != uriSegment) {
-				mismatch = true;
-				break;
-			}
-			word++;
-			if (locNext == std::string::npos || uriNext == std::string::npos)
-				break;
-			locPos = locNext + 1;
-			uriPos = uriNext + 1;
-		}
-		if (!mismatch && word > commonWord.second) {
-			commonWord.first = i;
-			commonWord.second = word;
-		}
-	}
-	if (commonWord.first == -1)
-		return defaultLoc;
-	return commonWord.first;
-}
-
-const Location &findURILocation(const std::vector<Location> &locations,
-                                const RequestMessage        &request) {
+const Location &findURILocation(const std::deque<Location> &locations,
+                                const RequestMessage       &request) {
 	const std::string &uri = request.getRequestUri();
 	const Location    *longestValidLoc = NULL;
-	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end();
-	     ++it) {
+
+	for (std::deque<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
 		std::string path = uri.substr(0, it->getName().length());
+		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
+			continue;
 		if (it->getName() == path && it->getName().length() > longestValidLoc->getName().length())
 			longestValidLoc = &*it;
 	}
@@ -92,12 +31,12 @@ const Location &findURILocation(const std::vector<Location> &locations,
 	throw AMessage::InvalidData("requested URI does not correspond to any location", uri);
 }
 
-int checkMethods(const std::deque<std::string> &methods, const std::string &requestMethod) {
+bool checkMethods(const std::deque<std::string> &methods, const std::string &requestMethod) {
 	for (std::deque<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
 		if (*it == requestMethod)
-			return (1);
+			return (true);
 	}
-	return (0);
+	return (false);
 }
 std::string getCompletePath(const std::string &locRoot, const std::string &requestUri) {
 	if (locRoot.empty())
@@ -134,7 +73,7 @@ int checkUrl(std::string &url) {
 }
 
 // recuperer index , return 0 si error, 1 si index, 2 si list a generer
-int indexWork(Config &config, std::string &url, int indexLoc) {
+int indexWork(Config &config, std::string &url, Location &location) {
 	std::string testIndex;
 
 	// Si deque vide, begin == end
@@ -146,7 +85,7 @@ int indexWork(Config &config, std::string &url, int indexLoc) {
 			return (1);
 		}
 	}
-	if (!config.getLocAutoindent(indexLoc))
+	if (location.getAutoindent())
 		return (0);
 
 	return (2); // liste autoindent a generer
@@ -180,19 +119,19 @@ std::pair<int, std::string> handleRequest(Config &config, RequestMessage &reques
 	//		return std::make_pair(400, server.getErrorPage(400));
 
 	// Trouver l'index de la bonne location
-	int indexLoc = findRightLocIndex(config, request);
+	Location location = findURILocation(config.getLocation(), request);
 
 	// si un return -> renvoye direct le bon code erreur + page
-	std::pair<int, std::string> returnInfo = config.getLocRedirection(indexLoc);
+	std::pair<int, std::string> returnInfo = location.getRedirection();
 	if (returnInfo.first != -1)
 		return (returnInfo); // type de retour a revoir
 
 	// verif si method autorise
-	if (!checkMethods(config.getLocMethods(indexLoc), request.getMethod()))
+	if (!checkMethods(location.getMethods(), request.getMethod()))
 		return std::make_pair(405, config.getErrorPage(405));
 
 	// recuperer uri et construire chemin avec ro  (si aucun root defini ?)
-	returnInfo.second = getCompletePath(config.getLocRoot(indexLoc), request.getRequestUri());
+	returnInfo.second = getCompletePath(location.getRoot(), request.getRequestUri());
 	returnInfo.first = 200;
 
 	// check si dossier, si oui envoyer sur index   // voir differents comportements selon
@@ -204,7 +143,7 @@ std::pair<int, std::string> handleRequest(Config &config, RequestMessage &reques
 
 	// Si dossier -> envoye sur index ou autoindent
 	if (!resultCheckUrl && request.getMethod() == "GET") {
-		int resultIndex = indexWork(config, returnInfo.second, indexLoc);
+		int resultIndex = indexWork(config, returnInfo.second, location);
 		if (!resultIndex)
 			return std::make_pair(403, config.getErrorPage(403));
 		if (resultIndex == 2)
@@ -214,7 +153,7 @@ std::pair<int, std::string> handleRequest(Config &config, RequestMessage &reques
 
 	// check si CGI dans ce cas la, pas de droits a verif je return direct
 	// Pour l'instant on check pas, on executera avec python3, a voir ensuite
-	if (config.getLocName(indexLoc).find("cgi-bin") != std::string::npos)
+	if (location.getName().find("cgi-bin") != std::string::npos)
 		return std::make_pair(1, returnInfo.second);
 
 	// Verifier si les droits sont les bons selon la methode

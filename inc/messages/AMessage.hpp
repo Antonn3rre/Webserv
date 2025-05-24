@@ -15,8 +15,11 @@ class AMessage {
 
 	virtual const std::string &getHttpVersion() const = 0;
 
-	void                         addHeader(const Header &header);
-	std::pair<std::string, bool> getHeaderValue(const std::string &headerName);
+	void addHeader(const Header &header);
+
+	std::pair<std::string, bool> getHeaderValue(const std::string &headerName) const;
+	const std::string           &getBody() const;
+	const std::vector<Header>   &getHeaders() const;
 
 	virtual std::string str() const = 0;
 
@@ -45,9 +48,6 @@ class AMessage {
 		InvalidData(const std::string &name, const std::string &value);
 	};
 
-	const std::string   &getBody() const;
-	std::vector<Header> &getHeaders();
-
 	protected:
 	std::map<std::string, std::pair<Header::HeaderType, bool> > _validHeaders;
 	std::vector<Header>                                         _headers;
@@ -55,7 +55,7 @@ class AMessage {
 
 	private:
 	void _insertKnownHeader(const std::string &name, Header::HeaderType type, bool isSupported);
-	bool _isHeaderValid(const std::string &headerName);
+	bool _isHeaderValid(const std::string &headerName) const;
 	void _setValidHeaders();
 };
 

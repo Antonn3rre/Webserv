@@ -55,18 +55,23 @@ void AMessage::addHeader(const Header &header) {
 		_headers.push_back(header);
 }
 
-std::pair<std::string, bool> AMessage::getHeaderValue(const std::string &headerName) {
+std::pair<std::string, bool> AMessage::getHeaderValue(const std::string &headerName) const {
+	std::vector<Header>::const_iterator foundHeaderIterator = _headers.end();
+
 	if (!_isHeaderValid(headerName))
 		return (std::pair<std::string, bool>("", false));
-	for (std::vector<Header>::iterator it = _headers.begin(); it != _headers.end(); ++it) {
-		if (it->getName() == headerName)
-			return (std::pair<std::string, bool>(it->getValue(), true));
+	for (std::vector<Header>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+		if (it->getName() == headerName) {
+			if (foundHeaderIterator != _headers.end())
+				return (std::pair<std::string, bool>("", false));
+			foundHeaderIterator = it;
+		}
 	}
-	return (std::pair<std::string, bool>("", false));
+	return (std::pair<std::string, bool>(foundHeaderIterator->getValue(), true));
 }
 
-bool AMessage::_isHeaderValid(const std::string &headerName) {
-	std::map<std::string, std::pair<Header::HeaderType, bool> >::iterator headerEntry =
+bool AMessage::_isHeaderValid(const std::string &headerName) const {
+	std::map<std::string, std::pair<Header::HeaderType, bool> >::const_iterator headerEntry =
 	    _validHeaders.find(headerName);
 	if (headerEntry != _validHeaders.end()) {
 		if (headerEntry->second.second)
@@ -154,4 +159,4 @@ void AMessage::_setValidHeaders() {
 
 const std::string &AMessage::getBody() const { return _body; }
 
-std::vector<Header> &AMessage::getHeaders() { return _headers; }
+const std::vector<Header> &AMessage::getHeaders() const { return _headers; }

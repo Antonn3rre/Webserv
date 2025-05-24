@@ -22,7 +22,7 @@ class RequestHandler {
 	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request);
 	static std::string _generateBody(const RequestMessage &request, unsigned short &status);
 
-	static std::string _getReasonPhrase(unsigned short status);
+	static bool _checkHost(const RequestMessage &request, const std::string &host);
 };
 
 #endif
