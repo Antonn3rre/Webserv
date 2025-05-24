@@ -42,11 +42,10 @@ int generateAutoindent(std::string &page, std::string &body) {
 	return (1);
 }
 
-ResponseMessage createResponse(Server &server, RequestMessage &request,
+ResponseMessage createResponse(Config &config, RequestMessage &request,
                                std::pair<int, std::string> &handled) {
 	std::string body;
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));
-	(void)server;
 
 	if (handled.first == 1) {
 		body = "CGI";
@@ -54,7 +53,7 @@ ResponseMessage createResponse(Server &server, RequestMessage &request,
 	} else if (handled.first == 2) {
 		handled.first = 200;
 		if (!generateAutoindent(handled.second, body)) {
-			body = readPage(server.getErrorPage(403));
+			body = readPage(config.getErrorPage(403));
 			handled.first = 403;
 		}
 		// mauvais code mais ne devrait pas arriver jusque la

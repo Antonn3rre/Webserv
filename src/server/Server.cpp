@@ -160,25 +160,4 @@ std::string Server::_buildAnswer() {
 void Server::_shutdown() { close(_lsockfd); }
 
 // Config getter
-const std::string             &Server::getListen() const { return _config.getListen(); }
-const std::deque<std::string> &Server::getServerName() const { return _config.getServerName(); }
-const std::string &Server::getErrorPage(int index) const { return _config.getErrorPage(index); }
-const std::string &Server::getClientMaxBodySize() const { return _config.getClientMaxBodySize(); }
-const std::string &Server::getHost() const { return _config.getHost(); }
-const std::string &Server::getRoot() const { return _config.getRoot(); }
-const std::deque<std::string> &Server::getIndex() const { return _config.getIndex(); }
-const std::deque<Location>    &Server::getLocation() const { return _config.getLocation(); }
-
-// Location getter , int parameter is the index of the container
-const std::string &Server::getLocName(int index) const { return _config.getLocName(index); }
-const std::pair<int, std::string> &Server::getLocRedirection(int index) const {
-	return _config.getLocRedirection(index);
-}
-const std::deque<std::string> &Server::getLocMethods(int index) const {
-	return _config.getLocMethods(index);
-}
-const std::string &Server::getLocRoot(int index) const { return _config.getLocRoot(index); }
-const bool &Server::getLocAutoindent(int index) const { return _config.getLocAutoindent(index); }
-
-// additionnal getters
-unsigned int Server::getNumOfLoc() const { return _config.getNumOfLoc(); }
+const Config	&Server::getConfig(void) const { return _config; };

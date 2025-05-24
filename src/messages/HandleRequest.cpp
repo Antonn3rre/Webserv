@@ -2,7 +2,7 @@
 #include "AMessage.hpp"
 #include "Location.hpp"
 #include "RequestMessage.hpp"
-#include "Server.hpp"
+#include "Config.hpp"
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -32,27 +32,27 @@ int checkHost(std::vector<Header> &headers, const std::string &host) {
 	return (0); // pas le bon hostname
 }
 
-int findRightLocIndex(Server &server, RequestMessage &request) {
+int findRightLocIndex(Config &config, RequestMessage &request) {
 	std::pair<int, int> commonWord;
 	commonWord.first = -1;
 	int defaultLoc;
 
-	for (int i = 0; i < (int)server.getNumOfLoc(); i++) {
+	for (int i = 0; i < (int)config.getNumOfLoc(); i++) {
 		size_t locPos = 0;
 		size_t uriPos = 0;
 		int    word = 0;
 		bool   mismatch = false;
-		if (server.getLocName(i).size() > request.getRequestUri().size())
+		if (config.getLocName(i).size() > request.getRequestUri().size())
 			continue;
-		if (server.getLocName(i) == "/") {
+		if (config.getLocName(i) == "/") {
 			defaultLoc = i;
 			continue;
 		}
-		if (server.getLocName(i) == request.getRequestUri())
+		if (config.getLocName(i) == request.getRequestUri())
 			return (i);
-		while (locPos < server.getLocName(i).size() && uriPos < request.getRequestUri().size()) {
-			size_t      locNext = server.getLocName(i).find('/', locPos);
-			std::string locSegment = server.getLocName(i).substr(locPos, locNext - locPos);
+		while (locPos < config.getLocName(i).size() && uriPos < request.getRequestUri().size()) {
+			size_t      locNext = config.getLocName(i).find('/', locPos);
+			std::string locSegment = config.getLocName(i).substr(locPos, locNext - locPos);
 
 			size_t      uriNext = request.getRequestUri().find('/', uriPos);
 			std::string uriSegment = request.getRequestUri().substr(uriPos, uriNext - uriPos);
@@ -134,11 +134,11 @@ int checkUrl(std::string &url) {
 }
 
 // recuperer index , return 0 si error, 1 si index, 2 si list a generer
-int indexWork(Server &server, std::string &url, int indexLoc) {
+int indexWork(Config &config, std::string &url, int indexLoc) {
 	std::string testIndex;
 
 	// Si deque vide, begin == end
-	std::deque<std::string> index = server.getIndex();
+	std::deque<std::string> index = config.getIndex();
 	for (std::deque<std::string>::iterator it = index.begin(); it != index.end(); ++it) {
 		testIndex = url + *it;
 		if (!access(testIndex.c_str(), F_OK)) {
@@ -146,7 +146,7 @@ int indexWork(Server &server, std::string &url, int indexLoc) {
 			return (1);
 		}
 	}
-	if (!server.getLocAutoindent(indexLoc))
+	if (!config.getLocAutoindent(indexLoc))
 		return (0);
 
 	return (2); // liste autoindent a generer
@@ -174,25 +174,25 @@ int checkRights(int type, const std::string &url, const std::string &method) {
 }
 
 // return std::pair<code, page> ?
-std::pair<int, std::string> handleRequest(Server &server, RequestMessage &request) {
+std::pair<int, std::string> handleRequest(Config &config, RequestMessage &request) {
 	// check si host header est ok
 	//	if (!checkHost(request.getHeaders(), server.getHost()))
 	//		return std::make_pair(400, server.getErrorPage(400));
 
 	// Trouver l'index de la bonne location
-	int indexLoc = findRightLocIndex(server, request);
+	int indexLoc = findRightLocIndex(config, request);
 
 	// si un return -> renvoye direct le bon code erreur + page
-	std::pair<int, std::string> returnInfo = server.getLocRedirection(indexLoc);
+	std::pair<int, std::string> returnInfo = config.getLocRedirection(indexLoc);
 	if (returnInfo.first != -1)
 		return (returnInfo); // type de retour a revoir
 
 	// verif si method autorise
-	if (!checkMethods(server.getLocMethods(indexLoc), request.getMethod()))
-		return std::make_pair(405, server.getErrorPage(405));
+	if (!checkMethods(config.getLocMethods(indexLoc), request.getMethod()))
+		return std::make_pair(405, config.getErrorPage(405));
 
 	// recuperer uri et construire chemin avec ro  (si aucun root defini ?)
-	returnInfo.second = getCompletePath(server.getLocRoot(indexLoc), request.getRequestUri());
+	returnInfo.second = getCompletePath(config.getLocRoot(indexLoc), request.getRequestUri());
 	returnInfo.first = 200;
 
 	// check si dossier, si oui envoyer sur index   // voir differents comportements selon
@@ -200,13 +200,13 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	// dir, 1 si file, error code si error
 	int resultCheckUrl = checkUrl(returnInfo.second);
 	if (resultCheckUrl > 1)
-		return std::make_pair(resultCheckUrl, server.getErrorPage(resultCheckUrl));
+		return std::make_pair(resultCheckUrl, config.getErrorPage(resultCheckUrl));
 
 	// Si dossier -> envoye sur index ou autoindent
 	if (!resultCheckUrl && request.getMethod() == "GET") {
-		int resultIndex = indexWork(server, returnInfo.second, indexLoc);
+		int resultIndex = indexWork(config, returnInfo.second, indexLoc);
 		if (!resultIndex)
-			return std::make_pair(403, server.getErrorPage(403));
+			return std::make_pair(403, config.getErrorPage(403));
 		if (resultIndex == 2)
 			returnInfo.first = 2; // si list a generer
 	}
@@ -214,13 +214,13 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 
 	// check si CGI dans ce cas la, pas de droits a verif je return direct
 	// Pour l'instant on check pas, on executera avec python3, a voir ensuite
-	if (server.getLocName(indexLoc).find("cgi-bin") != std::string::npos)
+	if (config.getLocName(indexLoc).find("cgi-bin") != std::string::npos)
 		return std::make_pair(1, returnInfo.second);
 
 	// Verifier si les droits sont les bons selon la methode
 	int resultRights = checkRights(resultCheckUrl, returnInfo.second, request.getMethod());
 	if (resultRights)
-		return std::make_pair(resultRights, server.getErrorPage(resultRights));
+		return std::make_pair(resultRights, config.getErrorPage(resultRights));
 
 	return (returnInfo);
 }
