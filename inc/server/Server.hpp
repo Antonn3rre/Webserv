@@ -19,7 +19,7 @@ class Server {
 	std::string _buildAnswer(void);
 
 	public:
-	//	Server();
+	Server();
 	Server(char *configFile);
 	void startServer(void);
 	void handleClients(void);

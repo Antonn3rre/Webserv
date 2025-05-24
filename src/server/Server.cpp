@@ -21,11 +21,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// Server::Server(void) {};
-//   Server::Server(void) : _config(Config("conf/default.conf")), _sd(0) {};
+Server::Server(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
 
-// Server::Server(char *configFile) {};
-Server::Server(char *configFile) : _config(Config(configFile)) {};
+// Server::Server(char *configFile) : _config(Config(configFile)) {};
 
 int setnonblocking(int sock) {
 	int result;
@@ -48,8 +46,7 @@ void Server::startServer(void) {
 	socklen_t          clilen;
 	struct sockaddr_in servAddr;
 	struct sockaddr_in cliAddr;
-	ssize_t            n;
-	int                on = 1;
+	ssize_t            bytes;
 	char               buffer[100000];
 	struct epoll_event ev;
 	struct epoll_event events[MAX_EVENTS];
@@ -62,6 +59,7 @@ void Server::startServer(void) {
 	}
 
 	// allow the socket to be reusable
+	int on = 1;
 	setsockopt(_lsockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
 	bzero(&servAddr, sizeof(servAddr));
@@ -97,16 +95,16 @@ void Server::startServer(void) {
 				epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
 			} else {
 				bzero(buffer, 100000);
-				n = read(events[i].data.fd, buffer, 100000);
-				if (n < 0) {
+				bytes = read(events[i].data.fd, buffer, 100000);
+				if (bytes < 0) {
 					std::cerr << "Error on read." << std::endl;
 					close(events[i].data.fd);
 					continue;
 				}
 				std::cout << buffer << std::endl;
 				std::string tmp = _buildAnswer();
-				n = send(events[i].data.fd, tmp.c_str(), tmp.length(), MSG_NOSIGNAL);
-				if (n < 0) {
+				bytes = send(events[i].data.fd, tmp.c_str(), tmp.length(), MSG_NOSIGNAL);
+				if (bytes < 0) {
 					std::cerr << "Error on write => " << strerror(errno) << std::endl;
 					close(events[i].data.fd);
 				}
@@ -119,18 +117,34 @@ void Server::startServer(void) {
 void Server::handleClients(void) {}
 
 std::string Server::_buildAnswer() {
-	std::string body = "<!DOCTYPE html>\r\n"
-	                   "<html>\r\n"
-	                   "<head><title>First webserv</title></head>\r\n"
-	                   "<body>\r\n"
-	                   "    <p>Hello World.</p>\r\n"
-	                   "</body>\r\n"
-	                   "</html>\r\n";
+	std::string body =
+	    "<!DOCTYPE html>\r\n"
+	    "<html>\r\n"
+	    "<head><title>First webserv</title></head>\r\n"
+	    "<body>\r\n"
+	    "<div align=\"center\">\r\n"
+	    "<img "
+	    "src=\"https://remeng.rosselcdn.net/sites/default/files/dpistyles_v2/rem_16_9_1124w/2020/"
+	    "09/30/node_194669/12124212/public/2020/09/30/"
+	    "B9724766829Z.1_20200930170647_000%2BG3EGPBHMU.1-0.jpg?itok=7_rsY6Fj1601564062\" "
+	    "width=\"1200\" height=\"800\" />\r\n"
+	    "<a href=\"https://www.google.com/"
+	    "url?sa=i&url=https%3A%2F%2Fwww.lardennais.fr%2Fid194669%2Farticle%2F2020-09-30%2Fles-"
+	    "punaises-de-lit-lui-ont-fait-vivre-un-enfer-charleville-mezieres&psig=AOvVaw1InOT-"
+	    "kYF5steCdhBc6F-7&ust=1747918462193000&source=images&cd=vfe&opi=89978449&ved="
+	    "0CBcQjhxqFwoTCLCDguvNtI0DFQAAAAAdAAAAABAE\" target=_blank>\r\n"
+	    "<h1> A Charleville - Mézières, les punaises de lit lui ont fait vivre un enfer "
+	    "</h1></a>\r\n"
+	    "<img "
+	    "src=\"https://media1.tenor.com/m/WckcGq81cjYAAAAd/herv%C3%A9-regnier-tiktok.gif\"></img>"
+	    "</div>\r\n"
+	    "</body>\r\n"
+	    "</html>\r\n";
 
 	std::stringstream ss;
 	ss << "HTTP/1.1 200 OK\r\n"
 	   << "Date: Mon, 12 May 2025 16:29:56 GMT\r\n"
-	   << "Content-Type: text/html\r\n"
+	   << "Content-Type: text/html; charset=utf-8\r\n"
 	   << "Content-Length: " << body.length() << "\r\n"
 	   << "Connection: keep-alive\r\n"
 	   << "Server: gunicorn/19.9.0\r\n"
