@@ -19,8 +19,8 @@ class RequestHandler {
 	static void        _saveFile(const std::string &filename, const std::string &body);
 
 	static StatusLine  _generateStatusLine(unsigned short status);
-	static void        _generateHeaders(ResponseMessage &response, const RequestHandler &request);
-	static std::string _generateBody(const RequestMessage &request);
+	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request);
+	static std::string _generateBody(const RequestMessage &request, unsigned short &status);
 
 	static std::string _getReasonPhrase(unsigned short status);
 };

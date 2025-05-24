@@ -1,5 +1,6 @@
 #include "RequestHandler.hpp"
 #include "AMessage.hpp"
+#include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
 #include <cerrno>
 #include <cstdlib>
@@ -19,11 +20,20 @@ ResponseMessage RequestHandler::generateResponse(const Server         &server,
                                                  const RequestMessage &request) {
 	unsigned short status;
 
-	StatusLine statusLine = _generateStatusLine(status);
+	std::string     body = _generateBody(request, status);
+	StatusLine      statusLine = _generateStatusLine(status);
+	ResponseMessage response(statusLine, body);
+	_generateHeaders(response, request);
+	return response;
 }
+
+std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status) {}
 
 StatusLine RequestHandler::_generateStatusLine(unsigned short status) {
 	return StatusLine("HTTP/1.1", status, _getReasonPhrase(status));
+}
+void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMessage &request) {
+	std::pair<std::string, bool> headerValue;
 }
 
 std::string RequestHandler::_getReasonPhrase(unsigned short status) {
@@ -158,7 +168,7 @@ std::string RequestHandler::_loadFile(const std::string &filename) {
 	return bodyStream.str();
 }
 
-void saveFile(const std::string &filename, const std::string &body) {
+void RequestHandler::_saveFile(const std::string &filename, const std::string &body) {
 	std::ofstream file;
 	file.open(filename.c_str(), std::ios::trunc | std::ios::binary);
 	file << body;

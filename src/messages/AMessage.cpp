@@ -51,16 +51,33 @@ AMessage::InvalidData::InvalidData(const std::string &name, const std::string &v
     : MessageError("invalid " + name, value) {}
 
 void AMessage::addHeader(const Header &header) {
+	if (_isHeaderValid(header.getName()))
+		_headers.push_back(header);
+}
+
+std::pair<std::string, bool> AMessage::getHeaderValue(const std::string &headerName) {
+	if (!_isHeaderValid(headerName))
+		return (std::pair<std::string, bool>("", false));
+	for (std::vector<Header>::iterator it = _headers.begin(); it != _headers.end(); ++it) {
+		if (it->getName() == headerName)
+			return (std::pair<std::string, bool>(it->getValue(), true));
+	}
+	return (std::pair<std::string, bool>("", false));
+}
+
+bool AMessage::_isHeaderValid(const std::string &headerName) {
 	std::map<std::string, std::pair<Header::HeaderType, bool> >::iterator headerEntry =
-	    _validHeaders.find(header.getName());
+	    _validHeaders.find(headerName);
 	if (headerEntry != _validHeaders.end()) {
 		if (headerEntry->second.second)
-			_headers.push_back(header);
-		else
-			// throw Unsupported("header", header.getName());
-			std::cerr << "Warning: unsupported header: " << header.getName() << std::endl;
+			return true;
+		// throw Unsupported("header", header.getName());
+		std::cerr << "Warning: unsupported header: " << headerName << std::endl;
+		return false;
 	}
-	// } else
+	std::cerr << "Warning: invalid header: " << headerName << std::endl;
+	return false;
+	//  else
 	// 	throw InvalidData("header", header.getName());
 }
 
