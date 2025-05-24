@@ -1,6 +1,5 @@
 #include "Application.hpp"
 #include "Config.hpp"
-#include "HandleRequest.hpp"
 #include <arpa/inet.h>
 #include <asm-generic/socket.h>
 #include <cerrno>
@@ -21,9 +20,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Application::Application(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
+// Application::Application(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
 
 // Server::Server(char *configFile) : _config(Config(configFile)) {};
+
+Application::Application(std::fstream &file) : _config(Config(file)) {};
 
 void Application::_initApplication() {
 	struct epoll_event ev;
@@ -131,7 +132,7 @@ std::string Application::_buildAnswer() {
 	    "<body>\r\n"
 	    "<div align=\"center\">\r\n"
 	    "<img "
-	    "src=\"https://remeng.rosselcdn.net/sites/default/files/dpistyles_v2/rem_16_9_1124w/2020/"
+	    "src=\"https://remeng.rosselcdn.net/sites/default/"
 	    "09/30/node_194669/12124212/public/2020/09/30/"
 	    "B9724766829Z.1_20200930170647_000%2BG3EGPBHMU.1-0.jpg?itok=7_rsY6Fj1601564062\" "
 	    "width=\"1200\" height=\"800\" />\r\n"

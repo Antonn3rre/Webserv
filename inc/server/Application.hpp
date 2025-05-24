@@ -1,5 +1,5 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef APPLICATION_HPP
+#define APPLICATION_HPP
 
 #include "Config.hpp"
 #include <netinet/in.h>
@@ -25,6 +25,7 @@ class Application {
 	public:
 	Application();
 	Application(char *configFile);
+	Application(std::fstream &file);
 	// void startServer(void);
 
 	class ApplicationError : public std::exception {
@@ -41,4 +42,4 @@ class Application {
 	const Config &getConfig(void) const;
 };
 
-#endif // SERVER_HPP
+#endif // APPLICATION_HPP

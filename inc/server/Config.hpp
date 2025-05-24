@@ -3,12 +3,13 @@
 
 #include "Location.hpp"
 #include <deque>
+#include <fstream>
 #include <map>
 #include <string>
 
 class Config {
 	public:
-	Config(const std::string &configFile);
+	Config(std::fstream &file);
 	Config(const Config &);
 	Config &operator=(const Config &);
 	~Config();
@@ -21,6 +22,11 @@ class Config {
 
 		private:
 		std::string _errorMessage;
+	};
+
+	class Finished : public std::exception {
+		public:
+		virtual const char *what() const throw();
 	};
 
 	// Config getter

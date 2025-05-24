@@ -11,16 +11,10 @@
 #include <string>
 #include <utility>
 
-Config::Config(const std::string &configFile) {
+Config::Config(std::fstream &file) {
 	_setDefaultConfig();
 
-	std::fstream file;
-	int          i;
-	file.open(configFile.c_str(), std::fstream::in);
-	if (!file.is_open()) {
-		throw Config::Exception("Problem opening file");
-	}
-
+	int         i;
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
 	                      "host",   "root",        "index",      "location"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
@@ -32,7 +26,7 @@ Config::Config(const std::string &configFile) {
 	std::string token = " ";
 	while (justSpaces(token)) {
 		if (!getline(file, token))
-			throw Config::Exception("Empty config file");
+			throw Config::Finished();
 	}
 
 	// mettre dans un check first line
@@ -49,33 +43,19 @@ Config::Config(const std::string &configFile) {
 		if (token.empty())
 			throw Config::Exception("Unexpected newline");
 		// std::cout << "token = |" << token << "|\n";
-		if (token == "}") {
-			if (!getline(file, token) || justSpaces(token))
-				break;
-			throw Config::Exception("Closing brackets too soon");
-		}
+		if (token == "}")
+			break;
 		if (token.empty())
 			throw Config::Exception("Missing closing brackets");
 		for (i = 0; i < 8; i++) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
 				break;
-				for (int i = 0; i < 8; i++) {
-					if (token == list[i]) {
-						(this->*functionPointer[i])(token, file);
-						break;
-					}
-					if (i == 7)
-						throw Config::Exception("Problem parsing file");
-				}
-				if (i == 7) {
-					std::cout << "problem = " << token << std::endl;
-					throw Config::Exception("Problem parsing file");
-				}
 			}
+			if (i == 7)
+				throw Config::Exception("Problem parsing file");
 		}
 	}
-	file.close();
 
 	// check si location / existe bien
 	for (i = 0; i < getNumOfLoc(); i++) {
