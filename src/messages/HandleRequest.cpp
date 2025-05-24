@@ -78,6 +78,9 @@ std::string getCompletePath(const std::string &locRoot, const std::string &reque
 int checkUrl(std::string &url) {
 	struct stat st;
 
+	// check pour eviter les ../../psswd , voir si c'est ok
+	if (url.find("..") != std::string::npos)
+		return (403);
 	if (url[0] == '/') {
 		url = url.substr(1, url.size() - 1);
 	}
@@ -182,7 +185,6 @@ std::pair<int, std::string> handleRequest(Server &server, RequestMessage &reques
 	// check si dossier, si oui envoyer sur index   // voir differents comportements selon
 	// methode Si pas d'index, check autoindent et faire en fonction checkUrl -> return 0 si
 	// dir, 1 si file, error code si error
-	// /!\ pas securise (on peut chercher ../../../../../etc/passwd)
 	int resultCheckUrl = checkUrl(returnInfo.second);
 	if (resultCheckUrl > 1)
 		return std::make_pair(resultCheckUrl, server.getErrorPage(resultCheckUrl));
