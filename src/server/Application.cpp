@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "Application.hpp"
 #include "Config.hpp"
 #include "HandleRequest.hpp"
 #include <arpa/inet.h>
@@ -21,11 +21,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Server::Server(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
+Application::Application(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
 
 // Server::Server(char *configFile) : _config(Config(configFile)) {};
 
-void Server::_initServer() {
+void Application::_initApplication() {
 	struct epoll_event ev;
 	struct sockaddr_in servAddr;
 	_lsockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -60,12 +60,12 @@ void Server::_initServer() {
 	}
 }
 
-void Server::_printAtLaunch(void) {
+void Application::_printAtLaunch(void) {
 	std::cout << "Server launch at this address: http://" << _config.getAddress() << ":"
 	          << _config.getPort() << "/" << std::endl;
 }
 
-bool Server::_listenClientResponse(struct epoll_event &event, char *buffer) {
+bool Application::_listenClientResponse(struct epoll_event &event, char *buffer) {
 	bzero(buffer, 8192);
 	if (read(event.data.fd, buffer, 8192) < 0) {
 		std::cerr << "Error on read." << std::endl;
@@ -76,53 +76,54 @@ bool Server::_listenClientResponse(struct epoll_event &event, char *buffer) {
 	return (0);
 }
 
-void Server::_sendAnswer(std::string answer, struct epoll_event &event) {
+void Application::_sendAnswer(std::string answer, struct epoll_event &event) {
 	if (send(event.data.fd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
 		std::cerr << "Error on write => " << strerror(errno) << std::endl;
 		close(event.data.fd);
 	}
 }
 
-void Server::_serverLoop() {
-	struct epoll_event ev;
-	int                clientfd = -1;
-	int                nfds;
-	struct epoll_event events[MAX_EVENTS];
-	char               buffer[8192];
+// SERVER
+// void Application::_serverLoop() {
+// 	struct epoll_event ev;
+// 	int                clientfd = -1;
+// 	int                nfds;
+// 	struct epoll_event events[MAX_EVENTS];
+// 	char               buffer[8192];
+//
+// 	while (true) {
+// 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
+//
+// 		for (int i = 0; i < nfds; ++i) {
+// 			if (events[i].data.fd == _lsockfd) {
+// 				// reinterpreter_cast into `struct sockaddr *` and &clilen for the last parameter
+// 				// (see code in the epoll's man) for accept parameters
+// 				clientfd = accept(_lsockfd, NULL, NULL);
+// 				if (clientfd < 0) {
+// 					std::cerr << "Error on accept clients." << std::endl;
+// 					continue;
+// 				}
+// 				ev.events = EPOLLIN | EPOLLET;
+// 				ev.data.fd = clientfd;
+// 				epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
+// 			} else {
+// 				if (_listenClientResponse(events[i], buffer))
+// 					continue;
+// 				std::string answer = _buildAnswer();
+// 				_sendAnswer(answer, events[i]);
+// 			}
+// 		}
+// 	}
+// }
 
-	while (true) {
-		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
+// void Application::startServer(void) {
+// 	_initServer();
+// 	_printAtLaunch();
+// 	_serverLoop();
+// 	close(_lsockfd); // to put in the signal handler
+// }
 
-		for (int i = 0; i < nfds; ++i) {
-			if (events[i].data.fd == _lsockfd) {
-				// reinterpreter_cast into `struct sockaddr *` and &clilen for the last parameter
-				// (see code in the epoll's man) for accept parameters
-				clientfd = accept(_lsockfd, NULL, NULL);
-				if (clientfd < 0) {
-					std::cerr << "Error on accept clients." << std::endl;
-					continue;
-				}
-				ev.events = EPOLLIN | EPOLLET;
-				ev.data.fd = clientfd;
-				epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
-			} else {
-				if (_listenClientResponse(events[i], buffer))
-					continue;
-				std::string answer = _buildAnswer();
-				_sendAnswer(answer, events[i]);
-			}
-		}
-	}
-}
-
-void Server::startServer(void) {
-	_initServer();
-	_printAtLaunch();
-	_serverLoop();
-	close(_lsockfd); // to put in the signal handler
-}
-
-std::string Server::_buildAnswer() {
+std::string Application::_buildAnswer() {
 	std::string body =
 	    "<!DOCTYPE html>\r\n"
 	    "<html>\r\n"
@@ -166,4 +167,4 @@ std::string Server::_buildAnswer() {
 }
 
 // Config getter
-const Config &Server::getConfig(void) const { return _config; };
+const Config &Application::getConfig(void) const { return _config; };
