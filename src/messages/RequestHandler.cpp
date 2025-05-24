@@ -18,6 +18,11 @@
 
 RequestHandler::RequestHandler() {}
 
+RequestHandler::RequestError::RequestError(const std::string &error, const std::string &argument)
+    : AMessage::MessageError(error, argument) {}
+
+unsigned short RequestHandler::RequestError::getStatusCode() const { return _statusCode; }
+
 ResponseMessage RequestHandler::generateResponse(const Config         &config,
                                                  const RequestMessage &request) {
 	unsigned short status;
