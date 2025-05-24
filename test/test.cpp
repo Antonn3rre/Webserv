@@ -13,38 +13,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-std::string executeCgi(const std::string &uri) {
-	if (access(uri.c_str(), F_OK) == -1)
-		throw AMessage::InvalidData("cgi, does not exist", uri);
-	if (access(uri.c_str(), X_OK) == -1)
-		throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
-	int pipefd[2];
-	pipe(pipefd);
-
-	int pid = fork();
-	if (pid == 0) {
-		close(pipefd[0]);
-		char **argv = {NULL};
-		dup2(pipefd[1], STDOUT_FILENO);
-		close(pipefd[1]);
-		execve(uri.c_str(), argv, NULL);
-		std::cerr << "execve error" << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	close(pipefd[1]);
-	ssize_t     bytesRead;
-	std::string output;
-	char        buffer[1024];
-	bzero(buffer, 1024);
-	do {
-		bytesRead = read(pipefd[0], buffer, 1024);
-		std::string bufStr(buffer);
-		output += bufStr.substr(0, bytesRead);
-	} while (bytesRead == 1024);
-	close(pipefd[0]);
-	return output;
-}
-
 int main() {
 	// std::cout << std::endl << "\e[35mTESTS WEBSERV\e[0m" << std::endl << std::endl;
 	// // Message Parsing Test
@@ -94,19 +62,12 @@ int main() {
 	// }
 	// Server Start
 	{
-		// std::cout << "\e[33mTEST START SERVER\e[0m" << std::endl;
-		// Server test;
-		// test.startServer();
+		std::cout << "\e[33mTEST START SERVER\e[0m" << std::endl;
+		Server test;
+		test.startServer();
 	}
 	// CGI execution
-	{
-		std::cout << "\n\e[33mTEST EXEC CGI\e[0m" << std::endl;
-		try {
-			std::cout << executeCgi("website/var/www/cgi-bin/helloworld.cgi") << std::endl;
-		} catch (std::exception &e) {
-			std::cout << e.what() << std::endl;
-		}
-	}
+	{}
 	// Config test
 	// {
 	// 	std::cout << "\e[33mTEST CONFIG\e[0m" << std::endl;

@@ -157,6 +157,8 @@ std::string RequestHandler::_getCompletePath(const std::string &locRoot,
                                              const std::string &requestUri) {
 	if (locRoot.empty())
 		return (requestUri);
+	if (*(locRoot.rbegin()) == '/')
+		return (locRoot.substr(0, locRoot.size() - 1) + requestUri);
 	return locRoot + requestUri;
 }
 

@@ -173,58 +173,6 @@ int checkRights(int type, const std::string &url, const std::string &method) {
 	return (0);
 }
 
-std::string loadFile(const std::string &filename) {
-	std::ifstream      file(filename.c_str(), std::ios::binary);
-	std::ostringstream bodyStream;
-
-	bodyStream << file.rdbuf();
-	return bodyStream.str();
-}
-
-void saveFile(const std::string &filename, const std::string &body) {
-	std::ofstream file;
-	file.open(filename.c_str(), std::ios::trunc | std::ios::binary);
-	file << body;
-}
-
-std::string executeCgi(const std::string &uri) {
-	if (access(uri.c_str(), F_OK) == -1)
-		throw AMessage::InvalidData("cgi, does not exist", uri);
-	if (access(uri.c_str(), X_OK) == -1)
-		throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
-	int pipefd[2];
-	pipe(pipefd);
-
-	int pid = fork();
-	if (pid == 0) {
-		close(pipefd[0]);
-		char **argv = {NULL};
-		dup2(pipefd[1], STDOUT_FILENO);
-		close(pipefd[1]);
-		execve(uri.c_str(), argv, NULL);
-		std::cerr << "execve error" << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	close(pipefd[1]);
-	ssize_t     bytesRead;
-	std::string output;
-	char        buffer[1024];
-	bzero(buffer, 1024);
-	do {
-		bytesRead = read(pipefd[0], buffer, 1024);
-		std::string bufStr(buffer);
-		output += bufStr.substr(0, bytesRead);
-	} while (bytesRead == 1024);
-	close(pipefd[0]);
-	return output;
-}
-
-std::string getCompletePath(const std::string &locRoot, const std::string &requestUri) {
-	if (locRoot.empty())
-		return (requestUri);
-	return locRoot + requestUri;
-}
-
 // return std::pair<code, page> ?
 std::pair<int, std::string> handleRequest(Server &server, RequestMessage &request) {
 	// check si host header est ok
