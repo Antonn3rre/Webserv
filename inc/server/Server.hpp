@@ -1,7 +1,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "Client.hpp"
 #include "Config.hpp"
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -12,23 +11,19 @@
 
 class Server {
 	private:
-	Config             _config;
-	int                _msocket;
-	struct sockaddr_in _serverAddr;
-	Client             _client;
-	fd_set             _readfds;
-	size_t             _valread;
-	int                _maxfd;
-	int                _sd;
-	int                _activity;
+	Config _config;
+	int    _lsockfd;
+	int    _epollfd;
+
+	void        _shutdown();
+	std::string _buildAnswer(void);
 
 	public:
 	//	Server();
 	Server(char *configFile);
-	void        startServer(void);
-	void        handleClients(void);
-	void        handleMessage(void);
-	std::string buildAnswer(unsigned char i);
+	void startServer(void);
+	void handleClients(void);
+	void handleMessage(void);
 
 	class ServerError : public std::exception {
 		public:

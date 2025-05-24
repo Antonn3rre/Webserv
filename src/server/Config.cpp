@@ -124,6 +124,8 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 		throw Config::Exception("Problem parse listen (;)");
 	_listen = _listen.substr(0, _listen.length() - 1);
 	_listen = trim(_listen);
+	_address = _listen.substr(0, _listen.find(":", 0));
+	_port = std::atoi(_listen.substr(_listen.find(":", 0) + 1, _listen.length()).c_str());
 }
 
 void Config::_parseServerName(std::string &str, std::fstream &file) {
@@ -264,6 +266,8 @@ void Config::_setDefaultLocation() {
 }
 
 const std::string             &Config::getListen() const { return _listen; }
+const std::string             &Config::getAddress() const { return _address; }
+const int                     &Config::getPort() const { return _port; }
 const std::deque<std::string> &Config::getServerName() const { return _serverName; }
 const std::string             &Config::getErrorPage(int index) const {
     std::map<int, std::string>::const_iterator it = _errorPages.find(index);
