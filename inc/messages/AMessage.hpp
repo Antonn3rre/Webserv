@@ -44,7 +44,8 @@ class AMessage {
 		InvalidData(const std::string &name, const std::string &value);
 	};
 
-	const std::string &getBody() const;
+	const std::string   &getBody() const;
+	std::vector<Header> &getHeaders();
 
 	protected:
 	std::map<std::string, std::pair<Header::HeaderType, bool> > _validHeaders;

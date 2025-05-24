@@ -6,13 +6,25 @@
 #include <dirent.h>
 #include <fstream>
 #include <iostream>
-#include <ostream>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>
+
+// Check si hostname du header est le meme que dans la config
+int checkHost(std::vector<Header> &headers, const std::string &host) {
+	for (std::vector<Header>::iterator it = headers.begin(); it != headers.end(); it++) {
+		if (it->getName() == "Host") {
+			if (it->getValue() == host)
+				return (1);
+			return (0);
+		}
+	}
+	return (0); // pas le bon hostname
+}
 
 int findRightLocIndex(Server &server, RequestMessage &request) {
 	std::pair<int, int> commonWord;
@@ -164,7 +176,9 @@ void saveFile(const std::string &filename, const std::string &body) {
 
 // return std::pair<code, page> ?
 std::pair<int, std::string> handleRequest(Server &server, RequestMessage &request) {
-	// iterer location de server pour attribuer le bon ??
+	// check si host header est ok
+	//	if (!checkHost(request.getHeaders(), server.getHost()))
+	//		return std::make_pair(400, server.getErrorPage(400));
 
 	// Trouver l'index de la bonne location
 	int indexLoc = findRightLocIndex(server, request);

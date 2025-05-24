@@ -136,3 +136,5 @@ void AMessage::_setValidHeaders() {
 }
 
 const std::string &AMessage::getBody() const { return _body; }
+
+std::vector<Header> &AMessage::getHeaders() { return _headers; }

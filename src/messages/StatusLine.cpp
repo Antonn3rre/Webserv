@@ -18,13 +18,11 @@ StatusLine::StatusLine(const std::string &httpVersion, unsigned short statusCode
                        const std::string &reasonPhrase)
     : AStartLine(httpVersion), _statusCode(statusCode), _reasonPhrase(reasonPhrase) {}
 
-
 StatusLine::StatusLine(const std::string &httpVersion, unsigned short statusCode)
-    : AStartLine(httpVersion), _statusCode(statusCode) { 
-  _setKnownReasonPhrases();
-  _reasonPhrase = getReasonPhrase(_statusCode);
+    : AStartLine(httpVersion), _statusCode(statusCode) {
+	_setKnownReasonPhrases();
+	_reasonPhrase = getReasonPhrase(_statusCode);
 }
-
 
 void StatusLine::_setKnownReasonPhrases() {
 	// 400-417    500-505   200
@@ -59,7 +57,6 @@ void StatusLine::_setKnownReasonPhrases() {
 unsigned short StatusLine::getStatusCode() const { return _statusCode; }
 
 const std::string &StatusLine::getReasonPhrase(unsigned short code) const {
-  std::cout << "ici\n";
 	return _knownReasonPhrases.at(code);
 }
 
