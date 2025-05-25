@@ -10,15 +10,12 @@
 #include <fcntl.h>
 #include <iostream>
 #include <netinet/in.h>
-#include <sstream>
 #include <stdlib.h>
 #include <string>
-#include <strings.h>
 #include <sys/epoll.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 // Application::Application(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
 
@@ -26,7 +23,7 @@
 
 Application::Application(std::fstream &file) : _config(Config(file)) {};
 
-void Application::_initApplication() {
+void Application::_initApplication(int epollfd) {
 	struct epoll_event ev;
 	struct sockaddr_in servAddr;
 	_lsockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -42,7 +39,8 @@ void Application::_initApplication() {
 	bzero(&servAddr, sizeof(servAddr));
 	servAddr.sin_family = AF_INET;
 	servAddr.sin_addr.s_addr = INADDR_ANY;
-	servAddr.sin_port = htons(_config.getPort());
+	servAddr.sin_port = htons(8080);
+	// servAddr.sin_port = htons(_config.getPort());
 	if (bind(_lsockfd, reinterpret_cast<struct sockaddr *>(&servAddr), sizeof(servAddr)) == -1) {
 		std::cerr << "Error on the primary bind." << std::endl;
 		exit(1);
@@ -52,13 +50,13 @@ void Application::_initApplication() {
 		exit(1);
 	}
 
-	_epollfd = epoll_create(MAX_EVENTS);
 	ev.events = EPOLLIN;
 	ev.data.fd = _lsockfd;
-	if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, _lsockfd, &ev) == -1) {
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, _lsockfd, &ev) == -1) {
 		std::cerr << "Error on epoll_ctl." << std::endl;
 		exit(1);
 	}
+	_printAtLaunch();
 }
 
 void Application::_printAtLaunch(void) {
@@ -169,3 +167,4 @@ std::string Application::_buildAnswer() {
 
 // Config getter
 const Config &Application::getConfig(void) const { return _config; };
+const int    &Application::getLSockFd(void) const { return _lsockfd; };

@@ -5,17 +5,13 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#define BACKLOG    5
-#define MAX_EVENTS 1000
-#define TIME_OUT   3000
+#define BACKLOG 5
 
 class Application {
 	private:
 	Config _config;
 	int    _lsockfd;
-	int    _epollfd;
 
-	void _initApplication();
 	void _printAtLaunch(void);
 	bool _listenClientResponse(struct epoll_event &events, char *buffer);
 	void _sendAnswer(std::string answer, struct epoll_event &event);
@@ -38,8 +34,11 @@ class Application {
 		std::string _message;
 	};
 
+	void _initApplication(int epollfd);
+
 	// Config getter
 	const Config &getConfig(void) const;
+	const int    &getLSockFd(void) const;
 };
 
 #endif // APPLICATION_HPP

@@ -55,6 +55,8 @@ Config::Config(std::fstream &file) {
 			if (i == 7)
 				throw Config::Exception("Problem parsing file");
 		}
+		if (i == 8)
+			throw Config::Exception("Problem parsing file");
 	}
 
 	// check si location / existe bien
@@ -65,21 +67,21 @@ Config::Config(std::fstream &file) {
 	if (i == getNumOfLoc())
 		throw Config::Exception("No / location");
 	_setDefaultLocation();
-	/*
-	    // Affichage test
-	    std::cout << "Listen = |" << _listen << "|" << std::endl;
-	    for (std::deque<std::string>::iterator it = _serverName.begin(); it != _serverName.end();
-	   it++) std::cout << "Config name = " << *it << std::endl; std::cout << "Root = |" << _root <<
-	   "|" << std::endl; for (std::deque<std::string>::iterator it = _index.begin(); it !=
-	   _index.end(); it++) std::cout << "Index = " << *it << std::endl; std::cout << "Client max =
-	   |" << _clientMaxBodySize << "|" << std::endl; std::cout << "Host = |" << _host << "|" <<
-	   std::endl;
+	// Affichage test
+	std::cout << "TESTTTT = " << getAddress() << " | " << getPort() << std::endl;
+	std::cout << "Listen = |" << _listen << "|" << std::endl;
+	for (std::deque<std::string>::iterator it = _serverName.begin(); it != _serverName.end(); it++)
+		std::cout << "Config name = " << *it << std::endl;
+	std::cout << "Root = |" << _root << "|" << std::endl;
+	for (std::deque<std::string>::iterator it = _index.begin(); it != _index.end(); it++)
+		std::cout << "Index = " << *it << std::endl;
+	std::cout << "Client max = | " << _clientMaxBodySize << " | " << std::endl;
+	std::cout << " Host = | " << _host << " | " << std::endl;
 
-	    std::cout << "Location : " << std::endl;
-	    //	std::cout << "Root = |" << _location[0]._root << "|" << std::endl;
-	    std::cout << "Root = |" << _location.front()._root << "|" << std::endl;
-	    std::cout << "Nmae = |" << _location.front()._name << "|" << std::endl;
-	*/
+	std::cout << "Location : " << std::endl;
+	//	std::cout << "Root = |" << _location[0]._root << "|" << std::endl;
+	std::cout << "Root = |" << _location.front().getRoot() << "|" << std::endl;
+	std::cout << "Nmae = |" << _location.front().getName() << "|" << std::endl;
 }
 
 Config::Config(const Config &former) { (void)former; }
