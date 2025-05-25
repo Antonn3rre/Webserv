@@ -18,8 +18,9 @@ Config::Config(std::fstream &file) {
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
 	                      "host",   "root",        "index",      "location"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
-	    &Config::_parseListen,    &Config::_parseServerName, &Config::_parseErrorPage,
-	    &Config::_parseClientMax, &Config::_parseHost,       &Config::_parseRoot,
+	    &Config::_parseListen,    &Config::_parseApplicationName,
+	    &Config::_parseErrorPage, &Config::_parseClientMax,
+	    &Config::_parseHost,      &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
 
 	// mettre dans un check empty
@@ -70,7 +71,8 @@ Config::Config(std::fstream &file) {
 	// Affichage test
 	std::cout << "TESTTTT = " << getAddress() << " | " << getPort() << std::endl;
 	std::cout << "Listen = |" << _listen << "|" << std::endl;
-	for (std::deque<std::string>::iterator it = _serverName.begin(); it != _serverName.end(); it++)
+	for (std::deque<std::string>::iterator it = _applicationName.begin();
+	     it != _applicationName.end(); it++)
 		std::cout << "Config name = " << *it << std::endl;
 	std::cout << "Root = |" << _root << "|" << std::endl;
 	for (std::deque<std::string>::iterator it = _index.begin(); it != _index.end(); it++)
@@ -85,7 +87,7 @@ Config::Config(std::fstream &file) {
 }
 Config::Config(const Config &former)
     : _listen(former.getListen()), _address(former.getAddress()), _port(former.getPort()),
-      _serverName(former.getServerName()), _errorPages(former.getErrorPages()),
+      _applicationName(former.getApplicationName()), _errorPages(former.getErrorPages()),
       _clientMaxBodySize(former.getClientMaxBodySize()), _host(former.getHost()),
       _root(former.getRoot()), _index(former.getIndex()), _location(former.getLocation()) {}
 
@@ -115,7 +117,7 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 	_port = std::atoi(_listen.substr(_listen.find(":", 0) + 1, _listen.length()).c_str());
 }
 
-void Config::_parseServerName(std::string &str, std::fstream &file) {
+void Config::_parseApplicationName(std::string &str, std::fstream &file) {
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse server name");
@@ -128,7 +130,7 @@ void Config::_parseServerName(std::string &str, std::fstream &file) {
 
 	std::istringstream iss(str);
 	while (iss >> str) {
-		_serverName.push_back(str);
+		_applicationName.push_back(str);
 	}
 }
 
@@ -255,7 +257,7 @@ void Config::_setDefaultLocation() {
 const std::string             &Config::getListen() const { return _listen; }
 const std::string             &Config::getAddress() const { return _address; }
 const int                     &Config::getPort() const { return _port; }
-const std::deque<std::string> &Config::getServerName() const { return _serverName; }
+const std::deque<std::string> &Config::getApplicationName() const { return _applicationName; }
 const std::string             &Config::getErrorPage(int index) const {
     std::map<int, std::string>::const_iterator it = _errorPages.find(index);
     if (it != _errorPages.end())

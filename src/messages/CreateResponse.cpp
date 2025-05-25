@@ -42,7 +42,7 @@ int generateAutoindent(std::string &page, std::string &body) {
 	return (1);
 }
 
-ResponseMessage createResponse(Config &config, RequestMessage &request,
+ResponseMessage createResponse(const Config &config, RequestMessage &request,
                                std::pair<int, std::string> &handled) {
 	std::string body;
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));

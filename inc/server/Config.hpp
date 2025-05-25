@@ -33,7 +33,7 @@ class Config {
 	const std::string                &getListen() const;
 	const std::string                &getAddress() const;
 	const int                        &getPort() const;
-	const std::deque<std::string>    &getServerName() const;
+	const std::deque<std::string>    &getApplicationName() const;
 	const std::string                &getErrorPage(int index) const;
 	const std::map<int, std::string> &getErrorPages() const;
 	const std::string                &getClientMaxBodySize() const;
@@ -56,7 +56,7 @@ class Config {
 	std::string                _listen;
 	std::string                _address;
 	int                        _port;
-	std::deque<std::string>    _serverName;
+	std::deque<std::string>    _applicationName;
 	std::map<int, std::string> _errorPages;
 	std::string                _clientMaxBodySize;
 	std::string                _host;
@@ -65,7 +65,7 @@ class Config {
 	std::deque<Location>       _location;
 
 	void _parseListen(std::string &, std::fstream &);
-	void _parseServerName(std::string &, std::fstream &);
+	void _parseApplicationName(std::string &, std::fstream &);
 	void _parseErrorPage(std::string &, std::fstream &);
 	void _parseClientMax(std::string &, std::fstream &);
 	void _parseHost(std::string &, std::fstream &);

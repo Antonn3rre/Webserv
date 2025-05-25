@@ -36,8 +36,12 @@ Server::~Server(void) {};
 Application &Server::getRightApplication(const std::string &requestHost) {
 	for (std::vector<Application>::iterator it = _applicationList.begin();
 	     it != _applicationList.end(); ++it) {
-		if (it->getConfig().getHost() == requestHost)
-			return *it;
+		for (std::deque<std::string>::const_iterator sit =
+		         it->getConfig().getApplicationName().begin();
+		     sit != it->getConfig().getApplicationName().end(); ++sit) {
+			if (*sit == requestHost)
+				return *it;
+		}
 	}
 	return _applicationList.front();
 }

@@ -76,7 +76,7 @@ int checkUrl(std::string &url) {
 }
 
 // recuperer index , return 0 si error, 1 si index, 2 si list a generer
-int indexWork(Config &config, std::string &url, Location &location) {
+int indexWork(const Config &config, std::string &url, Location &location) {
 	std::string testIndex;
 
 	// Si deque vide, begin == end
@@ -116,7 +116,7 @@ int checkRights(int type, const std::string &url, const std::string &method) {
 }
 
 // return std::pair<code, page> ?
-std::pair<int, std::string> handleRequest(Config &config, RequestMessage &request) {
+std::pair<int, std::string> handleRequest(const Config &config, RequestMessage &request) {
 	// check si host header est ok
 	//	if (!checkHost(request.getHeaders(), server.getHost()))
 	//		return std::make_pair(400, server.getErrorPage(400));
