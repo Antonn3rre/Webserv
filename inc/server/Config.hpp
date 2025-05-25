@@ -30,16 +30,17 @@ class Config {
 	};
 
 	// Config getter
-	const std::string             &getListen() const;
-	const std::string             &getAddress() const;
-	const int                     &getPort() const;
-	const std::deque<std::string> &getServerName() const;
-	const std::string             &getErrorPage(int index) const;
-	const std::string             &getClientMaxBodySize() const;
-	const std::string             &getHost() const;
-	const std::string             &getRoot() const;
-	const std::deque<std::string> &getIndex() const;
-	const std::deque<Location>    &getLocation() const;
+	const std::string                &getListen() const;
+	const std::string                &getAddress() const;
+	const int                        &getPort() const;
+	const std::deque<std::string>    &getServerName() const;
+	const std::string                &getErrorPage(int index) const;
+	const std::map<int, std::string> &getErrorPages() const;
+	const std::string                &getClientMaxBodySize() const;
+	const std::string                &getHost() const;
+	const std::string                &getRoot() const;
+	const std::deque<std::string>    &getIndex() const;
+	const std::deque<Location>       &getLocation() const;
 
 	// Location getter , int parameter is the index of the container
 	const std::string                 &getLocName(int) const;

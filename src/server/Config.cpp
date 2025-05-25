@@ -83,8 +83,11 @@ Config::Config(std::fstream &file) {
 	std::cout << "Root = |" << _location.front().getRoot() << "|" << std::endl;
 	std::cout << "Nmae = |" << _location.front().getName() << "|" << std::endl;
 }
-
-Config::Config(const Config &former) { (void)former; }
+Config::Config(const Config &former)
+    : _listen(former.getListen()), _address(former.getAddress()), _port(former.getPort()),
+      _serverName(former.getServerName()), _errorPages(former.getErrorPages()),
+      _clientMaxBodySize(former.getClientMaxBodySize()), _host(former.getHost()),
+      _root(former.getRoot()), _index(former.getIndex()), _location(former.getLocation()) {}
 
 Config &Config::operator=(const Config &former) {
 	(void)former;
@@ -92,6 +95,8 @@ Config &Config::operator=(const Config &former) {
 }
 
 Config::~Config() {}
+
+const char *Config::Finished::what() const throw() { return "Finished"; }
 
 Config::Exception::Exception(const std::string &message) : _errorMessage(message) {}
 
@@ -258,6 +263,7 @@ const std::string             &Config::getErrorPage(int index) const {
     std::cerr << "Error page " << index << " does not exist" << std::endl;
     throw std::out_of_range("");
 }
+const std::map<int, std::string> &Config::getErrorPages() const { return _errorPages; }
 const std::string             &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
 const std::string             &Config::getHost() const { return _host; }
 const std::string             &Config::getRoot() const { return _root; }

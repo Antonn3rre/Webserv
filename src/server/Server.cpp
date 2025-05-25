@@ -7,14 +7,40 @@
 #include <unistd.h>
 #include <vector>
 
-Server::Server(void) {
-	Application test;
-	_applicationList.push_back(test);
-	std::cout << _applicationList.size() << std::endl;
-	std::cout << _applicationList[0].getConfig().getPort() << std::endl;
-};
+// Server::Server(void) {
+//	Application test;
+//	_applicationList.push_back(test);
+//	std::cout << _applicationList.size() << std::endl;
+//	std::cout << _applicationList[0].getConfig().getPort() << std::endl;
+// };
+
+Server::Server(const std::string &filename) {
+	std::fstream file;
+	file.open(filename.c_str(), std::fstream::in);
+	if (!file.is_open()) {
+		throw Config::Exception("Problem opening file");
+	}
+	try {
+		while (true) {
+			_applicationList.push_back(Application(file));
+		}
+	} catch (Config::Finished &e) {
+		if (_applicationList.empty())
+			throw Config::Exception("Empty config file"); // close file ?
+	}
+	file.close();
+}
 
 Server::~Server(void) {};
+
+Application &Server::getRightApplication(const std::string &requestHost) {
+	for (std::vector<Application>::iterator it = _applicationList.begin();
+	     it != _applicationList.end(); ++it) {
+		if (it->getConfig().getHost() == requestHost)
+			return *it;
+	}
+	return _applicationList.front();
+}
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);

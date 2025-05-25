@@ -19,9 +19,10 @@ class Application {
 	std::string _buildAnswer(void);
 
 	public:
-	Application();
+	//	Application();
 	Application(char *configFile);
 	Application(std::fstream &file);
+	Application(const Application &);
 	// void startServer(void);
 
 	class ApplicationError : public std::exception {

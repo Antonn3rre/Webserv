@@ -18,10 +18,12 @@ class Server {
 	void                     _serverLoop(void);
 
 	public:
-	Server();
+	//	Server();
+	Server(const std::string &);
 	~Server();
 
-	void startServer(void);
+	void         startServer(void);
+	Application &getRightApplication(const std::string &);
 };
 
 #endif // !SERVER_HPP
