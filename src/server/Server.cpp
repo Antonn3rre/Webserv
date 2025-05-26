@@ -33,13 +33,15 @@ Server::Server(const std::string &filename) {
 
 Server::~Server(void) {};
 
-Application &Server::getRightApplication(const std::string &requestHost) {
+Application &Server::getRightApplication(std::pair<std::string, bool> requestHost) {
+	std::cout << "Dans right, requestHost = " << requestHost.second << std::endl;
 	for (std::vector<Application>::iterator it = _applicationList.begin();
 	     it != _applicationList.end(); ++it) {
 		for (std::deque<std::string>::const_iterator sit =
 		         it->getConfig().getApplicationName().begin();
 		     sit != it->getConfig().getApplicationName().end(); ++sit) {
-			if (*sit == requestHost)
+			std::cout << "Valeur sit = " << *sit << std::endl;
+			if (*sit == requestHost.first)
 				return *it;
 		}
 	}

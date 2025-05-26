@@ -23,7 +23,7 @@ class Server {
 	~Server();
 
 	void         startServer(void);
-	Application &getRightApplication(const std::string &);
+	Application &getRightApplication(std::pair<std::string, bool>);
 };
 
 #endif // !SERVER_HPP
