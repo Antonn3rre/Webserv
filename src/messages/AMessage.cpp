@@ -57,6 +57,7 @@ void AMessage::addHeader(const Header &header) {
 }
 
 std::pair<std::string, bool> AMessage::getHeaderValue(const std::string &headerName) const {
+	std::cout << "yessss\n";
 	std::vector<Header>::const_iterator foundHeaderIterator = _headers.end();
 
 	if (!_isHeaderValid(headerName))
@@ -67,6 +68,9 @@ std::pair<std::string, bool> AMessage::getHeaderValue(const std::string &headerN
 				return (std::pair<std::string, bool>("", false));
 			foundHeaderIterator = it;
 		}
+	}
+	if (foundHeaderIterator == _headers.end()) {
+		return (std::pair<std::string, bool>("", false));
 	}
 	return (std::pair<std::string, bool>(foundHeaderIterator->getValue(), true));
 }
