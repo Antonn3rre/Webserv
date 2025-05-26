@@ -1,9 +1,9 @@
-#include "HandleRequest.hpp"
+#include "Config.hpp"
+#include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
 #include <dirent.h>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <unistd.h>
 
@@ -20,18 +20,18 @@ std::string readPage(const std::string &page) {
 	return (body);
 }
 
-std::string deleteRequest(std::string &page) {
+std::string deleteRequest(const std::string &page) {
 	std::string body = readPage(page);
 	std::remove(page.c_str());
 	// add check ?
 	return (body);
 }
 
-int generateAutoindent(std::string &page, std::string &body) {
-	DIR           *dir = opendir(page.c_str());
-	struct dirent *stDir;
+bool generateAutoindent(const std::string &page, std::string &body) {
+	DIR *dir = opendir(page.c_str());
 	if (!dir)
-		return (0);
+		return (false);
+	const struct dirent *stDir;
 	while (true) {
 		stDir = readdir(dir);
 		if (!stDir)
@@ -39,7 +39,7 @@ int generateAutoindent(std::string &page, std::string &body) {
 		body += stDir->d_name;
 		body += "\n";
 	}
-	return (1);
+	return (true);
 }
 
 ResponseMessage createResponse(const Config &config, RequestMessage &request,
