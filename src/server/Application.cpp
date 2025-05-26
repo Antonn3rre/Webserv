@@ -43,7 +43,7 @@ void Application::_initApplication(int epollfd) {
 	bzero(&servAddr, sizeof(servAddr));
 	servAddr.sin_family = AF_INET;
 	servAddr.sin_addr.s_addr = INADDR_ANY;
-	servAddr.sin_port = htons(8080);
+	servAddr.sin_port = htons(_config.getPort());
 	// servAddr.sin_port = htons(_config.getPort());
 	if (bind(_lsockfd, reinterpret_cast<struct sockaddr *>(&servAddr), sizeof(servAddr)) == -1) {
 		std::cerr << "Error on the primary bind." << std::endl;

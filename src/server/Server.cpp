@@ -85,13 +85,15 @@ void Server::_serverLoop() {
 	int                nfds;
 	struct epoll_event events[MAX_EVENTS];
 	char               buffer[8192];
+	bool               data_fd_found;
 
 	while (true) {
 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
 
-		for (std::vector<Application>::iterator itServer = _applicationList.begin();
-		     itServer != _applicationList.end(); itServer++) {
-			for (int i = 0; i < nfds; ++i) {
+		for (int i = 0; i < nfds; ++i) {
+			data_fd_found = false;
+			for (std::vector<Application>::iterator itServer = _applicationList.begin();
+			     itServer != _applicationList.end(); itServer++) {
 				if (events[i].data.fd == itServer->getLSockFd()) {
 					// reinterpreter_cast into `struct sockaddr *` and &clilen for the last
 					// parameter (see code in the epoll's man) for accept parameters
@@ -103,12 +105,14 @@ void Server::_serverLoop() {
 					ev.events = EPOLLIN | EPOLLET;
 					ev.data.fd = clientfd;
 					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
-				} else {
-					if (_listenClientResponse(events[i], buffer))
-						continue;
-					std::string answer = _buildAnswer();
-					_sendAnswer(answer, events[i]);
+					data_fd_found = true;
 				}
+			}
+			if (!data_fd_found) {
+				if (_listenClientResponse(events[i], buffer))
+					continue;
+				std::string answer = _buildAnswer();
+				_sendAnswer(answer, events[i]);
 			}
 		}
 	}
@@ -122,7 +126,8 @@ std::string Server::_buildAnswer() {
 	    "<body>\r\n"
 	    "<div align=\"center\">\r\n"
 	    "<img "
-	    "src=\"https://remeng.rosselcdn.net/sites/default/files/dpistyles_v2/rem_16_9_1124w/2020/"
+	    "src=\"https://remeng.rosselcdn.net/sites/default/files/dpistyles_v2/rem_16_9_1124w/"
+	    "2020/"
 	    "09/30/node_194669/12124212/public/2020/09/30/"
 	    "B9724766829Z.1_20200930170647_000%2BG3EGPBHMU.1-0.jpg?itok=7_rsY6Fj1601564062\" "
 	    "width=\"1200\" height=\"800\" />\r\n"
@@ -134,7 +139,8 @@ std::string Server::_buildAnswer() {
 	    "<h1> A Charleville - Mézières, les punaises de lit lui ont fait vivre un enfer "
 	    "</h1></a>\r\n"
 	    "<img "
-	    "src=\"https://media1.tenor.com/m/WckcGq81cjYAAAAd/herv%C3%A9-regnier-tiktok.gif\"></img>"
+	    "src=\"https://media1.tenor.com/m/WckcGq81cjYAAAAd/herv%C3%A9-regnier-tiktok.gif\"></"
+	    "img>"
 	    "</div>\r\n"
 	    "<div><img "
 	    "src=\"./website/img/IMG_3935.JPG\"></img></div>"
