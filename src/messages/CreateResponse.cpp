@@ -7,24 +7,24 @@
 #include <string>
 #include <unistd.h>
 
-std::string readPage(const std::string &page) {
+bool readPage(const std::string &page, std::string &body) {
 	std::fstream file;
-	std::string  body;
 
 	file.open(page.c_str(), std::fstream::in);
 	if (!file.is_open()) {
-		return ("Problem opening page"); // voir message erreur
+		return (false);
 	}
 	getline(file, body, '\0');
 	file.close();
-	return (body);
+	return (true);
 }
 
-std::string deleteRequest(const std::string &page) {
-	std::string body = readPage(page);
-	std::remove(page.c_str());
-	// add check ?
-	return (body);
+bool deleteRequest(const std::string &page, std::string &body) {
+	if (!readPage(page, body))
+		return (false);
+	if (std::remove(page.c_str()))
+		return (false);
+	return (true);
 }
 
 bool generateAutoindent(const std::string &page, std::string &body) {
@@ -53,15 +53,19 @@ ResponseMessage createResponse(const Config &config, RequestMessage &request,
 	} else if (handled.first == 2) {
 		handled.first = 200;
 		if (!generateAutoindent(handled.second, body)) {
-			body = readPage(config.getErrorPage(403));
+			readPage(config.getErrorPage(403), body); // 403 ou autre ?
 			handled.first = 403;
 		}
-		// mauvais code mais ne devrait pas arriver jusque la
 	} else if (handled.first != 200 || request.getMethod() == "GET") {
-		// -1 a changer, la ca veut dire que c'est un code erreur
-		body = readPage(handled.second);
+		if (!readPage(handled.second, body)) {
+			readPage(config.getErrorPage(403), body); // mais si le read 403 fail aussi ??
+			handled.first = 403;
+		}
 	} else if (request.getMethod() == "DELETE") {
-		body = deleteRequest(handled.second);
+		if (!deleteRequest(handled.second, body)) {
+			readPage(config.getErrorPage(403), body); // mais si le read 403 fail aussi ??
+			handled.first = 403;
+		}
 	}
 
 	StatusLine      stLine(request.getHttpVersion(), handled.first);
