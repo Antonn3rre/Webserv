@@ -19,6 +19,7 @@ AMessage::AMessage(const std::string &subMessage) {
 		addHeader(Header(line));
 	}
 	_checkDuplicateHeaders();
+	_checkHostHeader();
 
 	int i = 0;
 	while (std::getline(sstream, line)) {
@@ -95,6 +96,16 @@ void AMessage::_checkDuplicateHeaders() const {
 		for (std::vector<Header>::const_iterator it2 = it1 + 1; it2 != _headers.end(); ++it2)
 			if (it1->getName() == it2->getName() && !it1->isDuplicateAllowed())
 				throw InvalidData("header (duplicate)", it1->str() + " and " + it2->str());
+}
+
+void AMessage::_checkHostHeader() const {
+	std::vector<Header>::const_iterator it;
+	for (it = _headers.begin(); it != _headers.end(); ++it) {
+		if (it->getName() == "Host")
+			break;
+	}
+	if (it == _headers.end())
+		throw InvalidData("Host Header", "missing");
 }
 
 void AMessage::_insertKnownHeader(const std::string &name, Header::HeaderType type,

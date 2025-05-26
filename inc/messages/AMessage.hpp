@@ -59,6 +59,7 @@ class AMessage {
 	bool _isHeaderValid(const std::string &headerName) const;
 	void _setValidHeaders();
 	void _checkDuplicateHeaders() const;
+	void _checkHostHeader() const;
 };
 
 #endif
