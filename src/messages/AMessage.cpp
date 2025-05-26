@@ -58,7 +58,6 @@ void AMessage::addHeader(const Header &header) {
 }
 
 std::pair<std::string, bool> AMessage::getHeaderValue(const std::string &headerName) const {
-	std::cout << "yessss\n";
 	std::vector<Header>::const_iterator foundHeaderIterator = _headers.end();
 
 	if (!_isHeaderValid(headerName))
