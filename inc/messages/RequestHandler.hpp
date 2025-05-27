@@ -24,6 +24,8 @@ class RequestHandler {
 	private:
 	RequestHandler();
 
+	ResponseMessage     _createResponse(const Config &config, RequestMessage &request,
+	                                    std::pair<int, std::string> &handled);
 	static void         _executeMethod(const std::string &method);
 	static std::string  _loadFile(const std::string &filename);
 	static void         _saveFile(const std::string &filename, const std::string &body);

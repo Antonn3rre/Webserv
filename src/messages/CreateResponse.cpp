@@ -1,4 +1,5 @@
 #include "Config.hpp"
+#include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
@@ -42,13 +43,12 @@ bool generateAutoindent(const std::string &page, std::string &body) {
 	return (true);
 }
 
-int checkContentType(std::string value) {
-	if (value.find("multipart/form-data;", 0, 20)) // pour upload fichier, ajouter autres si besoin
-		return (1);
-	return (415);
-}
-
 // Surement pas besoin de ces fonctions -> POST va dans CGI
+// int checkContentType(std::string value) {
+//	if (value.find("multipart/form-data;", 0, 20)) // pour upload fichier, ajouter autres si besoin
+//		return (1);
+//	return (415);
+//}
 
 // bool postMultipart(RequestMessage &request, const std::string &page, std::string &body) {
 //	// add check boundary=
@@ -79,14 +79,14 @@ int checkContentType(std::string value) {
 // }
 
 // Manque toute la construction des headers
-ResponseMessage createResponse(const Config &config, RequestMessage &request,
-                               std::pair<int, std::string> &handled) {
+ResponseMessage RequestHandler::_createResponse(const Config &config, RequestMessage &request,
+                                                std::pair<int, std::string> &handled) {
 	std::string body;
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));
 
 	if (handled.first == 1) {
-		body = "CGI";
-		// envoyer dans CGI
+		body = _executeCgi(request, handled.second);
+		handled.first = 200; // code a revoir
 	} else if (handled.first == 2) {
 		handled.first = 200;
 		if (!generateAutoindent(handled.second, body)) {
