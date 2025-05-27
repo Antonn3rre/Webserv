@@ -77,9 +77,11 @@ std::vector<char *> RequestHandler::_setEnv(const RequestMessage &request, const
 	envMap.insert(std::pair<std::string, std::string>("REQUEST_METHOD", request.getMethod()));
 	envMap.insert(std::pair<std::string, std::string>(
 	    "CONTENT_TYPE", request.getHeaderValue("Content-type").first));
-	// ?check	envMap.insert(std::pair<std::string, std::string>("SCRIPT_FILENAME", uri));
-	// ?check	envMap.insert(std::pair<std::string, std::string>("GATEWAY_INTERFACE", "CGI/1.1"));
-	// ?check	envMap.insert(std::pair<std::string, std::string>("REDIRECT_STATUS", "200"));
+	envMap.insert(std::pair<std::string, std::string>("SCRIPT_FILENAME", uri));
+	envMap.insert(std::pair<std::string, std::string>("GATEWAY_INTERFACE", "CGI/1.1"));
+	envMap.insert(std::pair<std::string, std::string>("REDIRECT_STATUS", "200"));
+	envMap.insert(std::pair<std::string, std::string>(
+	    "CONTENT_LENGTH", request.getHeaderValue("Content-Length").first));
 	// voir quoi rajouter d'autre
 
 	std::vector<std::string> envVec;
@@ -116,9 +118,11 @@ std::string RequestHandler::_executeCgi(const RequestMessage &request, const std
 	if (pid == 0) {
 		close(pipefd[0]);
 		char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
+		// char *argv[] = {"php-cgi", NULL};
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
 		execve(uri.c_str(), argv, NULL);
+		//	execve("/usr/bin/php-cgi", argv, envp);
 		std::cerr << "execve error" << std::endl;
 		exit(EXIT_FAILURE);
 	}
