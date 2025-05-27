@@ -72,6 +72,10 @@ std::string RequestHandler::_deleteRequest(const std::string &page) {
 	return (body);
 }
 
+// manque
+//  - Gestion des variables d'environnement (par la que passent les infos)
+//  - waitpid ?
+//  - Comment on gere si process bloquant ?
 std::string RequestHandler::_executeCgi(const std::string &uri) {
 	if (access(uri.c_str(), F_OK) == -1)
 		throw AMessage::InvalidData("cgi, does not exist", uri);
@@ -83,7 +87,7 @@ std::string RequestHandler::_executeCgi(const std::string &uri) {
 	int pid = fork();
 	if (pid == 0) {
 		close(pipefd[0]);
-		char **argv = {NULL};
+		char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
 		execve(uri.c_str(), argv, NULL);

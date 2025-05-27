@@ -48,33 +48,35 @@ int checkContentType(std::string value) {
 	return (415);
 }
 
-bool postMultipart(RequestMessage &request, const std::string &page, std::string &body) {
-	// add check boundary=
-	std::string contentType = request.getHeaderValue("Content-type").first;
-	std::string boundary =
-	    contentType.substr(contentType.find('=') + 1, contentType.size() - contentType.find('='));
+// Surement pas besoin de ces fonctions -> POST va dans CGI
 
-	// idee : faire une boucle pour recuperer les infos comme des RequestMessage
-	// (meme disposition de Header + body (parfois ?), pas de firstLine)
-	// Est ce qu'on stocke dans un RequestMessage ? Autre chose ?
-	// Est ce qu'on recupere tout puis traite tout, ou au fur et a mesure
-
-	(void)boundary;
-	(void)request;
-	(void)page;
-	(void)body;
-	return (true);
-}
-
-int postRequest(RequestMessage &request, const std::string &page, std::string &body) {
-	int contentType = checkContentType(request.getHeaderValue("Content-type").first);
-	if (contentType > 1)
-		return (contentType); // error
-	if (contentType == 1) {
-		postMultipart(request, page, body);
-	}
-	return (true);
-}
+// bool postMultipart(RequestMessage &request, const std::string &page, std::string &body) {
+//	// add check boundary=
+//	std::string contentType = request.getHeaderValue("Content-type").first;
+//	std::string boundary =
+//	    contentType.substr(contentType.find('=') + 1, contentType.size() - contentType.find('='));
+//
+//	// idee : faire une boucle pour recuperer les infos comme des RequestMessage
+//	// (meme disposition de Header + body (parfois ?), pas de firstLine)
+//	// Est ce qu'on stocke dans un RequestMessage ? Autre chose ?
+//	// Est ce qu'on recupere tout puis traite tout, ou au fur et a mesure
+//
+//	(void)boundary;
+//	(void)request;
+//	(void)page;
+//	(void)body;
+//	return (true);
+// }
+//
+// int postRequest(RequestMessage &request, const std::string &page, std::string &body) {
+//	int contentType = checkContentType(request.getHeaderValue("Content-type").first);
+//	if (contentType > 1)
+//		return (contentType); // error
+//	if (contentType == 1) {
+//		postMultipart(request, page, body);
+//	}
+//	return (true);
+// }
 
 // Manque toute la construction des headers
 ResponseMessage createResponse(const Config &config, RequestMessage &request,
@@ -102,10 +104,7 @@ ResponseMessage createResponse(const Config &config, RequestMessage &request,
 			handled.first = 403;
 		}
 	} else if (request.getMethod() == "POST") {
-		if (!postRequest(request, handled.second, body)) {
-			readPage(config.getErrorPage(403), body); // mais si le read 403 fail aussi ??
-			handled.first = 403;
-		}
+		// return error en disant qu'on supporte pas ?
 	}
 
 	StatusLine      stLine(request.getHttpVersion(), handled.first);
