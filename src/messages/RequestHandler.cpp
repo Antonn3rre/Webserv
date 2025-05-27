@@ -72,15 +72,43 @@ std::string RequestHandler::_deleteRequest(const std::string &page) {
 	return (body);
 }
 
+std::vector<char *> RequestHandler::_setEnv(const RequestMessage &request, const std::string &uri) {
+	std::map<std::string, std::string> envMap;
+	envMap.insert(std::pair<std::string, std::string>("REQUEST_METHOD", request.getMethod()));
+	envMap.insert(std::pair<std::string, std::string>(
+	    "CONTENT_TYPE", request.getHeaderValue("Content-type").first));
+	// ?check	envMap.insert(std::pair<std::string, std::string>("SCRIPT_FILENAME", uri));
+	// ?check	envMap.insert(std::pair<std::string, std::string>("GATEWAY_INTERFACE", "CGI/1.1"));
+	// ?check	envMap.insert(std::pair<std::string, std::string>("REDIRECT_STATUS", "200"));
+	// voir quoi rajouter d'autre
+
+	std::vector<std::string> envVec;
+	std::vector<char *>      envp;
+	for (std::map<std::string, std::string>::iterator it = envMap.begin(); it != envMap.end();
+	     ++it) {
+		envVec.push_back(it->first + "=" + it->second);
+	}
+	envp.reserve(envVec.size());
+	for (size_t i = 0; i < envVec.size(); ++i) {
+		envp.push_back(const_cast<char *>(envVec[i].c_str()));
+	}
+	envp.push_back(NULL);
+	return (envp);
+}
+
 // manque
 //  - Gestion des variables d'environnement (par la que passent les infos)
 //  - waitpid ?
 //  - Comment on gere si process bloquant ?
-std::string RequestHandler::_executeCgi(const std::string &uri) {
+std::string RequestHandler::_executeCgi(const RequestMessage &request, const std::string &uri) {
 	if (access(uri.c_str(), F_OK) == -1)
 		throw AMessage::InvalidData("cgi, does not exist", uri);
 	if (access(uri.c_str(), X_OK) == -1)
 		throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
+
+	std::vector<char *> envp = _setEnv(request, uri);
+	// envoyer envp.data();
+
 	int pipefd[2];
 	pipe(pipefd);
 

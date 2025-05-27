@@ -6,6 +6,7 @@
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
+#include <vector>
 
 class RequestHandler {
 	public:
@@ -23,10 +24,12 @@ class RequestHandler {
 	private:
 	RequestHandler();
 
-	static void        _executeMethod(const std::string &method);
-	static std::string _loadFile(const std::string &filename);
-	static void        _saveFile(const std::string &filename, const std::string &body);
-	static std::string _executeCgi(const std::string &uri);
+	static void         _executeMethod(const std::string &method);
+	static std::string  _loadFile(const std::string &filename);
+	static void         _saveFile(const std::string &filename, const std::string &body);
+	char              **_setEnv();
+	std::vector<char *> _setEnv(const RequestMessage &, const std::string &);
+	std::string         _executeCgi(const RequestMessage &request, const std::string &uri);
 
 	static std::string _deleteRequest(const std::string &page);
 	std::string        _getRequest(const std::string &page);
