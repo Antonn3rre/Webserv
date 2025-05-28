@@ -16,6 +16,7 @@ class Server {
 	std::string              _buildAnswer(int i);
 	void                     _initServer(void);
 	void                     _serverLoop(void);
+	Application             &_getApplicationFromFD(int sockfd);
 
 	public:
 	//	Server();
