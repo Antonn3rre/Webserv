@@ -1,7 +1,6 @@
 #ifndef REQUESTHANDLER_HPP
 #define REQUESTHANDLER_HPP
 
-#include "AMessage.hpp"
 #include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
@@ -11,15 +10,6 @@
 class RequestHandler {
 	public:
 	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
-
-	class RequestError : AMessage::MessageError {
-		public:
-		RequestError(const std::string &error, const std::string &argument);
-		unsigned short getStatusCode() const;
-
-		private:
-		unsigned short _statusCode;
-	};
 
 	private:
 	RequestHandler();
@@ -38,7 +28,8 @@ class RequestHandler {
 
 	static StatusLine  _generateStatusLine(unsigned short status);
 	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request);
-	static std::string _generateBody(const RequestMessage &request, unsigned short &status);
+	static std::string _generateBody(const RequestMessage &request, unsigned short &status,
+	                                 const Config &config);
 
 	static bool _checkHostHeader(const RequestMessage &request, const std::string &host);
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);
