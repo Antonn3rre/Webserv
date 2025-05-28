@@ -38,9 +38,9 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
-Application &Server::getRightApplication(std::pair<std::string, bool> requestHost) {
+Application &Server::getRightApplication(const std::pair<std::string, bool> &requestHost) {
 	std::cout << "Dans right, requestHost = " << requestHost.second << std::endl;
 	for (std::vector<Application>::iterator it = _applicationList.begin();
 	     it != _applicationList.end(); ++it) {
@@ -56,7 +56,7 @@ Application &Server::getRightApplication(std::pair<std::string, bool> requestHos
 }
 Application &Server::_getApplicationFromFD(int sockfd) {
 	for (std::vector<Application>::iterator it = _applicationList.begin();
-	     it != _applicationList.end(); it++)
+	     it != _applicationList.end(); ++it)
 		if (sockfd == it->getLSockFd()) {
 			return *it;
 		}
@@ -66,7 +66,7 @@ Application &Server::_getApplicationFromFD(int sockfd) {
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
 	for (std::vector<Application>::iterator itServer = _applicationList.begin();
-	     itServer != _applicationList.end(); itServer++) {
+	     itServer != _applicationList.end(); ++itServer) {
 		itServer->_initApplication(_epollfd);
 	}
 }
@@ -78,7 +78,7 @@ void Server::startServer(void) {
 	// close(_lsockfd); // to put in the signal handler
 }
 
-void Server::_sendAnswer(std::string answer, struct epoll_event &event) {
+void Server::_sendAnswer(const std::string &answer, struct epoll_event &event) {
 	if (send(event.data.fd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
 		std::cerr << "Error on write." << std::endl;
 		close(event.data.fd);
@@ -109,7 +109,7 @@ void Server::_serverLoop() {
 		for (int i = 0; i < nfds; ++i) {
 			newClient = false;
 			for (std::vector<Application>::iterator itServer = _applicationList.begin();
-			     itServer != _applicationList.end(); itServer++) {
+			     itServer != _applicationList.end(); ++itServer) {
 				if (events[i].data.fd == itServer->getLSockFd()) {
 					// reinterpreter_cast into `struct sockaddr *` and &clilen for the last
 					// parameter (see code in the epoll's man) for accept parameters
@@ -155,8 +155,7 @@ std::string Server::_buildAnswer(int i) {
 	     << "<div align=\"center\">\r\n"
 	     << "<img "
 	     << "src=\"https://remeng.rosselcdn.net/sites/default/files/dpistyles_v2/rem_16_9_1124w/"
-	     << "2020/"
-	     << "09/30/node_194669/12124212/public/2020/09/30/"
+	     << "2020/" << "09/30/node_194669/12124212/public/2020/09/30/"
 	     << "B9724766829Z.1_20200930170647_000%2BG3EGPBHMU.1-0.jpg?itok=7_rsY6Fj1601564062\" "
 	     << "width=\"1200\" height=\"800\" />\r\n"
 	     << "<a href=\"https://www.google.com/"
@@ -170,21 +169,14 @@ std::string Server::_buildAnswer(int i) {
 	     << "<img "
 	     << "src=\"https://media1.tenor.com/m/WckcGq81cjYAAAAd/"
 	        "herv%C3%A9-regnier-tiktok.gif\"></"
-	     << "img>"
-	     << "</div>\r\n"
+	     << "img>" << "</div>\r\n"
 	     << "<div><a href=\"/cgi-bin\"><button type=\"button\" id=\"get-btn\"> Hello world! "
 	        "</button></a></div>"
-	     << "<script>"
-	     << "const button = document.getElementById('get-btn');"
-	     << "button.addEventListener('click', async () => {"
-	     << "  try {"
+	     << "<script>" << "const button = document.getElementById('get-btn');"
+	     << "button.addEventListener('click', async () => {" << "  try {"
 	     << "    const response = await fetch('/cgi-bin');"
-	     << "    const text = await response.text();"
-	     << "    console.log('Réponse reçue:', text);"
-	     << "  } catch (err) {"
-	     << "    console.error('Erreur :', err);"
-	     << "  }"
-	     << "});"
+	     << "    const text = await response.text();" << "    console.log('Réponse reçue:', text);"
+	     << "  } catch (err) {" << "    console.error('Erreur :', err);" << "  }" << "});"
 	     << "</script>"
 
 	     << "</body>\r\n"

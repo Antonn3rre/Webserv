@@ -104,7 +104,7 @@ void AMessage::_checkHostHeader() const {
 			break;
 	}
 	if (it == _headers.end())
-		throw InvalidData("Host Header", "missing");
+		throw InvalidData("Host header", "missing");
 }
 
 void AMessage::_insertKnownHeader(const std::string &name, Header::HeaderType type,
@@ -165,6 +165,12 @@ void AMessage::_setValidHeaders() {
 	_insertKnownHeader("Referer", Header::Request, false, false);
 	_insertKnownHeader("TE", Header::Request, false, false);
 	_insertKnownHeader("User-Agent", Header::Request, false, false);
+	_insertKnownHeader("Upgrade-Insecure-Requests", Header::Request, false, false);
+	_insertKnownHeader("Sec-Fetch-Dest", Header::Request, false, false);
+	_insertKnownHeader("Sec-Fetch-Mode", Header::Request, false, false);
+	_insertKnownHeader("Sec-Fetch-Site", Header::Request, false, false);
+	_insertKnownHeader("Sec-Fetch-User", Header::Request, false, false);
+	_insertKnownHeader("Priority", Header::Request, false, false);
 	// Response headers
 	_insertKnownHeader("WWW-Authenticate", Header::Response, false, false);
 	_insertKnownHeader("Access-Control-Allow-Origin", Header::Response, false, false);

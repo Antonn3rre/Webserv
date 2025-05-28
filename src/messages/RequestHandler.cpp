@@ -28,6 +28,7 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
 	unsigned short status;
 
 	(void)config;
+	std::cout << request.str() << std::endl;
 	std::string     body = _generateBody(request, status);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
@@ -36,8 +37,8 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
 }
 
 std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status) {
-	std::string body;
-	std::string method = request.getMethod();
+	std::string        body;
+	const std::string &method = request.getMethod();
 	if (method == "GET") {
 		body = _getRequest(request.getRequestUri());
 	} else if (method == "POST") {
@@ -46,7 +47,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		body = _deleteRequest(request.getRequestUri());
 	}
 	// (void)request;
-	(void)status;
+	status = 200;
 	return body;
 }
 
@@ -77,6 +78,19 @@ void RequestHandler::_addContentLengthHeader(ResponseMessage &response) {
 	std::ostringstream lengthStream;
 	lengthStream << response.getBody().length();
 	response.addHeader(Header("Content-Length", lengthStream.str()));
+}
+
+std::string RequestHandler::_getRequest(const std::string &page) {
+	std::string body = _loadFile(page);
+	// add check ?
+	return (body);
+}
+
+std::string RequestHandler::_postRequest(const std::string &page) {
+	(void)page;
+	std::string body;
+	// CGI PHP anton
+	return (body);
 }
 
 std::string RequestHandler::_deleteRequest(const std::string &page) {

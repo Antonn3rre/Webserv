@@ -11,8 +11,8 @@ class Server {
 	private:
 	std::vector<Application> _applicationList;
 	int                      _epollfd;
-	void                     _sendAnswer(std::string answer, struct epoll_event &event);
-	bool                     _listenClientResponse(struct epoll_event &event, char *buffer);
+	static void              _sendAnswer(const std::string &answer, struct epoll_event &event);
+	static bool              _listenClientResponse(struct epoll_event &event, char *buffer);
 	std::string              _buildAnswer(int i);
 	void                     _initServer(void);
 	void                     _serverLoop(void);
@@ -24,7 +24,7 @@ class Server {
 	~Server();
 
 	void         startServer(void);
-	Application &getRightApplication(std::pair<std::string, bool>);
+	Application &getRightApplication(const std::pair<std::string, bool> &requestHost);
 };
 
 #endif // !SERVER_HPP
