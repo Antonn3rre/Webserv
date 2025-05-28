@@ -35,6 +35,12 @@ AMessage::AMessage(const std::string &body, const std::vector<Header> &headers) 
 		addHeader(*it);
 }
 
+AMessage::MessageError::MessageError(unsigned short status) : _statusCode(status) {
+	std::ostringstream msgStream;
+	msgStream << "HTTP message error: " << status;
+	_message = msgStream.str();
+}
+
 AMessage::MessageError::MessageError(const std::string &error, const std::string &argument) {
 	_message = "HTTP message error: " + error + ": " + argument;
 }

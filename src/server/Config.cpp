@@ -113,8 +113,8 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 		throw Config::Exception("Problem parse listen (;)");
 	_listen = _listen.substr(0, _listen.length() - 1);
 	_listen = trim(_listen);
-	_address = _listen.substr(0, _listen.find(":", 0));
-	_port = std::atoi(_listen.substr(_listen.find(":", 0) + 1, _listen.length()).c_str());
+	_address = _listen.substr(0, _listen.find(':', 0));
+	_port = std::atoi(_listen.substr(_listen.find(':', 0) + 1, _listen.length()).c_str());
 }
 
 void Config::_parseApplicationName(std::string &str, std::fstream &file) {
@@ -246,7 +246,7 @@ void Config::_setDefaultErrorPages() {
 
 void Config::_setDefaultConfig() { _setDefaultErrorPages(); }
 void Config::_setDefaultLocation() {
-	for (std::deque<Location>::iterator it = _location.begin(); it != _location.end(); it++) {
+	for (std::deque<Location>::iterator it = _location.begin(); it != _location.end(); ++it) {
 		if ((*it).getMethods().empty())
 			(*it).setDefaultMethods();
 		if ((*it).getRoot().empty())
@@ -259,13 +259,13 @@ const std::string             &Config::getAddress() const { return _address; }
 const int                     &Config::getPort() const { return _port; }
 const std::deque<std::string> &Config::getApplicationName() const { return _applicationName; }
 const std::string             &Config::getErrorPage(int index) const {
-    std::map<int, std::string>::const_iterator it = _errorPages.find(index);
+    std::map<unsigned short, std::string>::const_iterator it = _errorPages.find(index);
     if (it != _errorPages.end())
         return it->second;
     std::cerr << "Error page " << index << " does not exist" << std::endl;
     throw std::out_of_range("");
 }
-const std::map<int, std::string> &Config::getErrorPages() const { return _errorPages; }
+const std::map<unsigned short, std::string> &Config::getErrorPages() const { return _errorPages; }
 const std::string             &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
 const std::string             &Config::getHost() const { return _host; }
 const std::string             &Config::getRoot() const { return _root; }

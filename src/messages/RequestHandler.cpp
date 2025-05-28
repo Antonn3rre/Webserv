@@ -18,37 +18,36 @@
 
 RequestHandler::RequestHandler() {}
 
-RequestHandler::RequestError::RequestError(const std::string &error, const std::string &argument)
-    : AMessage::MessageError(error, argument) {}
-
-unsigned short RequestHandler::RequestError::getStatusCode() const { return _statusCode; }
-
 ResponseMessage RequestHandler::generateResponse(const Config         &config,
                                                  const RequestMessage &request) {
 	unsigned short status;
 
 	(void)config;
 	std::cout << request.str() << std::endl;
-	std::string     body = _generateBody(request, status);
+	std::string     body = _generateBody(request, status, config);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
 	_generateHeaders(response, request);
 	return response;
 }
 
-std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status) {
+std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status,
+                                          const Config &config) {
 	std::string        body;
 	const std::string &method = request.getMethod();
 
-	if (method == "GET") {
-		body = _getRequest(request.getRequestUri());
-	} else if (method == "POST") {
-		body = _postRequest(request.getRequestUri());
-	} else if (method == "DELETE") {
-		body = _deleteRequest(request.getRequestUri());
+	try {
+		if (method == "GET") {
+			body = _getRequest(request.getRequestUri());
+		} else if (method == "POST") {
+			body = _postRequest(request.getRequestUri());
+		} else if (method == "DELETE") {
+			body = _deleteRequest(request.getRequestUri());
+		}
+		status = 200;
+	} catch (AMessage::MessageError &e) {
+		return config.getErrorPage(e.getStatusCode());
 	}
-	// (void)request;
-	status = 200;
 	return body;
 }
 
@@ -82,6 +81,8 @@ void RequestHandler::_addContentLengthHeader(ResponseMessage &response) {
 }
 
 std::string RequestHandler::_getRequest(const std::string &page) {
+	if (access(page.c_str(), R_OK))
+		throw AMessage::MessageError(403);
 	std::string body = _loadFile(page);
 	// add check ?
 	return (body);

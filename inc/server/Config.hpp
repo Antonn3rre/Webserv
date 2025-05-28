@@ -30,17 +30,17 @@ class Config {
 	};
 
 	// Config getter
-	const std::string                &getListen() const;
-	const std::string                &getAddress() const;
-	const int                        &getPort() const;
-	const std::deque<std::string>    &getApplicationName() const;
-	const std::string                &getErrorPage(int index) const;
-	const std::map<int, std::string> &getErrorPages() const;
-	const std::string                &getClientMaxBodySize() const;
-	const std::string                &getHost() const;
-	const std::string                &getRoot() const;
-	const std::deque<std::string>    &getIndex() const;
-	const std::deque<Location>       &getLocation() const;
+	const std::string                           &getListen() const;
+	const std::string                           &getAddress() const;
+	const int                                   &getPort() const;
+	const std::deque<std::string>               &getApplicationName() const;
+	const std::string                           &getErrorPage(int index) const;
+	const std::map<unsigned short, std::string> &getErrorPages() const;
+	const std::string                           &getClientMaxBodySize() const;
+	const std::string                           &getHost() const;
+	const std::string                           &getRoot() const;
+	const std::deque<std::string>               &getIndex() const;
+	const std::deque<Location>                  &getLocation() const;
 
 	// Location getter , int parameter is the index of the container
 	const std::string                 &getLocName(int) const;
@@ -53,16 +53,16 @@ class Config {
 	int getNumOfLoc() const;
 
 	private:
-	std::string                _listen;
-	std::string                _address;
-	int                        _port;
-	std::deque<std::string>    _applicationName;
-	std::map<int, std::string> _errorPages;
-	std::string                _clientMaxBodySize;
-	std::string                _host;
-	std::string                _root;
-	std::deque<std::string>    _index;
-	std::deque<Location>       _location;
+	std::string                           _listen;
+	std::string                           _address;
+	int                                   _port;
+	std::deque<std::string>               _applicationName;
+	std::map<unsigned short, std::string> _errorPages;
+	std::string                           _clientMaxBodySize;
+	std::string                           _host;
+	std::string                           _root;
+	std::deque<std::string>               _index;
+	std::deque<Location>                  _location;
 
 	void _parseListen(std::string &, std::fstream &);
 	void _parseApplicationName(std::string &, std::fstream &);

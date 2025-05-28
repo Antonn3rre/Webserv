@@ -25,12 +25,16 @@ class AMessage {
 
 	class MessageError : public std::exception {
 		public:
+		MessageError(unsigned short status);
 		MessageError(const std::string &error, const std::string &argument);
-		const char *what() const throw();
 		virtual ~MessageError() throw();
 
+		const char    *what() const throw();
+		unsigned short getStatusCode() const;
+
 		private:
-		std::string _message;
+		std::string    _message;
+		unsigned short _statusCode;
 	};
 
 	class SyntaxError : public MessageError {
