@@ -81,21 +81,28 @@ void RequestHandler::_addContentLengthHeader(ResponseMessage &response) {
 }
 
 std::string RequestHandler::_getRequest(const std::string &page) {
+	if (access(page.c_str(), F_OK))
+		throw AMessage::MessageError(404);
 	if (access(page.c_str(), R_OK))
 		throw AMessage::MessageError(403);
-	std::string body = _loadFile(page);
-	// add check ?
-	return (body);
+
+	return (_loadFile(page));
 }
 
 std::string RequestHandler::_postRequest(const std::string &page) {
-	(void)page;
+	if (!access(page.c_str(), F_OK) && access(page.c_str(), W_OK))
+		throw AMessage::MessageError(403);
 	std::string body;
 	// CGI PHP anton
 	return (body);
 }
 
 std::string RequestHandler::_deleteRequest(const std::string &page) {
+	if (access(page.c_str(), F_OK))
+		throw AMessage::MessageError(404);
+	if (access(page.c_str(), W_OK))
+		throw AMessage::MessageError(403);
+
 	std::string body = _loadFile(page);
 	std::remove(page.c_str());
 	// add check ?
@@ -134,9 +141,9 @@ std::vector<char *> RequestHandler::_setEnv(const RequestMessage &request, const
 //  - Comment on gere si process bloquant ?
 std::string RequestHandler::_executeCgi(const RequestMessage &request, const std::string &uri) {
 	if (access(uri.c_str(), F_OK) == -1)
-		throw AMessage::InvalidData("cgi, does not exist", uri);
+		throw AMessage::MessageError(404);
 	if (access(uri.c_str(), X_OK) == -1)
-		throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
+		throw AMessage::MessageError(403);
 
 	std::vector<char *> envp = _setEnv(request, uri);
 	// envoyer envp.data();

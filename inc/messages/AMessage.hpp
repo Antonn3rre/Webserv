@@ -26,6 +26,7 @@ class AMessage {
 	class MessageError : public std::exception {
 		public:
 		MessageError(unsigned short status);
+		MessageError(unsigned short status, const std::string &error, const std::string &argument);
 		MessageError(const std::string &error, const std::string &argument);
 		virtual ~MessageError() throw();
 

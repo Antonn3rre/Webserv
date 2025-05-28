@@ -18,7 +18,7 @@ AMessage::AMessage(const std::string &subMessage) {
 	while (std::getline(sstream, line) && line != "\r") {
 		addHeader(Header(line));
 	}
-	_checkDuplicateHeaders();
+	// _checkDuplicateHeaders();
 	_checkHostHeader();
 
 	int i = 0;
@@ -39,6 +39,12 @@ AMessage::MessageError::MessageError(unsigned short status) : _statusCode(status
 	std::ostringstream msgStream;
 	msgStream << "HTTP message error: " << status;
 	_message = msgStream.str();
+}
+
+AMessage::MessageError::MessageError(unsigned short status, const std::string &error,
+                                     const std::string &argument)
+    : _statusCode(status) {
+	_message = "HTTP message error: " + error + ": " + argument;
 }
 
 AMessage::MessageError::MessageError(const std::string &error, const std::string &argument) {
@@ -88,14 +94,11 @@ bool AMessage::_isHeaderValid(const std::string &headerName) const {
 	if (headerEntry != _validHeaders.end()) {
 		if (headerEntry->second.isSupported())
 			return true;
-		// throw Unsupported("header", header.getName());
 		std::cerr << "Warning: unsupported header: " << headerName << std::endl;
 		return false;
 	}
 	std::cerr << "Warning: invalid header: " << headerName << std::endl;
 	return false;
-	//  else
-	// 	throw InvalidData("header", header.getName());
 }
 
 void AMessage::_checkDuplicateHeaders() const {
@@ -112,7 +115,7 @@ void AMessage::_checkHostHeader() const {
 			break;
 	}
 	if (it == _headers.end())
-		throw InvalidData("Host header", "missing");
+		throw MessageError(400, "Host header", "missing");
 }
 
 void AMessage::_insertKnownHeader(const std::string &name, Header::HeaderType type,

@@ -7,7 +7,6 @@
 #include <cstring>
 #include <deque>
 #include <dirent.h>
-#include <iostream>
 #include <iterator>
 #include <string>
 #include <sys/stat.h>
@@ -32,7 +31,7 @@ const Location &findURILocation(const std::deque<Location> &locations,
 	}
 	if (longestValidLoc)
 		return *longestValidLoc;
-	throw AMessage::InvalidData("requested URI does not correspond to any location", uri);
+	throw AMessage::MessageError(404);
 }
 
 bool checkMethods(const std::deque<std::string> &methods, const std::string &requestMethod) {

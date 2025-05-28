@@ -2,6 +2,7 @@
 #include "AMessage.hpp"
 #include "AStartLine.hpp"
 #include <cstddef>
+#include <iostream>
 #include <map>
 #include <string>
 
@@ -12,12 +13,13 @@ RequestLine::RequestLine(const std::string &line)
 	_setValidMethods();
 	_method = line.substr(0, spacePos);
 	_requestUri = line.substr(spacePos + 1, line.find(' ', spacePos + 1) - spacePos - 1);
+
 	std::map<std::string, bool>::iterator headerEntry = _validMethods.find(_method);
 	if (headerEntry != _validMethods.end()) {
 		if (!headerEntry->second)
-			throw AMessage::Unsupported("method", _method);
+			std::cerr << "Warning: unsupported method: " << _method << std::endl;
 	} else
-		throw AMessage::InvalidData("method", _method);
+		throw AMessage::MessageError(400, "invalid method", _method);
 }
 
 RequestLine::RequestLine(const std::string &httpVersion, const std::string &method,
