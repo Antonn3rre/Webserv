@@ -34,8 +34,8 @@ class RequestHandler {
 	std::string         _executeCgi(const RequestMessage &request, const std::string &uri);
 
 	static std::string _deleteRequest(const std::string &page);
-	std::string        _getRequest(const std::string &page);
-	std::string        _postRequest(const std::string &page);
+	static std::string _getRequest(const std::string &page);
+	static std::string _postRequest(const std::string &page);
 
 	static StatusLine  _generateStatusLine(unsigned short status);
 	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request);
