@@ -132,6 +132,8 @@ void Server::_serverLoop() {
 					ResponseMessage answer = RequestHandler::generateResponse(
 					    _getApplicationFromFD(events[i].data.fd).getConfig(), request);
 
+					// std::cout << " --- ANSWER --- \n"
+					//           << answer.getHeaderValue("Content-Type").first << std::endl;
 					_sendAnswer(answer.str(), events[i]);
 				} catch (std::exception &e) {
 					std::cerr << "Error: " << e.what() << std::endl;
