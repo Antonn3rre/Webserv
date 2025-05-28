@@ -39,6 +39,7 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
 std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status) {
 	std::string        body;
 	const std::string &method = request.getMethod();
+
 	if (method == "GET") {
 		body = _getRequest(request.getRequestUri());
 	} else if (method == "POST") {
@@ -98,6 +99,26 @@ std::string RequestHandler::_deleteRequest(const std::string &page) {
 	std::remove(page.c_str());
 	// add check ?
 	return (body);
+}
+
+const Location &RequestHandler::_findURILocation(const std::deque<Location> &locations,
+                                                 const RequestMessage       &request) {
+	const std::string &uri = request.getRequestUri();
+	const Location    *longestValidLoc = NULL;
+
+	for (std::deque<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+		if (it->getName().length() > uri.length())
+			continue;
+		std::string path = uri.substr(0, it->getName().length());
+		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
+			continue;
+		if (it->getName() == path &&
+		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
+			longestValidLoc = &*it;
+	}
+	if (longestValidLoc)
+		return *longestValidLoc;
+	throw AMessage::InvalidData("requested URI does not correspond to any location", uri);
 }
 
 std::vector<char *> RequestHandler::_setEnv(const RequestMessage &request, const std::string &uri) {
