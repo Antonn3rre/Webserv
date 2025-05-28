@@ -27,6 +27,7 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
                                                  const RequestMessage &request) {
 	unsigned short status;
 
+	(void)config;
 	std::string     body = _generateBody(request, status);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
@@ -34,7 +35,20 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
 	return response;
 }
 
-std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status) {}
+std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status) {
+	std::string body;
+	std::string method = request.getMethod();
+	if (method == "GET") {
+		body = _getRequest(request.getRequestUri());
+	} else if (method == "POST") {
+		body = _postRequest(request.getRequestUri());
+	} else if (method == "DELETE") {
+		body = _deleteRequest(request.getRequestUri());
+	}
+	// (void)request;
+	(void)status;
+	return body;
+}
 
 StatusLine RequestHandler::_generateStatusLine(unsigned short status) {
 	return StatusLine("HTTP/1.1", status);

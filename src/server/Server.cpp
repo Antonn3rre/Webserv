@@ -2,6 +2,8 @@
 #include "Application.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
+#include "ResponseMessage.hpp"
+#include <exception>
 #include <iostream>
 #include <sstream>
 #include <stdlib.h>
@@ -9,6 +11,7 @@
 #include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 // Server::Server(void) {
@@ -51,6 +54,14 @@ Application &Server::getRightApplication(std::pair<std::string, bool> requestHos
 	}
 	return _applicationList.front();
 }
+Application &Server::_getApplicationFromFD(int sockfd) {
+	for (std::vector<Application>::iterator it = _applicationList.begin();
+	     it != _applicationList.end(); it++)
+		if (sockfd == it->getLSockFd()) {
+			return *it;
+		}
+	return *_applicationList.end(); // TODO: throw an exception here
+}
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
@@ -74,67 +85,14 @@ void Server::_sendAnswer(std::string answer, struct epoll_event &event) {
 	}
 }
 
-std::string _executeCgi(const std::string &uri) {
-	// if (access(uri.c_str(), F_OK) == -1)
-	// 	throw AMessage::InvalidData("cgi, does not exist", uri);
-	// if (access(uri.c_str(), X_OK) == -1)
-	// 	throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
-	int pipefd[2];
-	pipe(pipefd);
-
-	int pid = fork();
-	if (pid == 0) {
-		close(pipefd[0]);
-		char **argv = {NULL};
-		dup2(pipefd[1], STDOUT_FILENO);
-		close(pipefd[1]);
-		execve(uri.c_str(), argv, NULL);
-		std::cerr << "execve error" << std::endl;
-		exit(1);
-	}
-	close(pipefd[1]);
-	ssize_t     bytesRead;
-	std::string output;
-	char        buffer[1024];
-	bzero(buffer, 1024);
-	do {
-		bytesRead = read(pipefd[0], buffer, 1024);
-		std::string bufStr(buffer);
-		output += bufStr.substr(0, bytesRead);
-	} while (bytesRead == 1024);
-	close(pipefd[0]);
-	return output;
-}
-
 bool Server::_listenClientResponse(struct epoll_event &event, char *buffer) {
 	bzero(buffer, 8192);
 	if (read(event.data.fd, buffer, 8192) < 0) {
 		std::cerr << "Error on read." << std::endl;
 		close(event.data.fd);
-		return (1);
+		return 1;
 	}
-	RequestMessage test(buffer);
-	std::cout << "TEST/ " << test.getRequestUri() << std::endl;
-	if (strstr(buffer, "cgi-bin")) {
-		std::cout << "TESTCGI" << std::endl;
-		std::stringstream ss;
-		std::string       test = _executeCgi("website/var/www/cgi-bin/helloworld.cgi");
-		ss << "HTTP/1.1 200 OK\r\n"
-		   << "Date: Mon, 12 May 2025 16:29:56 GMT\r\n"
-		   << "Content-Type: text/html; charset=utf-8\r\n"
-		   << "Content-Length: " << test.length() << "\r\n"
-		   << "Connection: keep-alive\r\n"
-		   << "Server: gunicorn/19.9.0\r\n"
-		   << "Access-Control-Allow-Origin: *\r\n"
-		   << "Access-Control-Allow-Credentials: true\r\n"
-		   << "\r\n"
-		   << test;
-		std::cout << "returns -> " << test << std::endl;
-		_sendAnswer(ss.str(), event);
-		return (1);
-	}
-	std::cout << buffer << std::endl;
-	return (0);
+	return 0;
 }
 
 void Server::_serverLoop() {
@@ -169,10 +127,19 @@ void Server::_serverLoop() {
 			if (!newClient) {
 				if (_listenClientResponse(events[i], buffer))
 					continue;
-				// RequestHandler(_);
-				std::string answer = _buildAnswer(events[i].data.fd);
+				try {
+					RequestMessage  request(buffer);
+					ResponseMessage answer = RequestHandler::generateResponse(
+					    _getApplicationFromFD(events[i].data.fd).getConfig(), request);
+					//
+					// RequestHandler(_);
+					// std::string answer = _buildAnswer(events[i].data.fd);
 
-				_sendAnswer(answer, events[i]);
+					_sendAnswer(answer.str(), events[i]);
+				} catch (std::exception &e) {
+					std::cerr << "Error: " << e.what() << std::endl;
+					continue;
+				}
 			}
 		}
 	}
