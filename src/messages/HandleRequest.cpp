@@ -7,6 +7,7 @@
 #include <cstring>
 #include <deque>
 #include <dirent.h>
+#include <iostream>
 #include <iterator>
 #include <string>
 #include <sys/stat.h>
@@ -156,7 +157,7 @@ std::pair<int, std::string> handleRequest(const Config &config, RequestMessage &
 
 	// check si CGI dans ce cas la, pas de droits a verif je return direct
 	// Pour l'instant on check pas, on executera avec python3, a voir ensuite
-	if (location.getName().find("cgi-bin") != std::string::npos)
+	if (returnInfo.second.find("cgi-bin") != std::string::npos)
 		return std::make_pair(1, returnInfo.second);
 
 	// Verifier si les droits sont les bons selon la methode
