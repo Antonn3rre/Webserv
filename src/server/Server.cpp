@@ -38,7 +38,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 Application &Server::getRightApplication(const std::pair<std::string, bool> &requestHost) {
 	std::cout << "Dans right, requestHost = " << requestHost.second << std::endl;
@@ -131,9 +131,6 @@ void Server::_serverLoop() {
 					RequestMessage  request(buffer);
 					ResponseMessage answer = RequestHandler::generateResponse(
 					    _getApplicationFromFD(events[i].data.fd).getConfig(), request);
-					//
-					// RequestHandler(_);
-					// std::string answer = _buildAnswer(events[i].data.fd);
 
 					_sendAnswer(answer.str(), events[i]);
 				} catch (std::exception &e) {
