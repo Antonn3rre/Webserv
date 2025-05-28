@@ -34,6 +34,10 @@ class RequestHandler {
 	static bool _checkHostHeader(const RequestMessage &request, const std::string &host);
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);
 	static void _addContentLengthHeader(ResponseMessage &response);
+	static void _addContentTypeHeader(const RequestMessage &request, ResponseMessage &response);
+
+	const Location &_findURILocation(const std::deque<Location> &locations,
+	                                 const RequestMessage       &request);
 
 	static std::string _getCompletePath(const std::string &locRoot, const std::string &requestUri);
 };

@@ -1,10 +1,12 @@
 #include "RequestHandler.hpp"
 #include "AMessage.hpp"
 #include "Config.hpp"
+#include "Header.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
 #include <cerrno>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <dirent.h>
@@ -59,6 +61,7 @@ void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMe
 	// headerValue = _checkHost(request, "");
 	_addContentLengthHeader(response);
 	_addConnectionHeader(request, response);
+	_addContentTypeHeader(request, response);
 	response.addHeader(Header("Server", "webserv"));
 }
 
@@ -78,6 +81,19 @@ void RequestHandler::_addContentLengthHeader(ResponseMessage &response) {
 	std::ostringstream lengthStream;
 	lengthStream << response.getBody().length();
 	response.addHeader(Header("Content-Length", lengthStream.str()));
+}
+
+void RequestHandler::_addContentTypeHeader(const RequestMessage &request,
+                                           ResponseMessage      &response) {
+	std::string requestUri = request.getRequestUri();
+	std::size_t dotpos = requestUri.rfind('.', requestUri.length());
+	if (dotpos != std::string::npos) {
+		std::string extension = requestUri.substr(dotpos + 1, requestUri.length());
+		if (extension == "JPG" || extension == "jpg")
+			response.addHeader(Header("Content-Type", "image/jpeg"));
+		if (extension == "html")
+			response.addHeader(Header("Content-Type", "text/html"));
+	}
 }
 
 std::string RequestHandler::_getRequest(const std::string &page) {
@@ -107,6 +123,26 @@ std::string RequestHandler::_deleteRequest(const std::string &page) {
 	std::remove(page.c_str());
 	// add check ?
 	return (body);
+}
+
+const Location &RequestHandler::_findURILocation(const std::deque<Location> &locations,
+                                                 const RequestMessage       &request) {
+	const std::string &uri = request.getRequestUri();
+	const Location    *longestValidLoc = NULL;
+
+	for (std::deque<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+		if (it->getName().length() > uri.length())
+			continue;
+		std::string path = uri.substr(0, it->getName().length());
+		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
+			continue;
+		if (it->getName() == path &&
+		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
+			longestValidLoc = &*it;
+	}
+	if (longestValidLoc)
+		return *longestValidLoc;
+	throw AMessage::InvalidData("requested URI does not correspond to any location", uri);
 }
 
 std::vector<char *> RequestHandler::_setEnv(const RequestMessage &request, const std::string &uri) {

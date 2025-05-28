@@ -11,7 +11,7 @@ class RequestMessage : public AMessage {
 
 	const std::string &getHttpVersion() const;
 	const std::string &getMethod() const;
-	const std::string &getRequestUri() const;
+	const std::string  getRequestUri() const;
 
 	std::string str() const;
 
