@@ -13,9 +13,10 @@ class Server {
 	int                      _epollfd;
 	void                     _sendAnswer(std::string answer, struct epoll_event &event);
 	bool                     _listenClientResponse(struct epoll_event &event, char *buffer);
-	std::string              _buildAnswer();
+	std::string              _buildAnswer(int i);
 	void                     _initServer(void);
 	void                     _serverLoop(void);
+	Application             &_getApplicationFromFD(int sockfd);
 
 	public:
 	//	Server();

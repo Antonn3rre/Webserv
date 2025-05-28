@@ -6,7 +6,7 @@
 #include <string>
 
 RequestLine::RequestLine(const std::string &line)
-    : AStartLine(line.substr(line.rfind(' ') + 1, 8)) {
+    : AStartLine(line.substr(line.find("HTTP"))) { // TODO: find a better method on hard refresh.
 	size_t spacePos = line.find(' ');
 
 	_setValidMethods();

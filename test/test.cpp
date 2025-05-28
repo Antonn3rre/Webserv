@@ -63,7 +63,7 @@ int main() {
 	// Server Start
 	{
 		std::cout << "\e[33mTEST START SERVER\e[0m" << std::endl;
-		Server test;
+		Server test("conf/defaultWithoutCommentaries.conf");
 		test.startServer();
 	}
 	// CGI execution

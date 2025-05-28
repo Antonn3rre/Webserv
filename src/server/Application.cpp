@@ -43,8 +43,7 @@ void Application::_initApplication(int epollfd) {
 	bzero(&servAddr, sizeof(servAddr));
 	servAddr.sin_family = AF_INET;
 	servAddr.sin_addr.s_addr = INADDR_ANY;
-	servAddr.sin_port = htons(8080);
-	// servAddr.sin_port = htons(_config.getPort());
+	servAddr.sin_port = htons(_config.getPort());
 	if (bind(_lsockfd, reinterpret_cast<struct sockaddr *>(&servAddr), sizeof(servAddr)) == -1) {
 		std::cerr << "Error on the primary bind." << std::endl;
 		exit(1);
@@ -85,89 +84,6 @@ void Application::_sendAnswer(std::string answer, struct epoll_event &event) {
 		close(event.data.fd);
 	}
 }
-
-// SERVER
-// void Application::_serverLoop() {
-// 	struct epoll_event ev;
-// 	int                clientfd = -1;
-// 	int                nfds;
-// 	struct epoll_event events[MAX_EVENTS];
-// 	char               buffer[8192];
-//
-// 	while (true) {
-// 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
-//
-// 		for (int i = 0; i < nfds; ++i) {
-// 			if (events[i].data.fd == _lsockfd) {
-// 				// reinterpreter_cast into `struct sockaddr *` and &clilen for the last parameter
-// 				// (see code in the epoll's man) for accept parameters
-// 				clientfd = accept(_lsockfd, NULL, NULL);
-// 				if (clientfd < 0) {
-// 					std::cerr << "Error on accept clients." << std::endl;
-// 					continue;
-// 				}
-// 				ev.events = EPOLLIN | EPOLLET;
-// 				ev.data.fd = clientfd;
-// 				epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
-// 			} else {
-// 				if (_listenClientResponse(events[i], buffer))
-// 					continue;
-// 				std::string answer = _buildAnswer();
-// 				_sendAnswer(answer, events[i]);
-// 			}
-// 		}
-// 	}
-// }
-
-// void Application::startServer(void) {
-// 	_initServer();
-// 	_printAtLaunch();
-// 	_serverLoop();
-// 	close(_lsockfd); // to put in the signal handler
-// }
-
-// std::string Application::_buildAnswer() {
-//	std::string body =
-//	    "<!DOCTYPE html>\r\n"
-//	    "<html>\r\n"
-//	    "<head><title>First webserv</title></head>\r\n"
-//	    "<body>\r\n"
-//	    "<div align=\"center\">\r\n"
-//	    "<img "
-//	    "src=\"https://remeng.rosselcdn.net/sites/default/"
-//	    "09/30/node_194669/12124212/public/2020/09/30/"
-//	    "B9724766829Z.1_20200930170647_000%2BG3EGPBHMU.1-0.jpg?itok=7_rsY6Fj1601564062\" "
-//	    "width=\"1200\" height=\"800\" />\r\n"
-//	    "<a href=\"https://www.google.com/"
-//	    "url?sa=i&url=https%3A%2F%2Fwww.lardennais.fr%2Fid194669%2Farticle%2F2020-09-30%2Fles-"
-//	    "punaises-de-lit-lui-ont-fait-vivre-un-enfer-charleville-mezieres&psig=AOvVaw1InOT-"
-//	    "kYF5steCdhBc6F-7&ust=1747918462193000&source=images&cd=vfe&opi=89978449&ved="
-//	    "0CBcQjhxqFwoTCLCDguvNtI0DFQAAAAAdAAAAABAE\" target=_blank>\r\n"
-//	    "<h1> A Charleville - Mézières, les punaises de lit lui ont fait vivre un enfer "
-//	    "</h1></a>\r\n"
-//	    "<img "
-//	    "src=\"https://media1.tenor.com/m/WckcGq81cjYAAAAd/herv%C3%A9-regnier-tiktok.gif\"></img>"
-//	    "</div>\r\n"
-//	    "<div><img "
-//	    "src=\"./website/img/IMG_3935.JPG\"></img></div>"
-//	    "</body>\r\n"
-//	    "</html>\r\n";
-//
-//	std::stringstream ss;
-//	ss << "HTTP/1.1 200 OK\r\n"
-//	   << "Date: Mon, 12 May 2025 16:29:56 GMT\r\n"
-//	   << "Content-Type: text/html; charset=utf-8\r\n"
-//	   << "Content-Length: " << body.length() << "\r\n"
-//	   << "Connection: keep-alive\r\n"
-//	   << "Server: gunicorn/19.9.0\r\n"
-//	   << "Access-Control-Allow-Origin: *\r\n"
-//	   << "Access-Control-Allow-Credentials: true\r\n"
-//	   << "\r\n"
-//	   << body;
-//
-//	// ResponseMessage response(ss.str());
-//	return ss.str();
-// }
 
 // Config getter
 const Config &Application::getConfig(void) const { return _config; };
