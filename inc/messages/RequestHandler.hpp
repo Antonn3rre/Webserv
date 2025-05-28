@@ -12,6 +12,8 @@ class RequestHandler {
 	public:
 	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
 
+	static ResponseMessage createResponse(const Config &config, RequestMessage &request,
+	                                      std::pair<int, std::string> &handled);
 	class RequestError : AMessage::MessageError {
 		public:
 		RequestError(const std::string &error, const std::string &argument);
@@ -24,14 +26,12 @@ class RequestHandler {
 	private:
 	RequestHandler();
 
-	ResponseMessage     _createResponse(const Config &config, RequestMessage &request,
-	                                    std::pair<int, std::string> &handled);
-	static void         _executeMethod(const std::string &method);
-	static std::string  _loadFile(const std::string &filename);
-	static void         _saveFile(const std::string &filename, const std::string &body);
-	char              **_setEnv();
-	std::vector<char *> _setEnv(const RequestMessage &, const std::string &);
-	std::string         _executeCgi(const RequestMessage &request, const std::string &uri);
+	static void                     _executeMethod(const std::string &method);
+	static std::string              _loadFile(const std::string &filename);
+	static void                     _saveFile(const std::string &filename, const std::string &body);
+	static char                   **_setEnv();
+	static std::vector<std::string> _setEnv(const RequestMessage &, const std::string &);
+	static std::string _executeCgi(const RequestMessage &request, const std::string &uri);
 
 	static std::string _deleteRequest(const std::string &page);
 	std::string        _getRequest(const std::string &page);

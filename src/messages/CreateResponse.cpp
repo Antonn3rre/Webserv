@@ -79,8 +79,8 @@ bool generateAutoindent(const std::string &page, std::string &body) {
 // }
 
 // Manque toute la construction des headers
-ResponseMessage RequestHandler::_createResponse(const Config &config, RequestMessage &request,
-                                                std::pair<int, std::string> &handled) {
+ResponseMessage RequestHandler::createResponse(const Config &config, RequestMessage &request,
+                                               std::pair<int, std::string> &handled) {
 	std::string body;
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));
 
