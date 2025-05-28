@@ -49,6 +49,8 @@ AMessage::MessageError::~MessageError() throw() {}
 
 const char *AMessage::MessageError::what() const throw() { return _message.c_str(); }
 
+unsigned short AMessage::MessageError::getStatusCode() const { return _statusCode; }
+
 AMessage::SyntaxError::SyntaxError(const std::string &error, const std::string &badSyntax)
     : MessageError("bad syntax: " + error, badSyntax) {}
 
