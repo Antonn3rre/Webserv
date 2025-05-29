@@ -9,22 +9,22 @@
 
 class Server {
 	private:
-	std::vector<Application> _applicationList;
-	int                      _epollfd;
-	static void              _sendAnswer(const std::string &answer, struct epoll_event &event);
-	static bool              _listenClientResponse(struct epoll_event &event, char *buffer);
-	std::string              _buildAnswer(int i);
-	void                     _initServer(void);
-	void                     _serverLoop(void);
-	Application             &_getApplicationFromFD(int sockfd);
+	std::vector<Application>     _applicationList;
+	int                          _epollfd;
+	std::map<int, Application *> _clientAppMap;
+	void                         _sendAnswer(const std::string &answer, int clientfd);
+	static bool                  _listenClientResponse(char *buffer, int clientfd);
+	std::string                  _buildAnswer(int i);
+	void                         _initServer(void);
+	void                         _serverLoop(void);
+	Application                 &_getApplicationFromFD(int sockfd);
 
 	public:
 	//	Server();
 	Server(const std::string &);
 	~Server();
 
-	void         startServer(void);
-	Application &getRightApplication(const std::pair<std::string, bool> &requestHost);
+	void startServer(void);
 };
 
 #endif // !SERVER_HPP

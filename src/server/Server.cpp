@@ -11,15 +11,7 @@
 #include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
-#include <utility>
 #include <vector>
-
-// Server::Server(void) {
-//	Application test;
-//	_applicationList.push_back(test);
-//	std::cout << _applicationList.size() << std::endl;
-//	std::cout << _applicationList[0].getConfig().getPort() << std::endl;
-// };
 
 Server::Server(const std::string &filename) {
 	std::fstream file;
@@ -40,29 +32,6 @@ Server::Server(const std::string &filename) {
 
 Server::~Server(void) {};
 
-Application &Server::getRightApplication(const std::pair<std::string, bool> &requestHost) {
-	std::cout << "Dans right, requestHost = " << requestHost.second << std::endl;
-	for (std::vector<Application>::iterator it = _applicationList.begin();
-	     it != _applicationList.end(); ++it) {
-		for (std::deque<std::string>::const_iterator sit =
-		         it->getConfig().getApplicationName().begin();
-		     sit != it->getConfig().getApplicationName().end(); ++sit) {
-			std::cout << "Valeur sit = " << *sit << std::endl;
-			if (*sit == requestHost.first)
-				return *it;
-		}
-	}
-	return _applicationList.front();
-}
-Application &Server::_getApplicationFromFD(int sockfd) {
-	for (std::vector<Application>::iterator it = _applicationList.begin();
-	     it != _applicationList.end(); ++it)
-		if (sockfd == it->getLSockFd()) {
-			return *it;
-		}
-	return *_applicationList.end(); // TODO: throw an exception here
-}
-
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
 	for (std::vector<Application>::iterator itServer = _applicationList.begin();
@@ -78,18 +47,19 @@ void Server::startServer(void) {
 	// close(_lsockfd); // to put in the signal handler
 }
 
-void Server::_sendAnswer(const std::string &answer, struct epoll_event &event) {
-	if (send(event.data.fd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
+void Server::_sendAnswer(const std::string &answer, int clientfd) {
+	if (send(clientfd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
 		std::cerr << "Error on write." << std::endl;
-		close(event.data.fd);
+		_clientAppMap.erase(clientfd);
+		close(clientfd);
 	}
 }
 
-bool Server::_listenClientResponse(struct epoll_event &event, char *buffer) {
+bool Server::_listenClientResponse(char *buffer, int clientfd) {
 	bzero(buffer, 8192);
-	if (read(event.data.fd, buffer, 8192) < 0) {
+	if (read(clientfd, buffer, 8192) < 0) {
 		std::cerr << "Error on read." << std::endl;
-		close(event.data.fd);
+		close(clientfd);
 		return 1;
 	}
 	return 0;
@@ -118,6 +88,9 @@ void Server::_serverLoop() {
 						std::cerr << "Error on accept clients." << std::endl;
 						continue;
 					}
+
+					_clientAppMap[clientfd] = &(*itServer);
+
 					ev.events = EPOLLIN | EPOLLET;
 					ev.data.fd = clientfd;
 					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
@@ -125,7 +98,7 @@ void Server::_serverLoop() {
 				}
 			}
 			if (!newClient) {
-				if (_listenClientResponse(events[i], buffer))
+				if (_listenClientResponse(buffer, events[i].data.fd))
 					continue;
 				try {
 					RequestMessage  request(buffer);
@@ -134,7 +107,7 @@ void Server::_serverLoop() {
 
 					// std::cout << " --- ANSWER --- \n"
 					//           << answer.getHeaderValue("Content-Type").first << std::endl;
-					_sendAnswer(answer.str(), events[i]);
+					_sendAnswer(answer.str(), events[i].data.fd);
 				} catch (std::exception &e) {
 					std::cerr << "Error: " << e.what() << std::endl;
 					continue;
@@ -142,6 +115,10 @@ void Server::_serverLoop() {
 			}
 		}
 	}
+}
+
+Application &Server::_getApplicationFromFD(int sockfd) {
+	return *_clientAppMap.find(sockfd)->second;
 }
 
 std::string Server::_buildAnswer(int i) {

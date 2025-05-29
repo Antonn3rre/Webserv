@@ -91,6 +91,8 @@ void RequestHandler::_addContentTypeHeader(const RequestMessage &request,
 		std::string extension = requestUri.substr(dotpos + 1, requestUri.length());
 		if (extension == "JPG" || extension == "jpg")
 			response.addHeader(Header("Content-Type", "image/jpeg"));
+		if (extension == "ico")
+			response.addHeader(Header("Content-Type", "image/svg+xml"));
 		if (extension == "html")
 			response.addHeader(Header("Content-Type", "text/html"));
 	}

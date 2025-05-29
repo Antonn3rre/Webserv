@@ -238,7 +238,7 @@ void Config::_setDefaultErrorPages() {
 		pageNameStream.str("");
 		pageNameStream << "website/errorPages/error" << i << ".html";
 		pageName = pageNameStream.str();
-		_errorPages.insert(std::pair<int, std::string>(i, pageName));
+		_errorPages.insert(std::pair<unsigned short, std::string>(i, pageName));
 		if (i == 417)
 			i = 499;
 	}
