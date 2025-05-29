@@ -89,7 +89,7 @@ Config::Config(const Config &former)
     : _listen(former.getListen()), _address(former.getAddress()), _port(former.getPort()),
       _applicationName(former.getApplicationName()), _errorPages(former.getErrorPages()),
       _clientMaxBodySize(former.getClientMaxBodySize()), _host(former.getHost()),
-      _root(former.getRoot()), _index(former.getIndex()), _location(former.getLocation()) {}
+      _root(former.getRoot()), _index(former.getIndex()), _locations(former.getLocations()) {}
 
 Config &Config::operator=(const Config &former) {
 	if (this != &former) {
@@ -102,7 +102,7 @@ Config &Config::operator=(const Config &former) {
 		_host = former.getHost();
 		_root = former.getRoot();
 		_index = former.getIndex();
-		_location = former.getLocation();
+		_locations = former.getLocations();
 	}
 	return *this;
 }
@@ -235,7 +235,7 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 
 void Config::_parseLocation(std::string &str, std::fstream &file) {
 	try {
-		_location.push_back(Location(str, file));
+		_locations.push_back(Location(str, file));
 	} catch (Location::Exception &e) {
 		throw Config::Exception("Problem parse location");
 	}
@@ -259,7 +259,7 @@ void Config::_setDefaultErrorPages() {
 void Config::_setDefaultConfig() { _setDefaultErrorPages(); }
 
 void Config::_setDefaultLocation() {
-	for (std::deque<Location>::iterator it = _location.begin(); it != _location.end(); ++it) {
+	for (std::deque<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
 		if ((*it).getMethods().empty())
 			(*it).setDefaultMethods();
 		if ((*it).getRoot().empty())
@@ -284,20 +284,20 @@ const std::string             &Config::getClientMaxBodySize() const { return _cl
 const std::string             &Config::getHost() const { return _host; }
 const std::string             &Config::getRoot() const { return _root; }
 const std::deque<std::string> &Config::getIndex() const { return _index; }
-const std::deque<Location>    &Config::getLocation() const { return _location; }
+const std::deque<Location>    &Config::getLocations() const { return _locations; }
 
 // Location getter , int parameter is the index of the container
-const std::string &Config::getLocName(int index) const { return _location.at(index).getName(); }
+const std::string &Config::getLocName(int index) const { return _locations.at(index).getName(); }
 const std::pair<int, std::string> &Config::getLocRedirection(int index) const {
-	return _location.at(index).getRedirection();
+	return _locations.at(index).getRedirection();
 }
 const std::deque<std::string> &Config::getLocMethods(int index) const {
-	return _location.at(index).getMethods();
+	return _locations.at(index).getMethods();
 }
-const std::string &Config::getLocRoot(int index) const { return _location.at(index).getRoot(); }
+const std::string &Config::getLocRoot(int index) const { return _locations.at(index).getRoot(); }
 const bool        &Config::getLocAutoindent(int index) const {
-    return _location.at(index).getAutoindent();
+    return _locations.at(index).getAutoindent();
 }
 
 // additionnal getters
-int Config::getNumOfLoc() const { return (int)_location.size(); }
+int Config::getNumOfLoc() const { return (int)_locations.size(); }

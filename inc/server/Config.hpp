@@ -40,7 +40,7 @@ class Config {
 	const std::string                           &getHost() const;
 	const std::string                           &getRoot() const;
 	const std::deque<std::string>               &getIndex() const;
-	const std::deque<Location>                  &getLocation() const;
+	const std::deque<Location>                  &getLocations() const;
 
 	// Location getter , int parameter is the index of the container
 	const std::string                 &getLocName(int) const;
@@ -62,7 +62,7 @@ class Config {
 	std::string                           _host;
 	std::string                           _root;
 	std::deque<std::string>               _index;
-	std::deque<Location>                  _location;
+	std::deque<Location>                  _locations;
 
 	void _parseListen(std::string &, std::fstream &);
 	void _parseApplicationName(std::string &, std::fstream &);

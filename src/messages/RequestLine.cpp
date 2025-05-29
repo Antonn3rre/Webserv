@@ -29,7 +29,7 @@ RequestLine::RequestLine(const std::string &httpVersion, const std::string &meth
 const std::string &RequestLine::getMethod() const { return _method; }
 
 const std::string RequestLine::getRequestUri() const {
-	return _requestUri.substr(1, _requestUri.length());
+	return _requestUri.substr(0, _requestUri.length());
 }
 
 std::string RequestLine::str() const {

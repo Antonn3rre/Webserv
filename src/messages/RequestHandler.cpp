@@ -37,14 +37,17 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
                                           const Config &config) {
 	std::string        body;
 	const std::string &method = request.getMethod();
+	const std::string &path =
+	    _getCompletePath(_findURILocation(config.getLocations(), request.getRequestUri()).getRoot(),
+	                     request.getRequestUri());
 
 	try {
 		if (method == "GET") {
-			body = _getRequest(request.getRequestUri());
+			body = _getRequest(path);
 		} else if (method == "POST") {
-			body = _postRequest(request.getRequestUri());
+			body = _postRequest(path);
 		} else if (method == "DELETE") {
-			body = _deleteRequest(request.getRequestUri());
+			body = _deleteRequest(path);
 		}
 		status = 200;
 	} catch (AMessage::MessageError &e) {
@@ -105,7 +108,6 @@ void RequestHandler::_addContentTypeHeader(const RequestMessage &request, Respon
 }
 
 std::string RequestHandler::_getRequest(const std::string &page) {
-	std::cout << "GET REQUEST\n";
 	if (access(page.c_str(), F_OK)) {
 		throw AMessage::MessageError(404);
 	}
@@ -137,9 +139,8 @@ std::string RequestHandler::_deleteRequest(const std::string &page) {
 }
 
 const Location &RequestHandler::_findURILocation(const std::deque<Location> &locations,
-                                                 const RequestMessage       &request) {
-	const std::string &uri = request.getRequestUri();
-	const Location    *longestValidLoc = NULL;
+                                                 const std::string          &uri) {
+	const Location *longestValidLoc = NULL;
 
 	for (std::deque<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
 		if (it->getName().length() > uri.length())

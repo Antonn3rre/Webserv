@@ -39,7 +39,7 @@ class RequestHandler {
 	                                  unsigned short status);
 
 	static const Location &_findURILocation(const std::deque<Location> &locations,
-	                                        const RequestMessage       &request);
+	                                        const std::string          &uri);
 
 	static std::string _getCompletePath(const std::string &locRoot, const std::string &requestUri);
 };
