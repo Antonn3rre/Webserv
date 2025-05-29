@@ -11,17 +11,12 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <stdlib.h>
-#include <string>
 #include <sys/epoll.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
-// Application::Application(void) : _config(Config("conf/defaultWithoutCommentaries.conf")) {};
-
-// Server::Server(char *configFile) : _config(Config(configFile)) {};
-
-Application::Application(std::fstream &file) : _config(Config(file)){};
+Application::Application(std::fstream &file) : _config(Config(file)) {};
 
 Application::Application(const Application &former) : _config(former.getConfig()) {
 	_lsockfd = former.getLSockFd();
@@ -65,24 +60,6 @@ void Application::initApplication(int epollfd) {
 void Application::_printAtLaunch(void) {
 	std::cout << "Server launch at this address: http://" << _config.getAddress() << ":"
 	          << _config.getPort() << "/" << std::endl;
-}
-
-bool Application::_listenClientResponse(struct epoll_event &event, char *buffer) {
-	bzero(buffer, 8192);
-	if (read(event.data.fd, buffer, 8192) < 0) {
-		std::cerr << "Error on read." << std::endl;
-		close(event.data.fd);
-		return (true);
-	}
-	std::cout << buffer << std::endl;
-	return (false);
-}
-
-void Application::_sendAnswer(const std::string &answer, struct epoll_event &event) {
-	if (send(event.data.fd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
-		std::cerr << "Error on write => " << strerror(errno) << std::endl;
-		close(event.data.fd);
-	}
 }
 
 // Config getter

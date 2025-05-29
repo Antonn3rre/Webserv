@@ -12,19 +12,12 @@ class Application {
 	Config _config;
 	int    _lsockfd;
 
-	void        _printAtLaunch(void);
-	static bool _listenClientResponse(struct epoll_event &events, char *buffer);
-	static void _sendAnswer(const std::string &answer, struct epoll_event &event);
-	// void        _serverLoop();
-	std::string _buildAnswer(void);
+	void _printAtLaunch(void);
 
 	public:
-	//	Application();
 	Application(char *configFile);
 	Application(std::fstream &file);
 	Application(const Application &);
-	// ~Application();
-	// void startServer(void);
 
 	class ApplicationError : public std::exception {
 		public:
