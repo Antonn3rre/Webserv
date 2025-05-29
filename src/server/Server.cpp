@@ -5,7 +5,6 @@
 #include "ResponseMessage.hpp"
 #include <exception>
 #include <iostream>
-#include <sstream>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -116,56 +115,3 @@ void Server::_serverLoop() {
 }
 
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
-
-std::string Server::_buildAnswer(int i) {
-	std::stringstream body;
-	body << "<!DOCTYPE html>\r\n"
-	     << "<html>\r\n"
-	     << "<head><title>First webserv</title></head>\r\n"
-	     << "<body>\r\n"
-	     << "<h1> _lsockfd = " << i << "</h1>\r\n"
-	     << "<div align=\"center\">\r\n"
-	     << "<img "
-	     << "src=\"https://remeng.rosselcdn.net/sites/default/files/dpistyles_v2/rem_16_9_1124w/"
-	     << "2020/" << "09/30/node_194669/12124212/public/2020/09/30/"
-	     << "B9724766829Z.1_20200930170647_000%2BG3EGPBHMU.1-0.jpg?itok=7_rsY6Fj1601564062\" "
-	     << "width=\"1200\" height=\"800\" />\r\n"
-	     << "<a href=\"https://www.google.com/"
-	     << "url?sa=i&url=https%3A%2F%2Fwww.lardennais.fr%2Fid194669%2Farticle%2F2020-09-30%"
-	        "2Fles-"
-	     << "punaises-de-lit-lui-ont-fait-vivre-un-enfer-charleville-mezieres&psig=AOvVaw1InOT-"
-	     << "kYF5steCdhBc6F-7&ust=1747918462193000&source=images&cd=vfe&opi=89978449&ved="
-	     << "0CBcQjhxqFwoTCLCDguvNtI0DFQAAAAAdAAAAABAE\" target=_blank>\r\n"
-	     << "<h1> A Charleville - Mézières, les punaises de lit lui ont fait vivre un enfer "
-	     << "</h1></a>\r\n"
-	     << "<img "
-	     << "src=\"https://media1.tenor.com/m/WckcGq81cjYAAAAd/"
-	        "herv%C3%A9-regnier-tiktok.gif\"></"
-	     << "img>" << "</div>\r\n"
-	     << "<div><a href=\"/cgi-bin\"><button type=\"button\" id=\"get-btn\"> Hello world! "
-	        "</button></a></div>"
-	     << "<script>" << "const button = document.getElementById('get-btn');"
-	     << "button.addEventListener('click', async () => {" << "  try {"
-	     << "    const response = await fetch('/cgi-bin');"
-	     << "    const text = await response.text();" << "    console.log('Réponse reçue:', text);"
-	     << "  } catch (err) {" << "    console.error('Erreur :', err);" << "  }" << "});"
-	     << "</script>"
-
-	     << "</body>\r\n"
-	     << "</html>\r\n";
-
-	std::stringstream ss;
-	ss << "HTTP/1.1 200 OK\r\n"
-	   << "Date: Mon, 12 May 2025 16:29:56 GMT\r\n"
-	   << "Content-Type: text/html; charset=utf-8\r\n"
-	   << "Content-Length: " << body.str().length() << "\r\n"
-	   << "Connection: keep-alive\r\n"
-	   << "Server: gunicorn/19.9.0\r\n"
-	   << "Access-Control-Allow-Origin: *\r\n"
-	   << "Access-Control-Allow-Credentials: true\r\n"
-	   << "\r\n"
-	   << body.str();
-
-	// ResponseMessage response(ss.str());
-	return ss.str();
-}
