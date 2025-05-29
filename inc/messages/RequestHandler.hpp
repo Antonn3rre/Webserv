@@ -27,14 +27,16 @@ class RequestHandler {
 	static std::string _postRequest(const std::string &page);
 
 	static StatusLine  _generateStatusLine(unsigned short status);
-	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request);
+	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request,
+	                                    unsigned short status);
 	static std::string _generateBody(const RequestMessage &request, unsigned short &status,
 	                                 const Config &config);
 
 	static bool _checkHostHeader(const RequestMessage &request, const std::string &host);
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);
 	static void _addContentLengthHeader(ResponseMessage &response);
-	static void _addContentTypeHeader(const RequestMessage &request, ResponseMessage &response);
+	static void _addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
+	                                  unsigned short status);
 
 	static const Location &_findURILocation(const std::deque<Location> &locations,
 	                                        const RequestMessage       &request);

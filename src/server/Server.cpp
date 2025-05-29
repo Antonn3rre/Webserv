@@ -115,9 +115,7 @@ void Server::_serverLoop() {
 	}
 }
 
-Application &Server::_getApplicationFromFD(int sockfd) {
-	return *_clientAppMap.find(sockfd)->second;
-}
+Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
 
 std::string Server::_buildAnswer(int i) {
 	std::stringstream body;

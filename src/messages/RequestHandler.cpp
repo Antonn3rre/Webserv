@@ -29,7 +29,7 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
 	std::string     body = _generateBody(request, status, config);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
-	_generateHeaders(response, request);
+	_generateHeaders(response, request, status);
 	return response;
 }
 
@@ -48,8 +48,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		}
 		status = 200;
 	} catch (AMessage::MessageError &e) {
-		std::cerr << "Catch in generate body: " << config.getErrorPage(e.getStatusCode())
-		          << std::endl;
+		status = e.getStatusCode();
 		return _loadFile(config.getErrorPage(e.getStatusCode()));
 	}
 	return body;
@@ -59,11 +58,12 @@ StatusLine RequestHandler::_generateStatusLine(unsigned short status) {
 	return StatusLine("HTTP/1.1", status);
 }
 
-void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMessage &request) {
+void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMessage &request,
+                                      unsigned short status) {
 	// headerValue = _checkHost(request, "");
 	_addContentLengthHeader(response);
 	_addConnectionHeader(request, response);
-	_addContentTypeHeader(request, response);
+	_addContentTypeHeader(request, response, status);
 	response.addHeader(Header("Server", "webserv"));
 }
 
@@ -85,17 +85,21 @@ void RequestHandler::_addContentLengthHeader(ResponseMessage &response) {
 	response.addHeader(Header("Content-Length", lengthStream.str()));
 }
 
-void RequestHandler::_addContentTypeHeader(const RequestMessage &request,
-                                           ResponseMessage      &response) {
+void RequestHandler::_addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
+                                           unsigned short status) {
+	if (status >= 400) {
+		response.addHeader(Header("Content-Type", "text/html"));
+		return;
+	}
 	std::string requestUri = request.getRequestUri();
 	std::size_t dotpos = requestUri.rfind('.', requestUri.length());
 	if (dotpos != std::string::npos) {
 		std::string extension = requestUri.substr(dotpos + 1, requestUri.length());
 		if (extension == "JPG" || extension == "jpg")
 			response.addHeader(Header("Content-Type", "image/jpeg"));
-		if (extension == "ico")
+		else if (extension == "ico")
 			response.addHeader(Header("Content-Type", "image/svg+xml"));
-		if (extension == "html")
+		else if (extension == "html")
 			response.addHeader(Header("Content-Type", "text/html"));
 	}
 }

@@ -12,12 +12,14 @@ class Server {
 	std::vector<Application>     _applicationList;
 	int                          _epollfd;
 	std::map<int, Application *> _clientAppMap;
-	void                         _sendAnswer(const std::string &answer, int clientfd);
-	static bool                  _listenClientResponse(char *buffer, int clientfd);
-	std::string                  _buildAnswer(int i);
-	void                         _initServer(void);
-	void                         _serverLoop(void);
-	Application                 &_getApplicationFromFD(int sockfd);
+
+	void        _sendAnswer(const std::string &answer, int clientfd);
+	static bool _listenClientResponse(char *buffer, int clientfd);
+	std::string _buildAnswer(int i); // TODO: DELETE
+	void        _initServer(void);
+	void        _serverLoop(void);
+
+	Application &_getApplicationFromFD(int sockfd) const;
 
 	public:
 	//	Server();
