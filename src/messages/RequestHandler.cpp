@@ -2,6 +2,7 @@
 #include "AMessage.hpp"
 #include "Config.hpp"
 #include "Header.hpp"
+#include "Location.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
@@ -37,9 +38,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
                                           const Config &config) {
 	std::string        body;
 	const std::string &method = request.getMethod();
-	const std::string &path =
-	    _getCompletePath(_findURILocation(config.getLocations(), request.getRequestUri()).getRoot(),
-	                     request.getRequestUri());
+	std::string        path = _getCompletePath(config, request.getRequestUri());
 
 	try {
 		if (method == "GET") {
@@ -139,10 +138,11 @@ std::string RequestHandler::_deleteRequest(const std::string &page) {
 }
 
 const Location &RequestHandler::_findURILocation(const std::vector<Location> &locations,
-                                                 const std::string          &uri) {
+                                                 const std::string           &uri) {
 	const Location *longestValidLoc = NULL;
 
-	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end();
+	     ++it) {
 		if (it->getName().length() > uri.length())
 			continue;
 		std::string path = uri.substr(0, it->getName().length());
@@ -225,13 +225,14 @@ std::string RequestHandler::_executeCgi(const RequestMessage &request, const std
 	return output;
 }
 
-std::string RequestHandler::_getCompletePath(const std::string &locRoot,
-                                             const std::string &requestUri) {
-	if (locRoot.empty())
-		return (requestUri);
-	if (*(locRoot.rbegin()) == '/')
-		return (locRoot.substr(0, locRoot.size() - 1) + requestUri);
-	return locRoot + requestUri;
+std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
+	std::string locRoot = _findURILocation(config.getLocations(), requestUri).getRoot();
+	std::string path = locRoot + requestUri;
+
+	if (path[path.length() - 1] == '/')
+		path += config.getIndex().at(0);
+
+	return path;
 }
 
 std::string RequestHandler::_loadFile(const std::string &filename) {
