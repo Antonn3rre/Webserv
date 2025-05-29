@@ -38,7 +38,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 Application &Server::getRightApplication(const std::pair<std::string, bool> &requestHost) {
 	std::cout << "Dans right, requestHost = " << requestHost.second << std::endl;
@@ -60,14 +60,14 @@ Application &Server::_getApplicationFromFD(int sockfd) {
 		if (sockfd == it->getLSockFd()) {
 			return *it;
 		}
-	return *_applicationList.end(); // TODO: throw an exception here
+	return *_applicationList.begin(); // TODO: throw an exception here
 }
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
 	for (std::vector<Application>::iterator itServer = _applicationList.begin();
 	     itServer != _applicationList.end(); ++itServer) {
-		itServer->_initApplication(_epollfd);
+		itServer->initApplication(_epollfd);
 	}
 }
 
@@ -85,14 +85,15 @@ void Server::_sendAnswer(const std::string &answer, struct epoll_event &event) {
 	}
 }
 
-bool Server::_listenClientResponse(struct epoll_event &event, char *buffer) {
+bool Server::_listenClientResponse(struct epoll_event &event, char *buffer) const {
 	bzero(buffer, 8192);
 	if (read(event.data.fd, buffer, 8192) < 0) {
-		std::cerr << "Error on read." << std::endl;
+		std::cerr << "Error on read: close socket " << event.data.fd << std::endl;
+		epoll_ctl(_epollfd, EPOLL_CTL_DEL, event.data.fd, NULL);
 		close(event.data.fd);
-		return 1;
+		return true;
 	}
-	return 0;
+	return false;
 }
 
 void Server::_serverLoop() {
@@ -111,8 +112,6 @@ void Server::_serverLoop() {
 			for (std::vector<Application>::iterator itServer = _applicationList.begin();
 			     itServer != _applicationList.end(); ++itServer) {
 				if (events[i].data.fd == itServer->getLSockFd()) {
-					// reinterpreter_cast into `struct sockaddr *` and &clilen for the last
-					// parameter (see code in the epoll's man) for accept parameters
 					clientfd = accept(itServer->getLSockFd(), NULL, NULL);
 					if (clientfd < 0) {
 						std::cerr << "Error on accept clients." << std::endl;

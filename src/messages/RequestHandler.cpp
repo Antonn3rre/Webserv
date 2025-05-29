@@ -48,7 +48,9 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		}
 		status = 200;
 	} catch (AMessage::MessageError &e) {
-		return config.getErrorPage(e.getStatusCode());
+		std::cerr << "Catch in generate body: " << config.getErrorPage(e.getStatusCode())
+		          << std::endl;
+		return _loadFile(config.getErrorPage(e.getStatusCode()));
 	}
 	return body;
 }
@@ -97,10 +99,13 @@ void RequestHandler::_addContentTypeHeader(const RequestMessage &request,
 }
 
 std::string RequestHandler::_getRequest(const std::string &page) {
-	if (access(page.c_str(), F_OK))
+	std::cout << "GET REQUEST\n";
+	if (access(page.c_str(), F_OK)) {
 		throw AMessage::MessageError(404);
-	if (access(page.c_str(), R_OK))
+	}
+	if (access(page.c_str(), R_OK)) {
 		throw AMessage::MessageError(403);
+	}
 
 	return (_loadFile(page));
 }

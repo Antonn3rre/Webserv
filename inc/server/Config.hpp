@@ -34,7 +34,7 @@ class Config {
 	const std::string                           &getAddress() const;
 	const int                                   &getPort() const;
 	const std::deque<std::string>               &getApplicationName() const;
-	const std::string                           &getErrorPage(int index) const;
+	std::string                                  getErrorPage(unsigned short status) const;
 	const std::map<unsigned short, std::string> &getErrorPages() const;
 	const std::string                           &getClientMaxBodySize() const;
 	const std::string                           &getHost() const;

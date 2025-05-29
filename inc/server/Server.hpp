@@ -11,12 +11,13 @@ class Server {
 	private:
 	std::vector<Application> _applicationList;
 	int                      _epollfd;
-	static void              _sendAnswer(const std::string &answer, struct epoll_event &event);
-	static bool              _listenClientResponse(struct epoll_event &event, char *buffer);
-	std::string              _buildAnswer(int i);
-	void                     _initServer(void);
-	void                     _serverLoop(void);
-	Application             &_getApplicationFromFD(int sockfd);
+
+	static void  _sendAnswer(const std::string &answer, struct epoll_event &event);
+	bool         _listenClientResponse(struct epoll_event &event, char *buffer) const;
+	std::string  _buildAnswer(int i);
+	void         _initServer(void);
+	void         _serverLoop(void);
+	Application &_getApplicationFromFD(int sockfd);
 
 	public:
 	//	Server();

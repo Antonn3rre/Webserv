@@ -21,13 +21,13 @@
 
 // Server::Server(char *configFile) : _config(Config(configFile)) {};
 
-Application::Application(std::fstream &file) : _config(Config(file)) {};
+Application::Application(std::fstream &file) : _config(Config(file)){};
 
 Application::Application(const Application &former) : _config(former.getConfig()) {
 	_lsockfd = former.getLSockFd();
 }
 
-void Application::_initApplication(int epollfd) {
+void Application::initApplication(int epollfd) {
 	struct epoll_event ev;
 	struct sockaddr_in servAddr;
 	_lsockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -72,13 +72,13 @@ bool Application::_listenClientResponse(struct epoll_event &event, char *buffer)
 	if (read(event.data.fd, buffer, 8192) < 0) {
 		std::cerr << "Error on read." << std::endl;
 		close(event.data.fd);
-		return (1);
+		return (true);
 	}
 	std::cout << buffer << std::endl;
-	return (0);
+	return (false);
 }
 
-void Application::_sendAnswer(std::string answer, struct epoll_event &event) {
+void Application::_sendAnswer(const std::string &answer, struct epoll_event &event) {
 	if (send(event.data.fd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
 		std::cerr << "Error on write => " << strerror(errno) << std::endl;
 		close(event.data.fd);
@@ -87,4 +87,5 @@ void Application::_sendAnswer(std::string answer, struct epoll_event &event) {
 
 // Config getter
 const Config &Application::getConfig(void) const { return _config; };
-const int    &Application::getLSockFd(void) const { return _lsockfd; };
+
+const int &Application::getLSockFd(void) const { return _lsockfd; };

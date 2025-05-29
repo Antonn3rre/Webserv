@@ -92,7 +92,18 @@ Config::Config(const Config &former)
       _root(former.getRoot()), _index(former.getIndex()), _location(former.getLocation()) {}
 
 Config &Config::operator=(const Config &former) {
-	(void)former;
+	if (this != &former) {
+		_listen = former.getListen();
+		_address = former.getAddress();
+		_port = former.getPort();
+		_applicationName = former.getApplicationName();
+		_errorPages = former.getErrorPages();
+		_clientMaxBodySize = former.getClientMaxBodySize();
+		_host = former.getHost();
+		_root = former.getRoot();
+		_index = former.getIndex();
+		_location = former.getLocation();
+	}
 	return *this;
 }
 
@@ -234,17 +245,19 @@ void Config::_setDefaultErrorPages() {
 	std::stringstream pageNameStream;
 	std::string       pageName;
 
-	for (int i = 400; i <= 505; ++i) {
+	for (unsigned short i = 400; i <= 505; ++i) {
 		pageNameStream.str("");
+		pageNameStream.clear();
 		pageNameStream << "website/errorPages/error" << i << ".html";
 		pageName = pageNameStream.str();
-		_errorPages.insert(std::pair<int, std::string>(i, pageName));
+		_errorPages[i] = pageName;
 		if (i == 417)
 			i = 499;
 	}
 }
 
 void Config::_setDefaultConfig() { _setDefaultErrorPages(); }
+
 void Config::_setDefaultLocation() {
 	for (std::deque<Location>::iterator it = _location.begin(); it != _location.end(); ++it) {
 		if ((*it).getMethods().empty())
@@ -258,11 +271,12 @@ const std::string             &Config::getListen() const { return _listen; }
 const std::string             &Config::getAddress() const { return _address; }
 const int                     &Config::getPort() const { return _port; }
 const std::deque<std::string> &Config::getApplicationName() const { return _applicationName; }
-const std::string             &Config::getErrorPage(int index) const {
-    std::map<unsigned short, std::string>::const_iterator it = _errorPages.find(index);
+std::string                    Config::getErrorPage(unsigned short status) const {
+    std::map<unsigned short, std::string>::const_iterator it = _errorPages.find(status);
+
     if (it != _errorPages.end())
         return it->second;
-    std::cerr << "Error page " << index << " does not exist" << std::endl;
+    std::cout << "Error page " << status << " does not exist" << std::endl;
     throw std::out_of_range("");
 }
 const std::map<unsigned short, std::string> &Config::getErrorPages() const { return _errorPages; }
