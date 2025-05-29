@@ -39,9 +39,9 @@ class RequestHandler {
 	                                  unsigned short status);
 
 	static const Location &_findURILocation(const std::vector<Location> &locations,
-	                                        const std::string          &uri);
+	                                        const std::string           &uri);
 
-	static std::string _getCompletePath(const std::string &locRoot, const std::string &requestUri);
+	static std::string _getCompletePath(const Config &config, const std::string &requestUri);
 };
 
 #endif

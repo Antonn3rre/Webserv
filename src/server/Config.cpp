@@ -267,11 +267,11 @@ void Config::_setDefaultLocation() {
 	}
 }
 
-const std::string             &Config::getListen() const { return _listen; }
-const std::string             &Config::getAddress() const { return _address; }
-const int                     &Config::getPort() const { return _port; }
+const std::string              &Config::getListen() const { return _listen; }
+const std::string              &Config::getAddress() const { return _address; }
+const int                      &Config::getPort() const { return _port; }
 const std::vector<std::string> &Config::getApplicationName() const { return _applicationName; }
-std::string                    Config::getErrorPage(unsigned short status) const {
+std::string                     Config::getErrorPage(unsigned short status) const {
     std::map<unsigned short, std::string>::const_iterator it = _errorPages.find(status);
 
     if (it != _errorPages.end())
@@ -280,9 +280,9 @@ std::string                    Config::getErrorPage(unsigned short status) const
     throw std::out_of_range("");
 }
 const std::map<unsigned short, std::string> &Config::getErrorPages() const { return _errorPages; }
-const std::string             &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
-const std::string             &Config::getHost() const { return _host; }
-const std::string             &Config::getRoot() const { return _root; }
+const std::string              &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
+const std::string              &Config::getHost() const { return _host; }
+const std::string              &Config::getRoot() const { return _root; }
 const std::vector<std::string> &Config::getIndex() const { return _index; }
 const std::vector<Location>    &Config::getLocations() const { return _locations; }
 
