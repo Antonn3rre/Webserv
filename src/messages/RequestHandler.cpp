@@ -138,11 +138,11 @@ std::string RequestHandler::_deleteRequest(const std::string &page) {
 	return (body);
 }
 
-const Location &RequestHandler::_findURILocation(const std::deque<Location> &locations,
+const Location &RequestHandler::_findURILocation(const std::vector<Location> &locations,
                                                  const std::string          &uri) {
 	const Location *longestValidLoc = NULL;
 
-	for (std::deque<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
 		if (it->getName().length() > uri.length())
 			continue;
 		std::string path = uri.substr(0, it->getName().length());

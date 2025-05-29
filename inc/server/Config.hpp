@@ -2,7 +2,7 @@
 #define CONFIG_HPP
 
 #include "Location.hpp"
-#include <deque>
+#include <vector>
 #include <fstream>
 #include <map>
 #include <string>
@@ -33,19 +33,19 @@ class Config {
 	const std::string                           &getListen() const;
 	const std::string                           &getAddress() const;
 	const int                                   &getPort() const;
-	const std::deque<std::string>               &getApplicationName() const;
+	const std::vector<std::string>               &getApplicationName() const;
 	std::string                                  getErrorPage(unsigned short status) const;
 	const std::map<unsigned short, std::string> &getErrorPages() const;
 	const std::string                           &getClientMaxBodySize() const;
 	const std::string                           &getHost() const;
 	const std::string                           &getRoot() const;
-	const std::deque<std::string>               &getIndex() const;
-	const std::deque<Location>                  &getLocations() const;
+	const std::vector<std::string>               &getIndex() const;
+	const std::vector<Location>                  &getLocations() const;
 
 	// Location getter , int parameter is the index of the container
 	const std::string                 &getLocName(int) const;
 	const std::pair<int, std::string> &getLocRedirection(int index) const;
-	const std::deque<std::string>     &getLocMethods(int) const;
+	const std::vector<std::string>     &getLocMethods(int) const;
 	const std::string                 &getLocRoot(int) const;
 	const bool                        &getLocAutoindent(int) const;
 
@@ -56,13 +56,13 @@ class Config {
 	std::string                           _listen;
 	std::string                           _address;
 	int                                   _port;
-	std::deque<std::string>               _applicationName;
+	std::vector<std::string>               _applicationName;
 	std::map<unsigned short, std::string> _errorPages;
 	std::string                           _clientMaxBodySize;
 	std::string                           _host;
 	std::string                           _root;
-	std::deque<std::string>               _index;
-	std::deque<Location>                  _locations;
+	std::vector<std::string>               _index;
+	std::vector<Location>                  _locations;
 
 	void _parseListen(std::string &, std::fstream &);
 	void _parseApplicationName(std::string &, std::fstream &);

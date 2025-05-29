@@ -129,6 +129,6 @@ void Location::setDefaultRoot(const std::string &root) { _root = root; }
 
 const std::string                 &Location::getName() const { return _name; }
 const std::pair<int, std::string> &Location::getRedirection() const { return _redirection; }
-const std::deque<std::string>     &Location::getMethods() const { return _methods; };
+const std::vector<std::string>     &Location::getMethods() const { return _methods; };
 const std::string                 &Location::getRoot() const { return _root; };
 const bool                        &Location::getAutoindent() const { return _autoindent; };

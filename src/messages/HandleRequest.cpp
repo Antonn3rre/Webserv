@@ -5,7 +5,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <deque>
+#include <vector>
 #include <dirent.h>
 #include <iterator>
 #include <string>
@@ -14,12 +14,12 @@
 #include <unistd.h>
 #include <utility>
 
-const Location &findURILocation(const std::deque<Location> &locations,
+const Location &findURILocation(const std::vector<Location> &locations,
                                 const RequestMessage       &request) {
 	const std::string &uri = request.getRequestUri();
 	const Location    *longestValidLoc = NULL;
 
-	for (std::deque<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
 		if (it->getName().length() > uri.length())
 			continue;
 		std::string path = uri.substr(0, it->getName().length());
@@ -34,8 +34,8 @@ const Location &findURILocation(const std::deque<Location> &locations,
 	throw AMessage::MessageError(404);
 }
 
-bool checkMethods(const std::deque<std::string> &methods, const std::string &requestMethod) {
-	for (std::deque<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+bool checkMethods(const std::vector<std::string> &methods, const std::string &requestMethod) {
+	for (std::vector<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
 		if (*it == requestMethod)
 			return (true);
 	}
@@ -79,9 +79,9 @@ int checkUrl(std::string &url) {
 int indexWork(const Config &config, std::string &url, Location &location) {
 	std::string testIndex;
 
-	// Si deque vide, begin == end
-	std::deque<std::string> index = config.getIndex();
-	for (std::deque<std::string>::iterator it = index.begin(); it != index.end(); ++it) {
+	// Si vector vide, begin == end
+	std::vector<std::string> index = config.getIndex();
+	for (std::vector<std::string>::iterator it = index.begin(); it != index.end(); ++it) {
 		testIndex = url + *it;
 		if (!access(testIndex.c_str(), F_OK)) {
 			url = testIndex;

@@ -71,11 +71,11 @@ Config::Config(std::fstream &file) {
 	// Affichage test
 	// std::cout << "TESTTTT = " << getAddress() << " | " << getPort() << std::endl;
 	// std::cout << "Listen = |" << _listen << "|" << std::endl;
-	// for (std::deque<std::string>::iterator it = _applicationName.begin();
+	// for (std::vector<std::string>::iterator it = _applicationName.begin();
 	//      it != _applicationName.end(); it++)
 	// 	std::cout << "Config name = " << *it << std::endl;
 	// std::cout << "Root = |" << _root << "|" << std::endl;
-	// for (std::deque<std::string>::iterator it = _index.begin(); it != _index.end(); it++)
+	// for (std::vector<std::string>::iterator it = _index.begin(); it != _index.end(); it++)
 	// 	std::cout << "Index = " << *it << std::endl;
 	// std::cout << "Client max = | " << _clientMaxBodySize << " | " << std::endl;
 	// std::cout << " Host = | " << _host << " | " << std::endl;
@@ -259,7 +259,7 @@ void Config::_setDefaultErrorPages() {
 void Config::_setDefaultConfig() { _setDefaultErrorPages(); }
 
 void Config::_setDefaultLocation() {
-	for (std::deque<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
+	for (std::vector<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
 		if ((*it).getMethods().empty())
 			(*it).setDefaultMethods();
 		if ((*it).getRoot().empty())
@@ -270,7 +270,7 @@ void Config::_setDefaultLocation() {
 const std::string             &Config::getListen() const { return _listen; }
 const std::string             &Config::getAddress() const { return _address; }
 const int                     &Config::getPort() const { return _port; }
-const std::deque<std::string> &Config::getApplicationName() const { return _applicationName; }
+const std::vector<std::string> &Config::getApplicationName() const { return _applicationName; }
 std::string                    Config::getErrorPage(unsigned short status) const {
     std::map<unsigned short, std::string>::const_iterator it = _errorPages.find(status);
 
@@ -283,15 +283,15 @@ const std::map<unsigned short, std::string> &Config::getErrorPages() const { ret
 const std::string             &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
 const std::string             &Config::getHost() const { return _host; }
 const std::string             &Config::getRoot() const { return _root; }
-const std::deque<std::string> &Config::getIndex() const { return _index; }
-const std::deque<Location>    &Config::getLocations() const { return _locations; }
+const std::vector<std::string> &Config::getIndex() const { return _index; }
+const std::vector<Location>    &Config::getLocations() const { return _locations; }
 
 // Location getter , int parameter is the index of the container
 const std::string &Config::getLocName(int index) const { return _locations.at(index).getName(); }
 const std::pair<int, std::string> &Config::getLocRedirection(int index) const {
 	return _locations.at(index).getRedirection();
 }
-const std::deque<std::string> &Config::getLocMethods(int index) const {
+const std::vector<std::string> &Config::getLocMethods(int index) const {
 	return _locations.at(index).getMethods();
 }
 const std::string &Config::getLocRoot(int index) const { return _locations.at(index).getRoot(); }

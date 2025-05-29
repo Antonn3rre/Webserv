@@ -38,7 +38,7 @@ class RequestHandler {
 	static void _addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
 	                                  unsigned short status);
 
-	static const Location &_findURILocation(const std::deque<Location> &locations,
+	static const Location &_findURILocation(const std::vector<Location> &locations,
 	                                        const std::string          &uri);
 
 	static std::string _getCompletePath(const std::string &locRoot, const std::string &requestUri);
