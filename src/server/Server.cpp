@@ -60,7 +60,7 @@ bool Server::_listenClientResponse(char *buffer, int clientfd) {
 	if (read(clientfd, buffer, 8192) < 0) {
 		std::cerr << "Error on read." << std::endl;
 		close(clientfd);
-		return 1;
+		return true;
 	}
 	return false;
 }
