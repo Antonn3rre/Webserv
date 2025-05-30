@@ -184,31 +184,30 @@ void Config::_parseErrorPage(std::string &str, std::fstream &file) {
 
 void Config::_parseClientMaxSizeBody(std::string &str, std::fstream &file) {
 	std::getline(file, str);
-	std::string str_clientMaxBodySize;
+	std::string strClientMaxBodySize;
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse client max body size");
-	str_clientMaxBodySize = trim(str);
-	if (str_clientMaxBodySize.length() - 1 != str_clientMaxBodySize.find_first_of(';') ||
-	    str_clientMaxBodySize.length() == 1)
+	strClientMaxBodySize = trim(str);
+	if (strClientMaxBodySize.length() - 1 != strClientMaxBodySize.find_first_of(';') ||
+	    strClientMaxBodySize.length() == 1)
 		throw Config::Exception("Problem parse client max body size (;)");
-	str_clientMaxBodySize =
-	    trim(str_clientMaxBodySize.substr(0, str_clientMaxBodySize.length() - 1));
+	strClientMaxBodySize = trim(strClientMaxBodySize.substr(0, strClientMaxBodySize.length() - 1));
 
-	int         val = std::atoi(str_clientMaxBodySize.c_str());
-	std::string multiplier_letter;
-	for (std::string::iterator it = str_clientMaxBodySize.begin();
-	     it != str_clientMaxBodySize.end(); it++) {
+	int         val = std::atoi(strClientMaxBodySize.c_str());
+	std::string multiplierLetter;
+	for (std::string::iterator it = strClientMaxBodySize.begin(); it != strClientMaxBodySize.end();
+	     ++it) {
 		if (!std::isdigit(*it))
-			multiplier_letter += *it;
+			multiplierLetter += *it;
 	}
-	if (multiplier_letter.length() != 1 ||
-	    multiplier_letter.find_first_of("kmgKMG") == std::string::npos)
+	if (multiplierLetter.length() != 1 ||
+	    multiplierLetter.find_first_of("kmgKMG") == std::string::npos)
 		throw Config::Exception("client_max_body_size bad format.");
-	if (multiplier_letter == "k" || multiplier_letter == "K")
+	if (multiplierLetter == "k" || multiplierLetter == "K")
 		_clientMaxBodySize = val * 1000;
-	else if (multiplier_letter == "m" || multiplier_letter == "M")
-		_clientMaxBodySize = val * 0;
-	else if (multiplier_letter == "g" || multiplier_letter == "G")
+	else if (multiplierLetter == "m" || multiplierLetter == "M")
+		_clientMaxBodySize = val * 1000000;
+	else if (multiplierLetter == "g" || multiplierLetter == "G")
 		_clientMaxBodySize = val * 1000000000;
 }
 

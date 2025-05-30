@@ -4,6 +4,7 @@
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include <cstddef>
 #include <exception>
 #include <iostream>
 #include <stdlib.h>
@@ -30,7 +31,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
@@ -56,26 +57,26 @@ void Server::_sendAnswer(const std::string &answer, int clientfd) {
 
 bool Server::_listenClientRequest(int clientfd, std::string &result,
                                   unsigned long clientMaxBodySize) {
-	const int     BUF_SIZE = 8192;
-	char          buffer[BUF_SIZE];
+	const int     bufSize = 8192;
+	char          buffer[bufSize];
 	unsigned long count = 0;
 
-	int bytes_red = 1;
-	while (bytes_red) {
-		bzero(buffer, BUF_SIZE);
-		bytes_red = read(clientfd, buffer, BUF_SIZE);
-		if (bytes_red < 0) {
+	ssize_t bytesRed = 1;
+	while (bytesRed) {
+		bzero(buffer, bufSize);
+		bytesRed = read(clientfd, buffer, bufSize);
+		if (bytesRed < 0) {
 			std::cerr << "Error on read." << std::endl;
 			close(clientfd);
 			return true;
 		}
-		result.append(buffer, BUF_SIZE);
-		count += bytes_red;
+		result.append(buffer, bufSize);
+		count += bytesRed;
 		if (clientMaxBodySize != 0 && count >= clientMaxBodySize) {
 			std::cout << "multiplier_letter = |" << clientMaxBodySize << "|" << std::endl;
 			throw AMessage::MessageError(413);
 		}
-		if (bytes_red < BUF_SIZE) {
+		if (bytesRed < bufSize) {
 			break;
 		}
 	}
@@ -122,13 +123,13 @@ void Server::_serverLoop() {
 					                         actualAppConfig.getClientMaxBodySize())) {
 						continue; // TODO: delete, instead: throw an error in the function
 					}
-					RequestMessage  request(requestStr.c_str());
+					RequestMessage  request(requestStr);
 					ResponseMessage answer =
 					    RequestHandler::generateResponse(actualAppConfig, request);
 					_sendAnswer(answer.str(), events[i].data.fd);
 				} catch (AMessage::MessageError &e) {
-					ResponseMessage answer = RequestHandler::generateErrorResponse(
-					    actualAppConfig, request, e.getStatusCode());
+					ResponseMessage answer =
+					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
 					_sendAnswer(answer.str(), events[i].data.fd);
 				} catch (std::exception &e) {
 					std::cerr << "Error: " << e.what() << std::endl;
