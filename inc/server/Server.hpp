@@ -14,8 +14,8 @@ class Server {
 	std::map<int, Application *> _clientAppMap;
 
 	void        _sendAnswer(const std::string &answer, int clientfd);
-	static bool _listenClientResponse(char *buffer, int clientfd);
-	std::string _buildAnswer(int i); // TODO: DELETE
+	static bool _listenClientRequest(int clientfd, std::string &result,
+	                                 unsigned long clientMaxBodySize);
 	void        _initServer(void);
 	void        _serverLoop(void);
 
