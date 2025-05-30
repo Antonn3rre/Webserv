@@ -32,19 +32,22 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
 	return response;
 }
 
-ResponseMessage RequestHandler::generateErrorResponse(const Config         &config,
-                                                      const RequestMessage &request,
-                                                      unsigned short        status) {
-	std::cout << request.str() << std::endl;
+ResponseMessage RequestHandler::generateErrorResponse(const Config &config, unsigned short status) {
 	std::string     body = _generateErrorBody(status, config);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
-	_generateHeaders(response, request, status);
+	_generateErrorHeaders(response);
 	return response;
 }
 
 std::string RequestHandler::_generateErrorBody(unsigned short status, const Config &config) {
 	return MethodHandler::loadFile(config.getErrorPage(status));
+}
+
+void RequestHandler::_generateErrorHeaders(ResponseMessage &response) {
+	response.addHeader(Header("Connection", "close"));
+	response.addHeader(Header("Content-Type", "text/html"));
+	_addContentLengthHeader(response);
 }
 
 std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status,

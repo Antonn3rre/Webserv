@@ -10,9 +10,7 @@
 class RequestHandler {
 	public:
 	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
-	static ResponseMessage generateErrorResponse(const Config         &config,
-	                                             const RequestMessage &request,
-	                                             unsigned short        status);
+	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
 
 	private:
 	RequestHandler();
@@ -26,6 +24,7 @@ class RequestHandler {
 	static std::string _generateBody(const RequestMessage &request, unsigned short &status,
 	                                 const Config &config);
 	static std::string _generateErrorBody(unsigned short status, const Config &config);
+	static void        _generateErrorHeaders(ResponseMessage &response);
 
 	static bool _checkHostHeader(const RequestMessage &request, const std::string &host);
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);
