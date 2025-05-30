@@ -29,7 +29,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
@@ -43,7 +43,6 @@ void Server::startServer(void) {
 	_initServer();
 	std::cout << "TEST" << std::endl;
 	_serverLoop();
-	// close(_lsockfd); // to put in the signal handler
 }
 
 void Server::_sendAnswer(const std::string &answer, int clientfd) {
@@ -63,6 +62,8 @@ bool Server::_listenClientResponse(char *buffer, int clientfd) {
 	}
 	return false;
 }
+
+Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
 
 void Server::_serverLoop() {
 	struct epoll_event ev;
@@ -101,9 +102,6 @@ void Server::_serverLoop() {
 					RequestMessage  request(buffer);
 					ResponseMessage answer = RequestHandler::generateResponse(
 					    _getApplicationFromFD(events[i].data.fd).getConfig(), request);
-
-					// std::cout << " --- ANSWER --- \n"
-					//           << answer.getHeaderValue("Content-Type").first << std::endl;
 					_sendAnswer(answer.str(), events[i].data.fd);
 				} catch (std::exception &e) {
 					std::cerr << "Error: " << e.what() << std::endl;
@@ -113,5 +111,3 @@ void Server::_serverLoop() {
 		}
 	}
 }
-
-Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
