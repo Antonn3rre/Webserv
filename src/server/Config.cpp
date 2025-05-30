@@ -19,7 +19,7 @@ Config::Config(std::fstream &file) {
 	                      "host",   "root",        "index",      "location"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
 	    &Config::_parseListen,    &Config::_parseApplicationName,
-	    &Config::_parseErrorPage, &Config::_parseClientMax,
+	    &Config::_parseErrorPage, &Config::_parseClientMaxSizeBody,
 	    &Config::_parseHost,      &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
 
@@ -182,16 +182,34 @@ void Config::_parseErrorPage(std::string &str, std::fstream &file) {
 	}
 }
 
-void Config::_parseClientMax(std::string &str, std::fstream &file) {
+void Config::_parseClientMaxSizeBody(std::string &str, std::fstream &file) {
 	std::getline(file, str);
+	std::string str_clientMaxBodySize;
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse client max body size");
-	_clientMaxBodySize = trim(str);
-	if (_clientMaxBodySize.length() - 1 != _clientMaxBodySize.find_first_of(';') ||
-	    _clientMaxBodySize.length() == 1)
+	str_clientMaxBodySize = trim(str);
+	if (str_clientMaxBodySize.length() - 1 != str_clientMaxBodySize.find_first_of(';') ||
+	    str_clientMaxBodySize.length() == 1)
 		throw Config::Exception("Problem parse client max body size (;)");
-	_clientMaxBodySize = _clientMaxBodySize.substr(0, _clientMaxBodySize.length() - 1);
-	_clientMaxBodySize = trim(_clientMaxBodySize);
+	str_clientMaxBodySize =
+	    trim(str_clientMaxBodySize.substr(0, str_clientMaxBodySize.length() - 1));
+
+	int         val = std::atoi(str_clientMaxBodySize.c_str());
+	std::string multiplier_letter;
+	for (std::string::iterator it = str_clientMaxBodySize.begin();
+	     it != str_clientMaxBodySize.end(); it++) {
+		if (!std::isdigit(*it))
+			multiplier_letter += *it;
+	}
+	if (multiplier_letter.length() != 1 ||
+	    multiplier_letter.find_first_of("kmgKMG") == std::string::npos)
+		throw Config::Exception("client_max_body_size bad format.");
+	if (multiplier_letter == "k" || multiplier_letter == "K")
+		_clientMaxBodySize = val * 1000;
+	else if (multiplier_letter == "m" || multiplier_letter == "M")
+		_clientMaxBodySize = val * 0;
+	else if (multiplier_letter == "g" || multiplier_letter == "G")
+		_clientMaxBodySize = val * 1000000000;
 }
 
 void Config::_parseHost(std::string &str, std::fstream &file) {
@@ -280,7 +298,7 @@ std::string                     Config::getErrorPage(unsigned short status) cons
     throw std::out_of_range("");
 }
 const std::map<unsigned short, std::string> &Config::getErrorPages() const { return _errorPages; }
-const std::string              &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
+unsigned long int               Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
 const std::string              &Config::getHost() const { return _host; }
 const std::string              &Config::getRoot() const { return _root; }
 const std::vector<std::string> &Config::getIndex() const { return _index; }

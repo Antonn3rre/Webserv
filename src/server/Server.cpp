@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "AMessage.hpp"
 #include "Application.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
@@ -53,12 +54,30 @@ void Server::_sendAnswer(const std::string &answer, int clientfd) {
 	}
 }
 
-bool Server::_listenClientResponse(char *buffer, int clientfd) {
-	bzero(buffer, 8192);
-	if (read(clientfd, buffer, 8192) < 0) {
-		std::cerr << "Error on read." << std::endl;
-		close(clientfd);
-		return true;
+bool Server::_listenClientRequest(int clientfd, std::string &result,
+                                  unsigned long clientMaxBodySize) {
+	const int     BUF_SIZE = 8192;
+	char          buffer[BUF_SIZE];
+	unsigned long count = 0;
+
+	int bytes_red = 1;
+	while (bytes_red) {
+		bzero(buffer, BUF_SIZE);
+		bytes_red = read(clientfd, buffer, BUF_SIZE);
+		if (bytes_red < 0) {
+			std::cerr << "Error on read." << std::endl;
+			close(clientfd);
+			return true;
+		}
+		result.append(buffer, BUF_SIZE);
+		count += bytes_red;
+		if (clientMaxBodySize != 0 && count >= clientMaxBodySize) {
+			std::cout << "multiplier_letter = |" << clientMaxBodySize << "|" << std::endl;
+			throw AMessage::MessageError(413);
+		}
+		if (bytes_red < BUF_SIZE) {
+			break;
+		}
 	}
 	return false;
 }
@@ -70,7 +89,6 @@ void Server::_serverLoop() {
 	int                clientfd = -1;
 	int                nfds;
 	struct epoll_event events[MAX_EVENTS];
-	char               buffer[8192];
 	bool               newClient;
 
 	while (true) {
@@ -96,12 +114,21 @@ void Server::_serverLoop() {
 				}
 			}
 			if (!newClient) {
-				if (_listenClientResponse(buffer, events[i].data.fd))
-					continue;
+				Config actualAppConfig = _getApplicationFromFD(events[i].data.fd).getConfig();
 				try {
-					RequestMessage  request(buffer);
-					ResponseMessage answer = RequestHandler::generateResponse(
-					    _getApplicationFromFD(events[i].data.fd).getConfig(), request);
+					std::string requestStr;
+
+					if (_listenClientRequest(events[i].data.fd, requestStr,
+					                         actualAppConfig.getClientMaxBodySize())) {
+						continue; // TODO: delete, instead: throw an error in the function
+					}
+					RequestMessage  request(requestStr.c_str());
+					ResponseMessage answer =
+					    RequestHandler::generateResponse(actualAppConfig, request);
+					_sendAnswer(answer.str(), events[i].data.fd);
+				} catch (AMessage::MessageError &e) {
+					ResponseMessage answer = RequestHandler::generateErrorResponse(
+					    actualAppConfig, request, e.getStatusCode());
 					_sendAnswer(answer.str(), events[i].data.fd);
 				} catch (std::exception &e) {
 					std::cerr << "Error: " << e.what() << std::endl;
