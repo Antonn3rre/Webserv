@@ -27,10 +27,13 @@ class RequestHandler {
 	static void        _generateErrorHeaders(ResponseMessage &response);
 
 	static bool _checkHostHeader(const RequestMessage &request, const std::string &host);
+
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);
 	static void _addContentLengthHeader(ResponseMessage &response);
 	static void _addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
 	                                  unsigned short status);
+	static void _addDateHeader(ResponseMessage &response);
+	static std::string _getTime();
 
 	static const Location &_findURILocation(const std::vector<Location> &locations,
 	                                        const std::string           &uri);
