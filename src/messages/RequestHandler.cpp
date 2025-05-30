@@ -22,7 +22,6 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
                                                  const RequestMessage &request) {
 	unsigned short status;
 
-	(void)config;
 	std::cout << request.str() << std::endl;
 	std::string     body = _generateBody(request, status, config);
 	StatusLine      statusLine = _generateStatusLine(status);
@@ -126,9 +125,13 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
 	std::string locRoot = _findURILocation(config.getLocations(), requestUri).getRoot();
 	std::string path = locRoot + requestUri;
+	struct stat sb;
 
 	if (path[path.length() - 1] == '/')
 		path += config.getIndex().at(0);
+	else if (stat(path.c_str(), &sb) == 0 &&
+	         (sb.st_mode & S_IFDIR)) // Is the path a directory but without the '/'
+		path += "/" + config.getIndex().at(0);
 
 	return path;
 }
