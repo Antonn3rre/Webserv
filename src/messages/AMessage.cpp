@@ -1,5 +1,7 @@
 #include "AMessage.hpp"
 #include "Header.hpp"
+#include <cstddef>
+#include <ios>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -19,7 +21,7 @@ AMessage::AMessage(const std::string &subMessage) {
 		addHeader(Header(line));
 	}
 	// _checkDuplicateHeaders();
-	_checkHostHeader();
+	// _checkHostHeader();
 
 	int i = 0;
 	while (std::getline(sstream, line)) {
@@ -56,15 +58,6 @@ AMessage::MessageError::~MessageError() throw() {}
 const char *AMessage::MessageError::what() const throw() { return _message.c_str(); }
 
 unsigned short AMessage::MessageError::getStatusCode() const { return _statusCode; }
-
-AMessage::SyntaxError::SyntaxError(const std::string &error, const std::string &badSyntax)
-    : MessageError("bad syntax: " + error, badSyntax) {}
-
-AMessage::Unsupported::Unsupported(const std::string &name, const std::string &value)
-    : MessageError("unsupported " + name, value) {}
-
-AMessage::InvalidData::InvalidData(const std::string &name, const std::string &value)
-    : MessageError("invalid " + name, value) {}
 
 void AMessage::addHeader(const Header &header) {
 	if (_isHeaderValid(header.getName()))
@@ -105,7 +98,7 @@ void AMessage::_checkDuplicateHeaders() const {
 	for (std::vector<Header>::const_iterator it1 = _headers.begin(); it1 != _headers.end(); ++it1)
 		for (std::vector<Header>::const_iterator it2 = it1 + 1; it2 != _headers.end(); ++it2)
 			if (it1->getName() == it2->getName() && !it1->isDuplicateAllowed())
-				throw InvalidData("header (duplicate)", it1->str() + " and " + it2->str());
+				throw MessageError(400, "header (duplicate)", it1->str() + " and " + it2->str());
 }
 
 void AMessage::_checkHostHeader() const {
@@ -129,7 +122,8 @@ void AMessage::_setValidHeaders() {
 	// General headers
 	_insertKnownHeader("Connection", Header::General, true, false);
 	_insertKnownHeader("Date", Header::General, true, false);
-	_insertKnownHeader("Transfer-Encoding", Header::General, true, false);
+	_insertKnownHeader("Transfer-Encoding", Header::General, true, true);
+	_insertKnownHeader("Trailer", Header::General, true, false);
 	// Entity headers
 	_insertKnownHeader("Allow", Header::Entity, true, false);
 	_insertKnownHeader("Content-Length", Header::Entity, true, false);
@@ -145,7 +139,6 @@ void AMessage::_setValidHeaders() {
 	// General headers
 	_insertKnownHeader("Cache-Control", Header::General, false, true);
 	_insertKnownHeader("Pragma", Header::General, false, false);
-	_insertKnownHeader("Trailer", Header::General, false, false);
 	_insertKnownHeader("Upgrade", Header::General, false, false);
 	_insertKnownHeader("Via", Header::General, false, false);
 	_insertKnownHeader("Warning", Header::General, false, false);
@@ -193,6 +186,19 @@ void AMessage::_setValidHeaders() {
 	_insertKnownHeader("Proxy-Authenticate", Header::Response, false, false);
 	_insertKnownHeader("Retry-After", Header::Response, false, false);
 	_insertKnownHeader("Vary", Header::Response, false, false);
+}
+
+void AMessage::appendChunk(const std::string &chunk) {
+	unsigned long     chunkLen;
+	std::stringstream ss;
+	size_t            firstLineEnd = chunk.find("\r\n");
+
+	ss << std::hex << chunk.substr(0, firstLineEnd);
+	ss >> chunkLen;
+
+	std::string content =
+	    chunk.substr(firstLineEnd + 2, chunk.find("\r\n", firstLineEnd + 2) - firstLineEnd - 2);
+	_body += content;
 }
 
 const std::string &AMessage::getBody() const { return _body; }

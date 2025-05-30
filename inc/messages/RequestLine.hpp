@@ -12,7 +12,7 @@ class RequestLine : public AStartLine {
 	            const std::string &requestUri);
 
 	const std::string &getMethod() const;
-	const std::string  getRequestUri() const;
+	const std::string &getRequestUri() const;
 
 	std::string str() const;
 

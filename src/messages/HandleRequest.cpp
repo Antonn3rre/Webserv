@@ -5,7 +5,6 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <vector>
 #include <dirent.h>
 #include <iterator>
 #include <string>
@@ -13,26 +12,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>
-
-const Location &findURILocation(const std::vector<Location> &locations,
-                                const RequestMessage       &request) {
-	const std::string &uri = request.getRequestUri();
-	const Location    *longestValidLoc = NULL;
-
-	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
-		if (it->getName().length() > uri.length())
-			continue;
-		std::string path = uri.substr(0, it->getName().length());
-		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
-			continue;
-		if (it->getName() == path &&
-		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
-			longestValidLoc = &*it;
-	}
-	if (longestValidLoc)
-		return *longestValidLoc;
-	throw AMessage::MessageError(404);
-}
+#include <vector>
 
 bool checkMethods(const std::vector<std::string> &methods, const std::string &requestMethod) {
 	for (std::vector<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
@@ -40,13 +20,6 @@ bool checkMethods(const std::vector<std::string> &methods, const std::string &re
 			return (true);
 	}
 	return (false);
-}
-std::string getCompletePath(const std::string &locRoot, const std::string &requestUri) {
-	if (locRoot.empty())
-		return (requestUri);
-	if (*(locRoot.rbegin()) == '/')
-		return (locRoot.substr(0, locRoot.size() - 1) + requestUri);
-	return locRoot + requestUri;
 }
 
 int checkUrl(std::string &url) {

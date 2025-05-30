@@ -15,15 +15,17 @@ const std::string &RequestMessage::getHttpVersion() const { return _startLine.ge
 
 std::string RequestMessage::str() const {
 	std::string str = _startLine.str();
-	str += "\n";
+	str += "\r\n";
 	for (std::vector<Header>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
 		str += (*it).str();
-		str += "\n";
+		str += "\r\n";
 	}
-	str += "\n";
+	str += "\r\n";
 	str += _body;
 
 	return str;
 }
+
 const std::string &RequestMessage::getMethod() const { return _startLine.getMethod(); }
-const std::string  RequestMessage::getRequestUri() const { return _startLine.getRequestUri(); }
+
+const std::string &RequestMessage::getRequestUri() const { return _startLine.getRequestUri(); }

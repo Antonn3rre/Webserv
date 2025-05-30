@@ -17,6 +17,8 @@ class AMessage {
 
 	void addHeader(const Header &header);
 
+	void appendChunk(const std::string &chunk);
+
 	std::pair<std::string, bool> getHeaderValue(const std::string &headerName) const;
 	const std::string           &getBody() const;
 	const std::vector<Header>   &getHeaders() const;
@@ -36,21 +38,6 @@ class AMessage {
 		private:
 		std::string    _message;
 		unsigned short _statusCode;
-	};
-
-	class SyntaxError : public MessageError {
-		public:
-		SyntaxError(const std::string &error, const std::string &badSyntax);
-	};
-
-	class Unsupported : public MessageError {
-		public:
-		Unsupported(const std::string &name, const std::string &value);
-	};
-
-	class InvalidData : public MessageError {
-		public:
-		InvalidData(const std::string &name, const std::string &value);
 	};
 
 	protected:

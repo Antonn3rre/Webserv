@@ -1,16 +1,13 @@
 #ifndef HANDLE_REQUEST_HPP
 #define HANDLE_REQUEST_HPP
 
-#include "Application.hpp"
 #include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 
 // class HandleRequest {
 //	public:
-int         findRightLocIndex(Config &config, RequestMessage &request);
-int         checkMethods(std::vector<std::string> methods, const std::string &requestMethod);
-std::string getCompletePath(const std::string &locRoot, const std::string &requestUri);
+int checkMethods(std::vector<std::string> methods, const std::string &requestMethod);
 std::pair<int, std::string> handleRequest(const Config &config, RequestMessage &request);
 int                         checkUrl(const std::string &url);
 int                         indexWork(Config &config, std::string &url, int indexLoc);

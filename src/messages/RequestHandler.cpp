@@ -14,6 +14,7 @@
 #include <dirent.h>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -29,6 +30,21 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
 	ResponseMessage response(statusLine, body);
 	_generateHeaders(response, request, status);
 	return response;
+}
+
+ResponseMessage RequestHandler::generateErrorResponse(const Config         &config,
+                                                      const RequestMessage &request,
+                                                      unsigned short        status) {
+	std::cout << request.str() << std::endl;
+	std::string     body = _generateErrorBody(status, config);
+	StatusLine      statusLine = _generateStatusLine(status);
+	ResponseMessage response(statusLine, body);
+	_generateHeaders(response, request, status);
+	return response;
+}
+
+std::string RequestHandler::_generateErrorBody(unsigned short status, const Config &config) {
+	return MethodHandler::loadFile(config.getErrorPage(status));
 }
 
 std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status,
@@ -48,7 +64,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		status = 200;
 	} catch (AMessage::MessageError &e) {
 		status = e.getStatusCode();
-		return MethodHandler::loadFile(config.getErrorPage(e.getStatusCode()));
+		return _generateErrorBody(status, config);
 	}
 	return body;
 }
@@ -90,8 +106,8 @@ void RequestHandler::_addContentTypeHeader(const RequestMessage &request, Respon
 		response.addHeader(Header("Content-Type", "text/html"));
 		return;
 	}
-	std::string requestUri = request.getRequestUri();
-	std::size_t dotpos = requestUri.rfind('.', requestUri.length());
+	const std::string &requestUri = request.getRequestUri();
+	std::size_t        dotpos = requestUri.rfind('.', requestUri.length());
 	if (dotpos != std::string::npos) {
 		std::string extension = requestUri.substr(dotpos + 1, requestUri.length());
 		if (extension == "JPG" || extension == "jpg")
@@ -120,7 +136,7 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 	}
 	if (longestValidLoc)
 		return *longestValidLoc;
-	throw AMessage::InvalidData("requested URI does not correspond to any location", uri);
+	throw AMessage::MessageError(404, "requested URI does not correspond to any location", uri);
 }
 
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
