@@ -14,6 +14,7 @@
 #include <dirent.h>
 #include <iostream>
 #include <sstream>
+#include <sys/stat.h>
 #include <unistd.h>
 
 RequestHandler::RequestHandler() {}
