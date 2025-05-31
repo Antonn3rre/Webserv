@@ -20,6 +20,7 @@ class RequestHandler {
 		unsigned short _statusCode;
 	};
 	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
+	static std::string _executeCgi(const RequestMessage &request, const std::string &uri);
 
 	private:
 	RequestHandler();
@@ -29,7 +30,7 @@ class RequestHandler {
 	static void                     _saveFile(const std::string &filename, const std::string &body);
 	static char                   **_setEnv();
 	static std::vector<std::string> _setEnv(const RequestMessage &, const std::string &);
-	static std::string _executeCgi(const RequestMessage &request, const std::string &uri);
+	//static std::string _executeCgi(const RequestMessage &request, const std::string &uri);
 
 	static std::string _deleteRequest(const std::string &page);
 	std::string        _getRequest(const std::string &page);

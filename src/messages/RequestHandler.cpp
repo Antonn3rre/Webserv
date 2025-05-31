@@ -67,7 +67,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		if (method == "GET") {
 			body = MethodHandler::getRequest(path);
 		} else if (method == "POST") {
-			body = MethodHandler::postRequest(path);
+			body = MethodHandler::postRequest(request, path);
 		} else if (method == "DELETE") {
 			body = MethodHandler::deleteRequest(path);
 		}
@@ -250,9 +250,9 @@ std::vector<std::string> RequestHandler::_setEnv(const RequestMessage &request,
 
 std::string RequestHandler::_executeCgi(const RequestMessage &request, const std::string &uri) {
 	if (access(uri.c_str(), F_OK) == -1)
-    	throw AMessage::InvalidData("cgi, does not exist", uri);
+    	throw AMessage::MessageError("cgi, does not exist", uri);
 	if (access(uri.c_str(), X_OK) == -1)
-    	throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
+    	throw AMessage::MessageError("cgi, does not have authorization to execute", uri);
 
 	// setEnv -> besoin de le faire ici car init en local
 	std::vector<std::string> env = _setEnv(request, uri);

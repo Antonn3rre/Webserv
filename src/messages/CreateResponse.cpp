@@ -8,6 +8,8 @@
 #include <fstream>
 #include <string>
 #include <unistd.h>
+#include <iostream>
+
 
 bool readPage(const std::string &page, std::string &body) {
 	std::fstream file;
@@ -44,47 +46,13 @@ bool generateAutoindent(const std::string &page, std::string &body) {
 	return (true);
 }
 
-// Surement pas besoin de ces fonctions -> POST va dans CGI
-// int checkContentType(std::string value) {
-//	if (value.find("multipart/form-data;", 0, 20)) // pour upload fichier, ajouter autres si besoin
-//		return (1);
-//	return (415);
-//}
-
-// bool postMultipart(RequestMessage &request, const std::string &page, std::string &body) {
-//	// add check boundary=
-//	std::string contentType = request.getHeaderValue("Content-type").first;
-//	std::string boundary =
-//	    contentType.substr(contentType.find('=') + 1, contentType.size() - contentType.find('='));
-//
-//	// idee : faire une boucle pour recuperer les infos comme des RequestMessage
-//	// (meme disposition de Header + body (parfois ?), pas de firstLine)
-//	// Est ce qu'on stocke dans un RequestMessage ? Autre chose ?
-//	// Est ce qu'on recupere tout puis traite tout, ou au fur et a mesure
-//
-//	(void)boundary;
-//	(void)request;
-//	(void)page;
-//	(void)body;
-//	return (true);
-// }
-//
-// int postRequest(RequestMessage &request, const std::string &page, std::string &body) {
-//	int contentType = checkContentType(request.getHeaderValue("Content-type").first);
-//	if (contentType > 1)
-//		return (contentType); // error
-//	if (contentType == 1) {
-//		postMultipart(request, page, body);
-//	}
-//	return (true);
-// }
-
 // Manque toute la construction des headers
-ResponseMessage RequestHandler::createResponse(const Config &config, RequestMessage &request,
+ResponseMessage RequestHandler::_createResponse(const Config &config, RequestMessage &request,
                                                std::pair<int, std::string> &handled) {
 	std::string body;
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));
 
+  std::cout << "\n\n\n\n ---- ICI ------ \n\n\n\n";
 	if (handled.first == 1) {
 		body = CgiHandler::executeCgi(request, handled.second);
 		handled.first = 200; // code a revoir

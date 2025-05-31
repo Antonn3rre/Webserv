@@ -1,4 +1,5 @@
 #include "MethodHandler.hpp"
+#include "RequestHandler.hpp"
 #include "AMessage.hpp"
 #include <cstdlib>
 #include <cstring>
@@ -18,11 +19,10 @@ std::string MethodHandler::getRequest(const std::string &page) {
 	return (loadFile(page));
 }
 
-std::string MethodHandler::postRequest(const std::string &page) {
+std::string MethodHandler::postRequest(const RequestMessage &request, const std::string &page) {
 	if (!access(page.c_str(), F_OK) && access(page.c_str(), W_OK))
 		throw AMessage::MessageError(403);
-	std::string body;
-	// CGI PHP anton
+	std::string body = RequestHandler::_executeCgi(request, page);
 	return (body);
 }
 
