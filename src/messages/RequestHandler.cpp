@@ -1,12 +1,17 @@
 #include "RequestHandler.hpp"
 #include "AMessage.hpp"
 #include "Config.hpp"
+#include "Header.hpp"
+#include "Location.hpp"
+#include "MethodHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
 #include <cerrno>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
 #include <fstream>
@@ -20,38 +25,166 @@
 
 RequestHandler::RequestHandler() {}
 
-RequestHandler::RequestError::RequestError(const std::string &error, const std::string &argument)
-    : AMessage::MessageError(error, argument) {}
-
-unsigned short RequestHandler::RequestError::getStatusCode() const { return _statusCode; }
-
 ResponseMessage RequestHandler::generateResponse(const Config         &config,
                                                  const RequestMessage &request) {
 	unsigned short status;
 	(void)config;
 
-	std::string     body = _generateBody(request, status);
+	std::cout << request.str() << std::endl;
+	std::string     body = _generateBody(request, status, config);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
-	_generateHeaders(response, request);
+	_generateHeaders(response, request, status);
 	return response;
 }
 
-std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status) {
-	(void)request;
-	(void)status;
-	return ("Fonction pas encore definie");
+ResponseMessage RequestHandler::generateErrorResponse(const Config &config, unsigned short status) {
+	std::string     body = _generateErrorBody(status, config);
+	StatusLine      statusLine = _generateStatusLine(status);
+	ResponseMessage response(statusLine, body);
+	_generateErrorHeaders(response);
+	return response;
+}
+
+std::string RequestHandler::_generateErrorBody(unsigned short status, const Config &config) {
+	return MethodHandler::loadFile(config.getErrorPage(status));
+}
+
+void RequestHandler::_generateErrorHeaders(ResponseMessage &response) {
+	_addDateHeader(response);
+	response.addHeader(Header("Connection", "close"));
+	response.addHeader(Header("Content-Type", "text/html"));
+	_addContentLengthHeader(response);
+}
+
+std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status,
+                                          const Config &config) {
+	std::string        body;
+	const std::string &method = request.getMethod();
+	std::string        path = _getCompletePath(config, request.getRequestUri());
+
+	try {
+		if (method == "GET") {
+			body = MethodHandler::getRequest(path);
+		} else if (method == "POST") {
+			body = MethodHandler::postRequest(path);
+		} else if (method == "DELETE") {
+			body = MethodHandler::deleteRequest(path);
+		}
+		status = 200;
+	} catch (AMessage::MessageError &e) {
+		status = e.getStatusCode();
+		return _generateErrorBody(status, config);
+	}
+	return body;
 }
 
 StatusLine RequestHandler::_generateStatusLine(unsigned short status) {
 	return StatusLine("HTTP/1.1", status);
 }
 
-void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMessage &request) {
+void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMessage &request,
+                                      unsigned short status) {
 	// headerValue = _checkHost(request, "");
+	_addDateHeader(response);
 	_addContentLengthHeader(response);
 	_addConnectionHeader(request, response);
+	_addContentTypeHeader(request, response, status);
 	response.addHeader(Header("Server", "webserv"));
+}
+
+void RequestHandler::_addDateHeader(ResponseMessage &response) {
+	response.addHeader(Header("Date", _getTime()));
+}
+
+std::string RequestHandler::_getTime() {
+	time_t   timeStamp = time(NULL);
+	std::tm *dateTime = std::gmtime(&timeStamp);
+	mktime(dateTime);
+	std::string timeStr;
+
+	// Week day
+	switch (dateTime->tm_wday - 1) // -1 offset because wtf
+	{
+		case 0:
+			timeStr += "Mon";
+			break;
+		case 1:
+			timeStr += "Tue";
+			break;
+		case 2:
+			timeStr += "Wed";
+			break;
+		case 3:
+			timeStr += "Thu";
+			break;
+		case 4:
+			timeStr += "Fri";
+			break;
+		case 5:
+			timeStr += "Sat";
+			break;
+		case 6:
+			timeStr += "Sun";
+			break;
+	}
+	timeStr += ", ";
+
+	std::ostringstream sstream;
+
+	// Month day
+	sstream << dateTime->tm_mday;
+	timeStr += sstream.str() + " ";
+	sstream.str("");
+
+	// Month
+	switch (dateTime->tm_mon) {
+		case 0:
+			timeStr += "Jan";
+			break;
+		case 1:
+			timeStr += "Feb";
+			break;
+		case 2:
+			timeStr += "Mar";
+			break;
+		case 3:
+			timeStr += "Apr";
+			break;
+		case 4:
+			timeStr += "May";
+			break;
+		case 5:
+			timeStr += "Jun";
+			break;
+		case 6:
+			timeStr += "Jul";
+			break;
+		case 7:
+			timeStr += "Aug";
+			break;
+		case 8:
+			timeStr += "Sep";
+			break;
+		case 9:
+			timeStr += "Oct";
+			break;
+		case 10:
+			timeStr += "Nov";
+			break;
+		case 11:
+			timeStr += "Dec";
+			break;
+	}
+	timeStr += " ";
+
+	// Year
+	sstream << dateTime->tm_year + 1900 << " ";
+	// Hour
+	sstream << dateTime->tm_hour << ":" << dateTime->tm_min << ":" << dateTime->tm_sec << " GMT";
+	timeStr += sstream.str();
+
+	return timeStr;
 }
 
 void RequestHandler::_addConnectionHeader(const RequestMessage &request,
@@ -72,11 +205,23 @@ void RequestHandler::_addContentLengthHeader(ResponseMessage &response) {
 	response.addHeader(Header("Content-Length", lengthStream.str()));
 }
 
-std::string RequestHandler::_deleteRequest(const std::string &page) {
-	std::string body = _loadFile(page);
-	std::remove(page.c_str());
-	// add check ?
-	return (body);
+void RequestHandler::_addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
+                                           unsigned short status) {
+	if (status >= 400) {
+		response.addHeader(Header("Content-Type", "text/html"));
+		return;
+	}
+	const std::string &requestUri = request.getRequestUri();
+	std::size_t        dotpos = requestUri.rfind('.', requestUri.length());
+	if (dotpos != std::string::npos) {
+		std::string extension = requestUri.substr(dotpos + 1, requestUri.length());
+		if (extension == "JPG" || extension == "jpg")
+			response.addHeader(Header("Content-Type", "image/jpeg"));
+		else if (extension == "ico")
+			response.addHeader(Header("Content-Type", "image/svg+xml"));
+		else if (extension == "html")
+			response.addHeader(Header("Content-Type", "text/html"));
+	}
 }
 
 std::vector<std::string> RequestHandler::_setEnv(const RequestMessage &request,
@@ -159,17 +304,6 @@ std::string RequestHandler::_executeCgi(const RequestMessage &request, const std
 
 }
 
-
-
-std::string RequestHandler::_getCompletePath(const std::string &locRoot,
-                                             const std::string &requestUri) {
-	if (locRoot.empty())
-		return (requestUri);
-	if (*(locRoot.rbegin()) == '/')
-		return (locRoot.substr(0, locRoot.size() - 1) + requestUri);
-	return locRoot + requestUri;
-}
-
 std::string RequestHandler::_loadFile(const std::string &filename) {
 	std::ifstream      file(filename.c_str(), std::ios::binary);
 	std::ostringstream bodyStream;
@@ -178,11 +312,48 @@ std::string RequestHandler::_loadFile(const std::string &filename) {
 	return bodyStream.str();
 }
 
-void RequestHandler::_saveFile(const std::string &filename, const std::string &body) {
-	std::ofstream file;
-	file.open(filename.c_str(), std::ios::trunc | std::ios::binary);
-	file << body;
+const Location &RequestHandler::_findURILocation(const std::vector<Location> &locations,
+                                                 const std::string           &uri) {
+	const Location *longestValidLoc = NULL;
+
+	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end();
+	     ++it) {
+		if (it->getName().length() > uri.length())
+			continue;
+		std::string path = uri.substr(0, it->getName().length());
+		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
+			continue;
+		if (it->getName() == path &&
+		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
+			longestValidLoc = &*it;
+	}
+	if (longestValidLoc)
+		return *longestValidLoc;
+	throw AMessage::MessageError(404, "requested URI does not correspond to any location", uri);
 }
+
+std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
+	std::string locRoot = _findURILocation(config.getLocations(), requestUri).getRoot();
+	std::string path = locRoot + requestUri;
+	struct stat sb;
+
+	if (path[path.length() - 1] == '/')
+		path += config.getIndex().at(0);
+	else if (stat(path.c_str(), &sb) == 0 &&
+	         (sb.st_mode & S_IFDIR)) // Is the path a directory but without the '/'
+		path += "/" + config.getIndex().at(0);
+
+	return path;
+}
+/*
+std::string RequestHandler::_getCompletePath(const std::string &locRoot,
+                                             const std::string &requestUri) {
+	if (locRoot.empty())
+		return (requestUri);
+	if (*(locRoot.rbegin()) == '/')
+		return (locRoot.substr(0, locRoot.size() - 1) + requestUri);
+	return locRoot + requestUri;
+}*/
 
 bool RequestHandler::_checkHostHeader(const RequestMessage &request, const std::string &host) {
 	std::pair<std::string, bool> hostValue = request.getHeaderValue("Host");

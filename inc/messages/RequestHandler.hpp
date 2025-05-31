@@ -1,7 +1,6 @@
 #ifndef REQUESTHANDLER_HPP
 #define REQUESTHANDLER_HPP
 
-#include "AMessage.hpp"
 #include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
@@ -12,8 +11,6 @@ class RequestHandler {
 	public:
 	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
 
-	static ResponseMessage createResponse(const Config &config, RequestMessage &request,
-	                                      std::pair<int, std::string> &handled);
 	class RequestError : AMessage::MessageError {
 		public:
 		RequestError(const std::string &error, const std::string &argument);
@@ -22,6 +19,7 @@ class RequestHandler {
 		private:
 		unsigned short _statusCode;
 	};
+	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
 
 	private:
 	RequestHandler();
@@ -36,16 +34,30 @@ class RequestHandler {
 	static std::string _deleteRequest(const std::string &page);
 	std::string        _getRequest(const std::string &page);
 	std::string        _postRequest(const std::string &page);
+	ResponseMessage _createResponse(const Config &config, RequestMessage &request,
+	                                std::pair<int, std::string> &handled);
 
 	static StatusLine  _generateStatusLine(unsigned short status);
-	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request);
-	static std::string _generateBody(const RequestMessage &request, unsigned short &status);
+	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request,
+	                                    unsigned short status);
+	static std::string _generateBody(const RequestMessage &request, unsigned short &status,
+	                                 const Config &config);
+	static std::string _generateErrorBody(unsigned short status, const Config &config);
+	static void        _generateErrorHeaders(ResponseMessage &response);
 
 	static bool _checkHostHeader(const RequestMessage &request, const std::string &host);
+
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);
 	static void _addContentLengthHeader(ResponseMessage &response);
+	static void _addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
+	                                  unsigned short status);
+	static void _addDateHeader(ResponseMessage &response);
+	static std::string _getTime();
 
-	static std::string _getCompletePath(const std::string &locRoot, const std::string &requestUri);
+	static const Location &_findURILocation(const std::vector<Location> &locations,
+	                                        const std::string           &uri);
+
+	static std::string _getCompletePath(const Config &config, const std::string &requestUri);
 };
 
 #endif

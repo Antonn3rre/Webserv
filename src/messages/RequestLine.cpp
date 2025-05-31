@@ -7,17 +7,17 @@
 
 RequestLine::RequestLine(const std::string &line)
     : AStartLine(line.substr(line.find("HTTP"))) { // TODO: find a better method on hard refresh.
-	size_t spacePos = line.find(' ');
-
 	_setValidMethods();
+
+	size_t spacePos = line.find(' ');
 	_method = line.substr(0, spacePos);
 	_requestUri = line.substr(spacePos + 1, line.find(' ', spacePos + 1) - spacePos - 1);
+
 	std::map<std::string, bool>::iterator headerEntry = _validMethods.find(_method);
-	if (headerEntry != _validMethods.end()) {
-		if (!headerEntry->second)
-			throw AMessage::Unsupported("method", _method);
-	} else
-		throw AMessage::InvalidData("method", _method);
+	if (headerEntry == _validMethods.end())
+		throw AMessage::MessageError(400, "invalid method", _method);
+	if (!headerEntry->second)
+		throw AMessage::MessageError(501, "unsupported method", _method);
 }
 
 RequestLine::RequestLine(const std::string &httpVersion, const std::string &method,
@@ -31,6 +31,7 @@ const std::string &RequestLine::getRequestUri() const { return _requestUri; }
 std::string RequestLine::str() const {
 	return _method + " " + _requestUri + " " + getHttpVersion();
 }
+
 void RequestLine::_setValidMethods() {
 	// SUPPORTED
 	_validMethods.insert(std::pair<std::string, bool>("GET", true));

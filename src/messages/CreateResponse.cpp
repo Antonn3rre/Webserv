@@ -1,3 +1,4 @@
+#include "CgiHandler.hpp"
 #include "Config.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
@@ -85,7 +86,7 @@ ResponseMessage RequestHandler::createResponse(const Config &config, RequestMess
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));
 
 	if (handled.first == 1) {
-		body = _executeCgi(request, handled.second);
+		body = CgiHandler::executeCgi(request, handled.second);
 		handled.first = 200; // code a revoir
 	} else if (handled.first == 2) {
 		handled.first = 200;

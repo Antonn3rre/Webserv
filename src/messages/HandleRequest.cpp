@@ -5,49 +5,21 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <deque>
 #include <dirent.h>
-#include <iostream>
 #include <iterator>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 
-const Location &findURILocation(const std::deque<Location> &locations,
-                                const RequestMessage       &request) {
-	const std::string &uri = request.getRequestUri();
-	const Location    *longestValidLoc = NULL;
-
-	for (std::deque<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
-		if (it->getName().length() > uri.length())
-			continue;
-		std::string path = uri.substr(0, it->getName().length());
-		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
-			continue;
-		if (it->getName() == path &&
-		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
-			longestValidLoc = &*it;
-	}
-	if (longestValidLoc)
-		return *longestValidLoc;
-	throw AMessage::InvalidData("requested URI does not correspond to any location", uri);
-}
-
-bool checkMethods(const std::deque<std::string> &methods, const std::string &requestMethod) {
-	for (std::deque<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
+bool checkMethods(const std::vector<std::string> &methods, const std::string &requestMethod) {
+	for (std::vector<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it) {
 		if (*it == requestMethod)
 			return (true);
 	}
 	return (false);
-}
-std::string getCompletePath(const std::string &locRoot, const std::string &requestUri) {
-	if (locRoot.empty())
-		return (requestUri);
-	if (*(locRoot.rbegin()) == '/')
-		return (locRoot.substr(0, locRoot.size() - 1) + requestUri);
-	return locRoot + requestUri;
 }
 
 int checkUrl(std::string &url) {
@@ -80,9 +52,9 @@ int checkUrl(std::string &url) {
 int indexWork(const Config &config, std::string &url, Location &location) {
 	std::string testIndex;
 
-	// Si deque vide, begin == end
-	std::deque<std::string> index = config.getIndex();
-	for (std::deque<std::string>::iterator it = index.begin(); it != index.end(); ++it) {
+	// Si vector vide, begin == end
+	std::vector<std::string> index = config.getIndex();
+	for (std::vector<std::string>::iterator it = index.begin(); it != index.end(); ++it) {
 		testIndex = url + *it;
 		if (!access(testIndex.c_str(), F_OK)) {
 			url = testIndex;

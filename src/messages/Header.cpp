@@ -2,7 +2,8 @@
 
 Header::Header(const std::string &headerLine)
     : _name(headerLine.substr(0, headerLine.find(':'))),
-      _value(headerLine.substr(headerLine.find(' ') + 1, headerLine.find('\r'))) {}
+      _value(headerLine.substr(headerLine.find(' ') + 1,
+                               headerLine.find('\r') - headerLine.find(' ') - 1)) {}
 
 Header::Header(const std::string &name, const std::string &value) : _name(name), _value(value) {}
 

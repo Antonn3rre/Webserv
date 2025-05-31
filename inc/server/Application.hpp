@@ -13,17 +13,11 @@ class Application {
 	int    _lsockfd;
 
 	void _printAtLaunch(void);
-	bool _listenClientResponse(struct epoll_event &events, char *buffer);
-	void _sendAnswer(std::string answer, struct epoll_event &event);
-	// void        _serverLoop();
-	std::string _buildAnswer(void);
 
 	public:
-	//	Application();
 	Application(char *configFile);
 	Application(std::fstream &file);
 	Application(const Application &);
-	// void startServer(void);
 
 	class ApplicationError : public std::exception {
 		public:
@@ -35,7 +29,7 @@ class Application {
 		std::string _message;
 	};
 
-	void _initApplication(int epollfd);
+	void initApplication(int epollfd);
 
 	// Config getter
 	const Config &getConfig(void) const;

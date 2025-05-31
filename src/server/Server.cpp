@@ -1,22 +1,18 @@
 #include "Server.hpp"
+#include "AMessage.hpp"
 #include "Application.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
+#include "ResponseMessage.hpp"
+#include <cstddef>
+#include <exception>
 #include <iostream>
-#include <sstream>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <vector>
-
-// Server::Server(void) {
-//	Application test;
-//	_applicationList.push_back(test);
-//	std::cout << _applicationList.size() << std::endl;
-//	std::cout << _applicationList[0].getConfig().getPort() << std::endl;
-// };
 
 Server::Server(const std::string &filename) {
 	std::fstream file;
@@ -35,28 +31,13 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
-
-Application &Server::getRightApplication(std::pair<std::string, bool> requestHost) {
-	std::cout << "Dans right, requestHost = " << requestHost.second << std::endl;
-	for (std::vector<Application>::iterator it = _applicationList.begin();
-	     it != _applicationList.end(); ++it) {
-		for (std::deque<std::string>::const_iterator sit =
-		         it->getConfig().getApplicationName().begin();
-		     sit != it->getConfig().getApplicationName().end(); ++sit) {
-			std::cout << "Valeur sit = " << *sit << std::endl;
-			if (*sit == requestHost.first)
-				return *it;
-		}
-	}
-	return _applicationList.front();
-}
+Server::~Server(void){};
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
 	for (std::vector<Application>::iterator itServer = _applicationList.begin();
-	     itServer != _applicationList.end(); itServer++) {
-		itServer->_initApplication(_epollfd);
+	     itServer != _applicationList.end(); ++itServer) {
+		itServer->initApplication(_epollfd);
 	}
 }
 
@@ -64,85 +45,51 @@ void Server::startServer(void) {
 	_initServer();
 	std::cout << "TEST" << std::endl;
 	_serverLoop();
-	// close(_lsockfd); // to put in the signal handler
 }
 
-void Server::_sendAnswer(std::string answer, struct epoll_event &event) {
-	if (send(event.data.fd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
+void Server::_sendAnswer(const std::string &answer, int clientfd) {
+	if (send(clientfd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
 		std::cerr << "Error on write." << std::endl;
-		close(event.data.fd);
+		_clientAppMap.erase(clientfd);
+		close(clientfd);
 	}
 }
 
-std::string _executeCgi(const std::string &uri) {
-	// if (access(uri.c_str(), F_OK) == -1)
-	// 	throw AMessage::InvalidData("cgi, does not exist", uri);
-	// if (access(uri.c_str(), X_OK) == -1)
-	// 	throw AMessage::InvalidData("cgi, does not have authorization to execute", uri);
-	int pipefd[2];
-	pipe(pipefd);
+bool Server::_listenClientRequest(int clientfd, std::string &result,
+                                  unsigned long clientMaxBodySize) {
+	const int     bufSize = 8192;
+	char          buffer[bufSize];
+	unsigned long count = 0;
 
-	int pid = fork();
-	if (pid == 0) {
-		close(pipefd[0]);
-		char **argv = {NULL};
-		dup2(pipefd[1], STDOUT_FILENO);
-		close(pipefd[1]);
-		execve(uri.c_str(), argv, NULL);
-		std::cerr << "execve error" << std::endl;
-		exit(1);
+	ssize_t bytesRed = 1;
+	while (bytesRed) {
+		bzero(buffer, bufSize);
+		bytesRed = read(clientfd, buffer, bufSize);
+		if (bytesRed < 0) {
+			std::cerr << "Error on read." << std::endl;
+			close(clientfd);
+			return true;
+		}
+		result.append(buffer, bufSize);
+		count += bytesRed;
+		if (clientMaxBodySize != 0 && count >= clientMaxBodySize) {
+			std::cout << "multiplier_letter = |" << clientMaxBodySize << "|" << std::endl;
+			throw AMessage::MessageError(413);
+		}
+		if (bytesRed < bufSize) {
+			break;
+		}
 	}
-	close(pipefd[1]);
-	ssize_t     bytesRead;
-	std::string output;
-	char        buffer[1024];
-	bzero(buffer, 1024);
-	do {
-		bytesRead = read(pipefd[0], buffer, 1024);
-		std::string bufStr(buffer);
-		output += bufStr.substr(0, bytesRead);
-	} while (bytesRead == 1024);
-	close(pipefd[0]);
-	return output;
+	return false;
 }
 
-bool Server::_listenClientResponse(struct epoll_event &event, char *buffer) {
-	bzero(buffer, 8192);
-	if (read(event.data.fd, buffer, 8192) < 0) {
-		std::cerr << "Error on read." << std::endl;
-		close(event.data.fd);
-		return (1);
-	}
-	RequestMessage test(buffer);
-	std::cout << "TEST/ " << test.getRequestUri() << std::endl;
-	if (strstr(buffer, "cgi-bin")) {
-		std::cout << "TESTCGI" << std::endl;
-		std::stringstream ss;
-		std::string       test = _executeCgi("website/var/www/cgi-bin/helloworld.cgi");
-		ss << "HTTP/1.1 200 OK\r\n"
-		   << "Date: Mon, 12 May 2025 16:29:56 GMT\r\n"
-		   << "Content-Type: text/html; charset=utf-8\r\n"
-		   << "Content-Length: " << test.length() << "\r\n"
-		   << "Connection: keep-alive\r\n"
-		   << "Server: gunicorn/19.9.0\r\n"
-		   << "Access-Control-Allow-Origin: *\r\n"
-		   << "Access-Control-Allow-Credentials: true\r\n"
-		   << "\r\n"
-		   << test;
-		std::cout << "returns -> " << test << std::endl;
-		_sendAnswer(ss.str(), event);
-		return (1);
-	}
-	std::cout << buffer << std::endl;
-	return (0);
-}
+Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
 
 void Server::_serverLoop() {
 	struct epoll_event ev;
 	int                clientfd = -1;
 	int                nfds;
 	struct epoll_event events[MAX_EVENTS];
-	char               buffer[8192];
 	bool               newClient;
 
 	while (true) {
@@ -151,15 +98,16 @@ void Server::_serverLoop() {
 		for (int i = 0; i < nfds; ++i) {
 			newClient = false;
 			for (std::vector<Application>::iterator itServer = _applicationList.begin();
-			     itServer != _applicationList.end(); itServer++) {
+			     itServer != _applicationList.end(); ++itServer) {
 				if (events[i].data.fd == itServer->getLSockFd()) {
-					// reinterpreter_cast into `struct sockaddr *` and &clilen for the last
-					// parameter (see code in the epoll's man) for accept parameters
 					clientfd = accept(itServer->getLSockFd(), NULL, NULL);
 					if (clientfd < 0) {
 						std::cerr << "Error on accept clients." << std::endl;
 						continue;
 					}
+
+					_clientAppMap[clientfd] = &(*itServer);
+
 					ev.events = EPOLLIN | EPOLLET;
 					ev.data.fd = clientfd;
 					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
@@ -167,74 +115,27 @@ void Server::_serverLoop() {
 				}
 			}
 			if (!newClient) {
-				if (_listenClientResponse(events[i], buffer))
-					continue;
-				// RequestHandler(_);
-				std::string answer = _buildAnswer(events[i].data.fd);
+				Config actualAppConfig = _getApplicationFromFD(events[i].data.fd).getConfig();
+				try {
+					std::string requestStr;
 
-				_sendAnswer(answer, events[i]);
+					if (_listenClientRequest(events[i].data.fd, requestStr,
+					                         actualAppConfig.getClientMaxBodySize())) {
+						continue; // TODO: delete, instead: throw an error in the function
+					}
+					RequestMessage  request(requestStr);
+					ResponseMessage answer =
+					    RequestHandler::generateResponse(actualAppConfig, request);
+					_sendAnswer(answer.str(), events[i].data.fd);
+				} catch (AMessage::MessageError &e) {
+					ResponseMessage answer =
+					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
+					_sendAnswer(answer.str(), events[i].data.fd);
+				} catch (std::exception &e) {
+					std::cerr << "Error: " << e.what() << std::endl;
+					continue;
+				}
 			}
 		}
 	}
-}
-
-std::string Server::_buildAnswer(int i) {
-	std::stringstream body;
-	body << "<!DOCTYPE html>\r\n"
-	     << "<html>\r\n"
-	     << "<head><title>First webserv</title></head>\r\n"
-	     << "<body>\r\n"
-	     << "<h1> _lsockfd = " << i << "</h1>\r\n"
-	     << "<div align=\"center\">\r\n"
-	     << "<img "
-	     << "src=\"https://remeng.rosselcdn.net/sites/default/files/dpistyles_v2/rem_16_9_1124w/"
-	     << "2020/"
-	     << "09/30/node_194669/12124212/public/2020/09/30/"
-	     << "B9724766829Z.1_20200930170647_000%2BG3EGPBHMU.1-0.jpg?itok=7_rsY6Fj1601564062\" "
-	     << "width=\"1200\" height=\"800\" />\r\n"
-	     << "<a href=\"https://www.google.com/"
-	     << "url?sa=i&url=https%3A%2F%2Fwww.lardennais.fr%2Fid194669%2Farticle%2F2020-09-30%"
-	        "2Fles-"
-	     << "punaises-de-lit-lui-ont-fait-vivre-un-enfer-charleville-mezieres&psig=AOvVaw1InOT-"
-	     << "kYF5steCdhBc6F-7&ust=1747918462193000&source=images&cd=vfe&opi=89978449&ved="
-	     << "0CBcQjhxqFwoTCLCDguvNtI0DFQAAAAAdAAAAABAE\" target=_blank>\r\n"
-	     << "<h1> A Charleville - Mézières, les punaises de lit lui ont fait vivre un enfer "
-	     << "</h1></a>\r\n"
-	     << "<img "
-	     << "src=\"https://media1.tenor.com/m/WckcGq81cjYAAAAd/"
-	        "herv%C3%A9-regnier-tiktok.gif\"></"
-	     << "img>"
-	     << "</div>\r\n"
-	     << "<div><a href=\"/cgi-bin\"><button type=\"button\" id=\"get-btn\"> Hello world! "
-	        "</button></a></div>"
-	     << "<script>"
-	     << "const button = document.getElementById('get-btn');"
-	     << "button.addEventListener('click', async () => {"
-	     << "  try {"
-	     << "    const response = await fetch('/cgi-bin');"
-	     << "    const text = await response.text();"
-	     << "    console.log('Réponse reçue:', text);"
-	     << "  } catch (err) {"
-	     << "    console.error('Erreur :', err);"
-	     << "  }"
-	     << "});"
-	     << "</script>"
-
-	     << "</body>\r\n"
-	     << "</html>\r\n";
-
-	std::stringstream ss;
-	ss << "HTTP/1.1 200 OK\r\n"
-	   << "Date: Mon, 12 May 2025 16:29:56 GMT\r\n"
-	   << "Content-Type: text/html; charset=utf-8\r\n"
-	   << "Content-Length: " << body.str().length() << "\r\n"
-	   << "Connection: keep-alive\r\n"
-	   << "Server: gunicorn/19.9.0\r\n"
-	   << "Access-Control-Allow-Origin: *\r\n"
-	   << "Access-Control-Allow-Credentials: true\r\n"
-	   << "\r\n"
-	   << body.str();
-
-	// ResponseMessage response(ss.str());
-	return ss.str();
 }

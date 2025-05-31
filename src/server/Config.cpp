@@ -19,7 +19,7 @@ Config::Config(std::fstream &file) {
 	                      "host",   "root",        "index",      "location"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
 	    &Config::_parseListen,    &Config::_parseApplicationName,
-	    &Config::_parseErrorPage, &Config::_parseClientMax,
+	    &Config::_parseErrorPage, &Config::_parseClientMaxSizeBody,
 	    &Config::_parseHost,      &Config::_parseRoot,
 	    &Config::_parseIndex,     &Config::_parseLocation};
 
@@ -71,11 +71,11 @@ Config::Config(std::fstream &file) {
 	// Affichage test
 	// std::cout << "TESTTTT = " << getAddress() << " | " << getPort() << std::endl;
 	// std::cout << "Listen = |" << _listen << "|" << std::endl;
-	// for (std::deque<std::string>::iterator it = _applicationName.begin();
+	// for (std::vector<std::string>::iterator it = _applicationName.begin();
 	//      it != _applicationName.end(); it++)
 	// 	std::cout << "Config name = " << *it << std::endl;
 	// std::cout << "Root = |" << _root << "|" << std::endl;
-	// for (std::deque<std::string>::iterator it = _index.begin(); it != _index.end(); it++)
+	// for (std::vector<std::string>::iterator it = _index.begin(); it != _index.end(); it++)
 	// 	std::cout << "Index = " << *it << std::endl;
 	// std::cout << "Client max = | " << _clientMaxBodySize << " | " << std::endl;
 	// std::cout << " Host = | " << _host << " | " << std::endl;
@@ -89,10 +89,21 @@ Config::Config(const Config &former)
     : _listen(former.getListen()), _address(former.getAddress()), _port(former.getPort()),
       _applicationName(former.getApplicationName()), _errorPages(former.getErrorPages()),
       _clientMaxBodySize(former.getClientMaxBodySize()), _host(former.getHost()),
-      _root(former.getRoot()), _index(former.getIndex()), _location(former.getLocation()) {}
+      _root(former.getRoot()), _index(former.getIndex()), _locations(former.getLocations()) {}
 
 Config &Config::operator=(const Config &former) {
-	(void)former;
+	if (this != &former) {
+		_listen = former.getListen();
+		_address = former.getAddress();
+		_port = former.getPort();
+		_applicationName = former.getApplicationName();
+		_errorPages = former.getErrorPages();
+		_clientMaxBodySize = former.getClientMaxBodySize();
+		_host = former.getHost();
+		_root = former.getRoot();
+		_index = former.getIndex();
+		_locations = former.getLocations();
+	}
 	return *this;
 }
 
@@ -113,8 +124,8 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 		throw Config::Exception("Problem parse listen (;)");
 	_listen = _listen.substr(0, _listen.length() - 1);
 	_listen = trim(_listen);
-	_address = _listen.substr(0, _listen.find(":", 0));
-	_port = std::atoi(_listen.substr(_listen.find(":", 0) + 1, _listen.length()).c_str());
+	_address = _listen.substr(0, _listen.find(':', 0));
+	_port = std::atoi(_listen.substr(_listen.find(':', 0) + 1, _listen.length()).c_str());
 }
 
 void Config::_parseApplicationName(std::string &str, std::fstream &file) {
@@ -171,16 +182,33 @@ void Config::_parseErrorPage(std::string &str, std::fstream &file) {
 	}
 }
 
-void Config::_parseClientMax(std::string &str, std::fstream &file) {
+void Config::_parseClientMaxSizeBody(std::string &str, std::fstream &file) {
 	std::getline(file, str);
+	std::string strClientMaxBodySize;
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse client max body size");
-	_clientMaxBodySize = trim(str);
-	if (_clientMaxBodySize.length() - 1 != _clientMaxBodySize.find_first_of(';') ||
-	    _clientMaxBodySize.length() == 1)
+	strClientMaxBodySize = trim(str);
+	if (strClientMaxBodySize.length() - 1 != strClientMaxBodySize.find_first_of(';') ||
+	    strClientMaxBodySize.length() == 1)
 		throw Config::Exception("Problem parse client max body size (;)");
-	_clientMaxBodySize = _clientMaxBodySize.substr(0, _clientMaxBodySize.length() - 1);
-	_clientMaxBodySize = trim(_clientMaxBodySize);
+	strClientMaxBodySize = trim(strClientMaxBodySize.substr(0, strClientMaxBodySize.length() - 1));
+
+	int         val = std::atoi(strClientMaxBodySize.c_str());
+	std::string multiplierLetter;
+	for (std::string::iterator it = strClientMaxBodySize.begin(); it != strClientMaxBodySize.end();
+	     ++it) {
+		if (!std::isdigit(*it))
+			multiplierLetter += *it;
+	}
+	if (multiplierLetter.length() != 1 ||
+	    multiplierLetter.find_first_of("kmgKMG") == std::string::npos)
+		throw Config::Exception("client_max_body_size bad format.");
+	if (multiplierLetter == "k" || multiplierLetter == "K")
+		_clientMaxBodySize = val * 1000;
+	else if (multiplierLetter == "m" || multiplierLetter == "M")
+		_clientMaxBodySize = val * 1000000;
+	else if (multiplierLetter == "g" || multiplierLetter == "G")
+		_clientMaxBodySize = val * 1000000000;
 }
 
 void Config::_parseHost(std::string &str, std::fstream &file) {
@@ -224,7 +252,7 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 
 void Config::_parseLocation(std::string &str, std::fstream &file) {
 	try {
-		_location.push_back(Location(str, file));
+		_locations.push_back(Location(str, file));
 	} catch (Location::Exception &e) {
 		throw Config::Exception("Problem parse location");
 	}
@@ -234,19 +262,21 @@ void Config::_setDefaultErrorPages() {
 	std::stringstream pageNameStream;
 	std::string       pageName;
 
-	for (int i = 400; i <= 505; ++i) {
+	for (unsigned short i = 400; i <= 505; ++i) {
 		pageNameStream.str("");
+		pageNameStream.clear();
 		pageNameStream << "website/errorPages/error" << i << ".html";
 		pageName = pageNameStream.str();
-		_errorPages.insert(std::pair<int, std::string>(i, pageName));
+		_errorPages[i] = pageName;
 		if (i == 417)
 			i = 499;
 	}
 }
 
 void Config::_setDefaultConfig() { _setDefaultErrorPages(); }
+
 void Config::_setDefaultLocation() {
-	for (std::deque<Location>::iterator it = _location.begin(); it != _location.end(); it++) {
+	for (std::vector<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
 		if ((*it).getMethods().empty())
 			(*it).setDefaultMethods();
 		if ((*it).getRoot().empty())
@@ -254,36 +284,37 @@ void Config::_setDefaultLocation() {
 	}
 }
 
-const std::string             &Config::getListen() const { return _listen; }
-const std::string             &Config::getAddress() const { return _address; }
-const int                     &Config::getPort() const { return _port; }
-const std::deque<std::string> &Config::getApplicationName() const { return _applicationName; }
-const std::string             &Config::getErrorPage(int index) const {
-    std::map<int, std::string>::const_iterator it = _errorPages.find(index);
+const std::string              &Config::getListen() const { return _listen; }
+const std::string              &Config::getAddress() const { return _address; }
+const int                      &Config::getPort() const { return _port; }
+const std::vector<std::string> &Config::getApplicationName() const { return _applicationName; }
+std::string                     Config::getErrorPage(unsigned short status) const {
+    std::map<unsigned short, std::string>::const_iterator it = _errorPages.find(status);
+
     if (it != _errorPages.end())
         return it->second;
-    std::cerr << "Error page " << index << " does not exist" << std::endl;
+    std::cout << "Error page " << status << " does not exist" << std::endl;
     throw std::out_of_range("");
 }
-const std::map<int, std::string> &Config::getErrorPages() const { return _errorPages; }
-const std::string             &Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
-const std::string             &Config::getHost() const { return _host; }
-const std::string             &Config::getRoot() const { return _root; }
-const std::deque<std::string> &Config::getIndex() const { return _index; }
-const std::deque<Location>    &Config::getLocation() const { return _location; }
+const std::map<unsigned short, std::string> &Config::getErrorPages() const { return _errorPages; }
+unsigned long int               Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
+const std::string              &Config::getHost() const { return _host; }
+const std::string              &Config::getRoot() const { return _root; }
+const std::vector<std::string> &Config::getIndex() const { return _index; }
+const std::vector<Location>    &Config::getLocations() const { return _locations; }
 
 // Location getter , int parameter is the index of the container
-const std::string &Config::getLocName(int index) const { return _location.at(index).getName(); }
+const std::string &Config::getLocName(int index) const { return _locations.at(index).getName(); }
 const std::pair<int, std::string> &Config::getLocRedirection(int index) const {
-	return _location.at(index).getRedirection();
+	return _locations.at(index).getRedirection();
 }
-const std::deque<std::string> &Config::getLocMethods(int index) const {
-	return _location.at(index).getMethods();
+const std::vector<std::string> &Config::getLocMethods(int index) const {
+	return _locations.at(index).getMethods();
 }
-const std::string &Config::getLocRoot(int index) const { return _location.at(index).getRoot(); }
+const std::string &Config::getLocRoot(int index) const { return _locations.at(index).getRoot(); }
 const bool        &Config::getLocAutoindent(int index) const {
-    return _location.at(index).getAutoindent();
+    return _locations.at(index).getAutoindent();
 }
 
 // additionnal getters
-int Config::getNumOfLoc() const { return (int)_location.size(); }
+int Config::getNumOfLoc() const { return (int)_locations.size(); }
