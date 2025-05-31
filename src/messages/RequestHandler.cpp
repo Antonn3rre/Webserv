@@ -278,8 +278,21 @@ std::string RequestHandler::_executeCgi(const RequestMessage &request, const std
     	dup2(pipefdOut[1], STDERR_FILENO);
     	close(pipefdOut[1]);
 
+    if (uri.find(".php", uri.length() - 4)) {
     	char *argv[] = {const_cast<char *>("/usr/bin/php-cgi"), NULL};
     	execve("/usr/bin/php-cgi", argv, envp.data());
+    }
+    else if (uri.find(".py", uri.length() - 3)) {
+    	char *argv[] = {const_cast<char *>("/usr/bin/python3"), NULL};
+    	execve("/usr/bin/python3", argv, envp.data());
+    }
+    else if (uri.find(".cpp", uri.length() - 3)) {
+    	char *argv[] = {const_cast<char *>("/usr/bin/cpp"), NULL};
+    	execve("/usr/bin/cpp", argv, envp.data());
+    }
+    else
+      std::cerr << "Format not supported" << std::endl;
+
     	std::cerr << "execve error" << std::endl;
     	exit(EXIT_FAILURE);
 	}
@@ -315,11 +328,14 @@ std::string RequestHandler::_loadFile(const std::string &filename) {
 const Location &RequestHandler::_findURILocation(const std::vector<Location> &locations,
                                                  const std::string           &uri) {
 	const Location *longestValidLoc = NULL;
+  const Location *defaultLoc = NULL;
 
 	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end();
 	     ++it) {
 		if (it->getName().length() > uri.length())
 			continue;
+    if (it->getName() == "/")
+      defaultLoc = &*it;
 		std::string path = uri.substr(0, it->getName().length());
 		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
 			continue;
@@ -327,9 +343,10 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
 			longestValidLoc = &*it;
 	}
-	if (longestValidLoc)
+	if (longestValidLoc) {
 		return *longestValidLoc;
-	throw AMessage::MessageError(404, "requested URI does not correspond to any location", uri);
+  }
+  return *defaultLoc;
 }
 
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
