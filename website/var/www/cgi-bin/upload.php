@@ -17,6 +17,12 @@
 #error_log(print_r($_FILES, true));
 #error_log("------------------------");
 
+if ($_SERVER['REQUEST_METHOD'] == "GET") {
+	echo ("GET METHOD NOT SUITED TO THE SCRIPT\n");
+	return ;
+}
+
+
 if (isset($_FILES['file'])) {
     $file = $_FILES['file'];
     // Vérifie s'il y a eu une erreur d'upload
