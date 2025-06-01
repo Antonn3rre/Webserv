@@ -1,6 +1,7 @@
 #include "MethodHandler.hpp"
-#include "RequestHandler.hpp"
 #include "AMessage.hpp"
+#include "CgiHandler.hpp"
+#include "RequestHandler.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -22,7 +23,7 @@ std::string MethodHandler::getRequest(const std::string &page) {
 std::string MethodHandler::postRequest(const RequestMessage &request, const std::string &page) {
 	if (!access(page.c_str(), F_OK) && access(page.c_str(), W_OK))
 		throw AMessage::MessageError(403);
-	std::string body = RequestHandler::_executeCgi(request, page);
+	std::string body = CgiHandler::executeCgi(request, page);
 	return (body);
 }
 
