@@ -1,5 +1,6 @@
 #include "RequestHandler.hpp"
 #include "AMessage.hpp"
+#include "CgiHandler.hpp"
 #include "Config.hpp"
 #include "Header.hpp"
 #include "Location.hpp"
@@ -64,13 +65,21 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	std::string        path = _getCompletePath(config, request.getRequestUri());
 
 	try {
-		if (method == "GET") {
-			body = MethodHandler::getRequest(path);
-		} else if (method == "POST") {
-			body = MethodHandler::postRequest(request, path);
-		} else if (method == "DELETE") {
+		if (path.find("cgi-bin") != std::string::npos) // mais si index.html ?
+			body = CgiHandler::executeCgi(request, path);
+		else if (method == "DELETE")
 			body = MethodHandler::deleteRequest(path);
-		}
+		else
+			body = MethodHandler::getRequest(path);
+		/*
+		    if (method == "GET") {
+		        body = MethodHandler::getRequest(path);
+		    } else if (method == "POST") {
+		        body = MethodHandler::postRequest(request, path);
+		    } else if (method == "DELETE") {
+		        body = MethodHandler::deleteRequest(path);
+		    }
+		*/
 		status = 200;
 	} catch (AMessage::MessageError &e) {
 		status = e.getStatusCode();
