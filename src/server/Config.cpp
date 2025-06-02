@@ -2,6 +2,7 @@
 #include "utilsParsing.hpp"
 #include "utilsSpace.hpp"
 #include <algorithm> // pour afficher les tests
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -86,14 +87,13 @@ Config::Config(std::fstream &file) {
 	// std::cout << "Nmae = |" << _location.front().getName() << "|" << std::endl;
 }
 Config::Config(const Config &former)
-    : _listen(former.getListen()), _address(former.getAddress()), _port(former.getPort()),
+    : _address(former.getAddress()), _port(former.getPort()),
       _applicationName(former.getApplicationName()), _errorPages(former.getErrorPages()),
       _clientMaxBodySize(former.getClientMaxBodySize()), _host(former.getHost()),
       _root(former.getRoot()), _index(former.getIndex()), _locations(former.getLocations()) {}
 
 Config &Config::operator=(const Config &former) {
 	if (this != &former) {
-		_listen = former.getListen();
 		_address = former.getAddress();
 		_port = former.getPort();
 		_applicationName = former.getApplicationName();
@@ -118,24 +118,32 @@ Config::Exception::~Exception() throw() {}
 void Config::_parseListen(std::string &str, std::fstream &file) {
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
-		throw Config::Exception("Problem parse listen");
-	_listen = trim(str);
-	if (_listen.length() - 1 != _listen.find_first_of(';') || _listen.length() == 1)
-		throw Config::Exception("Problem parse listen (;)");
-	_listen = _listen.substr(0, _listen.length() - 1);
-	_listen = trim(_listen);
-	_address = _listen.substr(0, _listen.find(':', 0));
-	_port = std::atoi(_listen.substr(_listen.find(':', 0) + 1, _listen.length()).c_str());
+		throw Config::Exception("Problem parse listen, empty");
+	std::string listen = trim(str);
+	if (listen.length() - 1 != listen.find(';'))
+		throw Config::Exception("Problem parse listen, missing or misplaced ';'");
+	listen.resize(listen.length() - 1);
+	listen = trim(listen);
+	size_t semicolonPos = listen.find(':');
+	if (semicolonPos >= listen.length() - 1)
+		throw Config::Exception("Problem parse listen, nothing after ':'");
+	try {
+		_address = listen.substr(0, semicolonPos);
+		_port =
+		    std::atoi(listen.substr(semicolonPos + 1, listen.length() - semicolonPos - 1).c_str());
+	} catch (const std::exception &e) {
+		std::cerr << "bite" << std::endl;
+	}
 }
 
 void Config::_parseApplicationName(std::string &str, std::fstream &file) {
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
-		throw Config::Exception("Problem parse server name");
+		throw Config::Exception("Problem parse server name, empty");
 	str = trim(str);
-	if (str.length() - 1 != str.rfind(';'))
-		throw Config::Exception("Problem parse server name (;)");
-	str.erase(str.length() - 1);
+	if (str.length() - 1 != str.find(';'))
+		throw Config::Exception("Problem parse server name, missing or misplaced ';'");
+	str.resize(str.length() - 1);
 	if (str.empty())
 		throw Config::Exception("Problem parse server name");
 
@@ -148,26 +156,29 @@ void Config::_parseApplicationName(std::string &str, std::fstream &file) {
 void Config::_parseErrorPage(std::string &str, std::fstream &file) {
 	std::string page;
 
-	int start;
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse error page");
 	str = trim(str);
-	if (str.empty() || str[str.length() - 1] != ';')
+	if (str.length() - 1 != str.find(';'))
 		throw Config::Exception("Problem parse error page (;)");
-	str.erase(str.length() - 1);
+	str.resize(str.length() - 1);
 	if (str.empty())
 		throw Config::Exception("Problem parse error page");
 
 	str = trim(str);
-	start = (int)str.length() - 1;
+	int start = (int)str.length() - 1;
 	while (start >= 0 && !isspace(str[start]))
 		start--;
 	if (start == -1)
 		throw Config::Exception("Problem parse error page");
-	page = str.substr(start + 1, str.length() - start);
+	try {
+		page = str.substr(start + 1, str.length() - start);
 
-	str = str.substr(0, start);
+		str = str.substr(0, start);
+	} catch (const std::exception &e) {
+		std::cerr << "zob" << std::endl;
+	}
 	std::istringstream iss(str);
 	std::string        token;
 
@@ -177,26 +188,23 @@ void Config::_parseErrorPage(std::string &str, std::fstream &file) {
 		if (!(issNum >> code) || code < 100 || code > 599)
 			throw Config::Exception("Problem parsing error page : wrong error code");
 		_errorPages[code] = page;
-		//    std::cout << "code = " << code << " et erorpage[code] = " << _errorPage[code] <<
-		//    std::endl;
 	}
 }
 
 void Config::_parseClientMaxSizeBody(std::string &str, std::fstream &file) {
 	std::getline(file, str);
-	std::string strClientMaxBodySize;
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse client max body size");
-	strClientMaxBodySize = trim(str);
-	if (strClientMaxBodySize.length() - 1 != strClientMaxBodySize.find_first_of(';') ||
-	    strClientMaxBodySize.length() == 1)
+	str = trim(str);
+	if (str.length() - 1 != str.find(';') || str.length() == 1)
 		throw Config::Exception("Problem parse client max body size (;)");
-	strClientMaxBodySize = trim(strClientMaxBodySize.substr(0, strClientMaxBodySize.length() - 1));
+	str.resize(str.length() - 1);
+	str = trim(str);
 
-	int         val = std::atoi(strClientMaxBodySize.c_str());
+	int val = std::atoi(str.c_str());
+
 	std::string multiplierLetter;
-	for (std::string::iterator it = strClientMaxBodySize.begin(); it != strClientMaxBodySize.end();
-	     ++it) {
+	for (std::string::iterator it = str.begin(); it != str.end(); ++it) {
 		if (!std::isdigit(*it))
 			multiplierLetter += *it;
 	}
@@ -216,9 +224,9 @@ void Config::_parseHost(std::string &str, std::fstream &file) {
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse host");
 	_host = trim(str);
-	if (_host.length() - 1 != _host.find_first_of(';') || _host.length() == 1)
+	if (_host.length() - 1 != _host.find(';') || _host.length() == 1)
 		throw Config::Exception("Problem parse host (;)");
-	_host = _host.substr(0, _host.length() - 1);
+	_host.resize(_host.length() - 1);
 	_host = trim(_host);
 }
 
@@ -227,9 +235,10 @@ void Config::_parseRoot(std::string &str, std::fstream &file) {
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse root");
 	_root = trim(str);
-	if (_root.length() - 1 != _root.rfind(';'))
+	if (_root.length() - 1 != _root.find(';'))
 		throw Config::Exception("Problem parse root (;)");
-	_root = _root.substr(0, _root.length() - 1);
+
+	_root.resize(_root.length() - 1);
 	_root = trim(_root);
 }
 
@@ -238,16 +247,15 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse index");
 	str = trim(str);
-	if (str.length() - 1 != str.rfind(';'))
+	if (str.length() - 1 != str.find(';'))
 		throw Config::Exception("Problem parse index (;)");
-	str.erase(str.length() - 1);
+	str.resize(str.length() - 1);
 	if (str.empty())
 		throw Config::Exception("Problem parse index");
 
 	std::istringstream iss(str);
-	while (iss >> str) {
+	while (iss >> str)
 		_index.push_back(str);
-	}
 }
 
 void Config::_parseLocation(std::string &str, std::fstream &file) {
@@ -284,7 +292,6 @@ void Config::_setDefaultLocation() {
 	}
 }
 
-const std::string              &Config::getListen() const { return _listen; }
 const std::string              &Config::getAddress() const { return _address; }
 const int                      &Config::getPort() const { return _port; }
 const std::vector<std::string> &Config::getApplicationName() const { return _applicationName; }

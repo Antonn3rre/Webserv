@@ -30,7 +30,6 @@ class Config {
 	};
 
 	// Config getter
-	const std::string                           &getListen() const;
 	const std::string                           &getAddress() const;
 	const int                                   &getPort() const;
 	const std::vector<std::string>              &getApplicationName() const;
@@ -53,7 +52,6 @@ class Config {
 	int getNumOfLoc() const;
 
 	private:
-	std::string                           _listen;
 	std::string                           _address;
 	int                                   _port;
 	std::vector<std::string>              _applicationName;
