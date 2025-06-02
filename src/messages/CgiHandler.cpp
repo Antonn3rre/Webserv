@@ -71,9 +71,9 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 			char *argv[] = {const_cast<char *>("/usr/bin/python3"), const_cast<char *>(uri.c_str()),
 			                NULL};
 			execve("/usr/bin/python3", argv, envp.data());
-		} else if (uri.find(".cpp", uri.length() - 3) != std::string::npos) {
-			char *argv[] = {const_cast<char *>("/usr/bin/cpp"), NULL};
-			execve("/usr/bin/cpp", argv, envp.data());
+		} else if (uri.find(".cgi", uri.length() - 4) != std::string::npos) {
+			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
+			execve(argv[0], argv, envp.data());
 		} else
 			std::cerr << "Format not supported" << std::endl;
 
