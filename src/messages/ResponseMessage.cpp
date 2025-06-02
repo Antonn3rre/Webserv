@@ -4,7 +4,8 @@
 #include <vector>
 
 ResponseMessage::ResponseMessage(const std::string &message)
-    : AMessage(message.substr(message.find('\n') + 1, std::string::npos)),
+    : AMessage(
+          message.substr(message.find("\r\n") + 2, message.length() - message.find("\r\n") - 2)),
       _startLine(message.substr(0, message.find("\r\n"))) {}
 
 ResponseMessage::ResponseMessage(const StatusLine &statusLine, const std::string &body)

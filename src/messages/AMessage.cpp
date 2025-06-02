@@ -46,11 +46,13 @@ AMessage::MessageError::MessageError(unsigned short status) : _statusCode(status
 AMessage::MessageError::MessageError(unsigned short status, const std::string &error,
                                      const std::string &argument)
     : _statusCode(status) {
-	_message = "HTTP message error: " + error + ": " + argument;
+	std::ostringstream msgStream;
+	msgStream << "HTTP message error " << status << ": " << error << ", " << argument;
+	_message = msgStream.str();
 }
 
 AMessage::MessageError::MessageError(const std::string &error, const std::string &argument) {
-	_message = "HTTP message error: " + error + ": " + argument;
+	_message = "HTTP message error: " + error + ", " + argument;
 }
 
 AMessage::MessageError::~MessageError() throw() {}
@@ -189,15 +191,23 @@ void AMessage::_setValidHeaders() {
 }
 
 void AMessage::appendChunk(const std::string &chunk) {
-	unsigned long     chunkLen;
 	std::stringstream ss;
-	size_t            firstLineEnd = chunk.find("\r\n");
+	size_t            sizeLen = chunk.find("\r\n");
 
-	ss << std::hex << chunk.substr(0, firstLineEnd);
+	if (sizeLen == std::string::npos)
+		throw AMessage::MessageError(400, "bad chunk", "missing CRLF after chunk size");
+	ss << std::hex << chunk.substr(0, sizeLen);
+	std::string s = ss.str();
+	if (s.find_first_not_of("0123456789abcdefABCDEF") < sizeLen)
+		throw AMessage::MessageError(400, "bad chunk", "chunk size is not an hexadecimal number");
+	size_t chunkLen;
 	ss >> chunkLen;
-
-	std::string content =
-	    chunk.substr(firstLineEnd + 2, chunk.find("\r\n", firstLineEnd + 2) - firstLineEnd - 2);
+	if (ss.fail())
+		throw AMessage::MessageError(400, "bad chunk", "chunk size is not an hexadecimal number");
+	if (chunkLen != chunk.find("\r\n", sizeLen + 2) - sizeLen - 2)
+		throw AMessage::MessageError(400, "bad chunk",
+		                             "chunk size does not correspond to real size");
+	std::string content = chunk.substr(sizeLen + 2, chunkLen);
 	_body += content;
 }
 

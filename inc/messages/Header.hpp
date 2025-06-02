@@ -25,11 +25,11 @@ class Header {
 	std::string str() const;
 
 	private:
-	const std::string _name;
-	const std::string _value;
-	HeaderType        _type;
-	bool              _isSupported;
-	bool              _isDuplicateAllowed;
+	std::string _name;
+	std::string _value;
+	HeaderType  _type;
+	bool        _isSupported;
+	bool        _isDuplicateAllowed;
 };
 
 #endif

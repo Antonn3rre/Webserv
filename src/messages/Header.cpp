@@ -1,9 +1,16 @@
 #include "Header.hpp"
+#include "AMessage.hpp"
+#include <cstddef>
 
-Header::Header(const std::string &headerLine)
-    : _name(headerLine.substr(0, headerLine.find(':'))),
-      _value(headerLine.substr(headerLine.find(' ') + 1,
-                               headerLine.find('\r') - headerLine.find(' ') - 1)) {}
+Header::Header(const std::string &headerLine) {
+	size_t nameLen = headerLine.find(':');
+	if (nameLen == std::string::npos)
+		throw AMessage::MessageError(400, "invalid header", "missing ':'");
+	_name = (headerLine.substr(0, nameLen));
+	size_t valueStart = headerLine.find_first_not_of(" \t", nameLen + 1);
+	size_t valueEnd = headerLine.find_first_of(" \t\r", valueStart);
+	_value = (headerLine.substr(valueStart, valueEnd - valueStart));
+}
 
 Header::Header(const std::string &name, const std::string &value) : _name(name), _value(value) {}
 
