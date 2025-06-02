@@ -5,13 +5,17 @@
 #include <map>
 #include <string>
 
-RequestLine::RequestLine(const std::string &line)
-    : AStartLine(line.substr(line.find("HTTP"))) { // TODO: find a better method on hard refresh.
+RequestLine::RequestLine(const std::string &line) : AStartLine(line) {
 	_setValidMethods();
 
 	size_t spacePos = line.find(' ');
+	if (spacePos == std::string::npos)
+		throw AMessage::MessageError(400, "bad request line", "no space after method");
 	_method = line.substr(0, spacePos);
-	_requestUri = line.substr(spacePos + 1, line.find(' ', spacePos + 1) - spacePos - 1);
+	size_t spacePos2 = line.find(' ', spacePos + 1);
+	if (spacePos2 == std::string::npos)
+		throw AMessage::MessageError(400, "bad request line", "no space after uri");
+	_requestUri = line.substr(spacePos + 1, spacePos2 - spacePos - 1);
 
 	std::map<std::string, bool>::iterator headerEntry = _validMethods.find(_method);
 	if (headerEntry == _validMethods.end())

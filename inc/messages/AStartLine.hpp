@@ -5,10 +5,10 @@
 
 class AStartLine {
 	private:
-	const std::string _httpVersion;
+	std::string _httpVersion;
 
 	public:
-	AStartLine(const std::string &version);
+	AStartLine(const std::string &line);
 	virtual ~AStartLine();
 
 	const std::string &getHttpVersion() const;

@@ -1,4 +1,5 @@
 #include "StatusLine.hpp"
+#include "AMessage.hpp"
 #include "AStartLine.hpp"
 #include <cstddef>
 #include <cstdlib>
@@ -6,9 +7,13 @@
 #include <sstream>
 #include <string>
 
-StatusLine::StatusLine(const std::string &line) : AStartLine(line.substr(0, line.find(' '))) {
+StatusLine::StatusLine(const std::string &line) : AStartLine(line) {
 	size_t startPos = line.find(' ');
+	if (startPos == std::string::npos)
+		throw AMessage::MessageError(500, "bad status line", "no space after version");
 	size_t endPos = line.find(' ', startPos + 1);
+	if (endPos == std::string::npos)
+		throw AMessage::MessageError(500, "bad status line", "no space after status");
 
 	_statusCode = atoi(line.substr(startPos, endPos - startPos).c_str());
 	_reasonPhrase = line.substr(endPos + 1, std::string::npos);
