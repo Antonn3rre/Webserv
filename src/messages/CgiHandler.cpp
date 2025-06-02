@@ -1,7 +1,9 @@
 #include "CgiHandler.hpp"
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <iostream>
+#include <string>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
@@ -20,8 +22,8 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 	envMap.insert(std::pair<std::string, std::string>("QUERY_STRING", ""));
 	envMap.insert(std::pair<std::string, std::string>(
 	    "CONTENT_LENGTH", request.getHeaderValue("Content-Length").first));
-	envMap.insert(std::pair<std::string, std::string>("SERVER_NAME",
-	                                                  request.getHeaderValue("server_name").first));
+	// check si utile de recuperer server_name, si oui comment recuperer info
+	envMap.insert(std::pair<std::string, std::string>("SERVER_NAME", "localhost"));
 	// voir quoi rajouter d'autre
 
 	std::vector<std::string> envVec;
@@ -35,8 +37,8 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri) {
 	if (access(uri.c_str(), F_OK) == -1)
 		throw AMessage::MessageError("cgi, does not exist", uri);
-	if (access(uri.c_str(), X_OK) == -1)
-		throw AMessage::MessageError("cgi, does not have authorization to execute", uri);
+	//	if (access(uri.c_str(), X_OK) == -1)
+	//		throw AMessage::MessageError("cgi, does not have authorization to execute", uri);
 
 	// setEnv -> besoin de le faire ici car init en local
 	std::vector<std::string> env = _setEnv(request, uri);
@@ -62,13 +64,14 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		dup2(pipefdOut[1], STDERR_FILENO);
 		close(pipefdOut[1]);
 
-		if (uri.find(".php", uri.length() - 4)) {
+		if (uri.find(".php", uri.length() - 4) != std::string::npos) {
 			char *argv[] = {const_cast<char *>("/usr/bin/php-cgi"), NULL};
 			execve("/usr/bin/php-cgi", argv, envp.data());
-		} else if (uri.find(".py", uri.length() - 3)) {
-			char *argv[] = {const_cast<char *>("/usr/bin/python3"), NULL};
+		} else if (uri.find(".py", uri.length() - 3) != std::string::npos) {
+			char *argv[] = {const_cast<char *>("/usr/bin/python3"), const_cast<char *>(uri.c_str()),
+			                NULL};
 			execve("/usr/bin/python3", argv, envp.data());
-		} else if (uri.find(".cpp", uri.length() - 3)) {
+		} else if (uri.find(".cpp", uri.length() - 3) != std::string::npos) {
 			char *argv[] = {const_cast<char *>("/usr/bin/cpp"), NULL};
 			execve("/usr/bin/cpp", argv, envp.data());
 		} else
@@ -80,8 +83,8 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	close(pipefdIn[0]);
 	close(pipefdOut[1]);
 	//	std::cerr << "DEBUG (C++): Longueur du corps à écrire : " << request.getBody().length()
-	//          	<< std::endl;
-	//	std::cerr << "DEBUG (C++): Contenu du corps à écrire :\n" << request.getBody() << std::endl;
+	//	          << std::endl;
+	//	std::cerr << "DEBUG (C++): Contenu du corps à écrire : " << request.getBody() << std::endl;
 	write(pipefdIn[1], request.getBody().c_str(), request.getBody().length());
 	close(pipefdIn[1]);
 
