@@ -203,4 +203,6 @@ void AMessage::appendChunk(const std::string &chunk) {
 
 const std::string &AMessage::getBody() const { return _body; }
 
+void AMessage::setBody(const std::string &str) { _body = str; }
+
 const std::vector<Header> &AMessage::getHeaders() const { return _headers; }
