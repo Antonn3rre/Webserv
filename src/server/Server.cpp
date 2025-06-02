@@ -31,7 +31,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
@@ -73,7 +73,6 @@ bool Server::_listenClientRequest(int clientfd, std::string &result,
 		result.append(buffer, bufSize);
 		count += bytesRed;
 		if (clientMaxBodySize != 0 && count >= clientMaxBodySize) {
-			std::cout << "multiplier_letter = |" << clientMaxBodySize << "|" << std::endl;
 			throw AMessage::MessageError(413);
 		}
 		if (bytesRed < bufSize) {

@@ -52,7 +52,6 @@ ResponseMessage RequestHandler::_createResponse(const Config &config, RequestMes
 	std::string body;
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));
 
-  std::cout << "\n\n\n\n ---- ICI ------ \n\n\n\n";
 	if (handled.first == 1) {
 		body = CgiHandler::executeCgi(request, handled.second);
 		handled.first = 200; // code a revoir

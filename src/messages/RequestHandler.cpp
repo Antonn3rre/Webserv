@@ -29,9 +29,7 @@ RequestHandler::RequestHandler() {}
 ResponseMessage RequestHandler::generateResponse(const Config         &config,
                                                  const RequestMessage &request) {
 	unsigned short status;
-	(void)config;
 
-	std::cout << request.str() << std::endl;
 	std::string     body = _generateBody(request, status, config);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
@@ -278,15 +276,6 @@ std::string RequestHandler::_getCompletePath(const Config &config, const std::st
 
 	return path;
 }
-/*
-std::string RequestHandler::_getCompletePath(const std::string &locRoot,
-                                             const std::string &requestUri) {
-    if (locRoot.empty())
-        return (requestUri);
-    if (*(locRoot.rbegin()) == '/')
-        return (locRoot.substr(0, locRoot.size() - 1) + requestUri);
-    return locRoot + requestUri;
-}*/
 
 bool RequestHandler::_checkHostHeader(const RequestMessage &request, const std::string &host) {
 	std::pair<std::string, bool> hostValue = request.getHeaderValue("Host");

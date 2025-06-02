@@ -61,12 +61,12 @@ int main() {
 	// 	std::cout << std::endl << std::endl;
 	// }
 	// Chunk Transfer Encoding
-	{
-		RequestMessage request("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
-		request.appendChunk("6\r\nHello,\r\n");
-		request.appendChunk("6\r\nworld!\r\n");
-		std::cout << request.str() << std::endl;
-	}
+	// {
+	// 	RequestMessage request("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+	// 	request.appendChunk("6\r\nHello,\r\n");
+	// 	request.appendChunk("6\r\nworld!\r\n");
+	// 	std::cout << request.str() << std::endl;
+	// }
 	// Server Start
 	{
 		std::cout << "\e[33mTEST START SERVER\e[0m" << std::endl;
@@ -74,7 +74,8 @@ int main() {
 		test.startServer();
 	}
 	// CGI execution
-	{}
+	{
+	}
 	// Config test
 	// {
 	// 	std::cout << "\e[33mTEST CONFIG\e[0m" << std::endl;
