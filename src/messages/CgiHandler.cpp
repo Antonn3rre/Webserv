@@ -65,12 +65,11 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		close(pipefdOut[1]);
 
 		if (uri.find(".php", uri.length() - 4) != std::string::npos) {
-			char *argv[] = {const_cast<char *>("/usr/bin/php-cgi"), NULL};
-			execve("/usr/bin/php-cgi", argv, envp.data());
+			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
+			execve(argv[0], argv, envp.data());
 		} else if (uri.find(".py", uri.length() - 3) != std::string::npos) {
-			char *argv[] = {const_cast<char *>("/usr/bin/python3"), const_cast<char *>(uri.c_str()),
-			                NULL};
-			execve("/usr/bin/python3", argv, envp.data());
+			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
+			execve(argv[0], argv, envp.data());
 		} else if (uri.find(".cgi", uri.length() - 4) != std::string::npos) {
 			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
 			execve(argv[0], argv, envp.data());

@@ -214,6 +214,24 @@ void RequestHandler::_addContentLengthHeader(ResponseMessage &response) {
 
 void RequestHandler::_addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
                                            unsigned short status) {
+	// Si le content type a deja ete ajoute par le CGI
+	std::string body = response.getBody();
+	size_t      headerEnd = body.find("\r\n\r\n");
+	if (headerEnd != std::string::npos) {
+		size_t contentTypePos = body.find("Content-type:", 0);
+		if (contentTypePos != std::string::npos && contentTypePos < headerEnd) {
+			size_t valueStart =
+			    body.find_first_not_of(" \t", contentTypePos + 13); // 13 = Taille de Content-Type:
+			size_t lineEnd = body.find("\r\n", valueStart);
+			if (lineEnd != std::string::npos) {
+				std::string contentTypeValue = body.substr(valueStart, lineEnd - valueStart);
+				response.addHeader(Header("Content-Type", contentTypeValue));
+				response.setBody(body.substr(headerEnd + 4));
+				return;
+			}
+		}
+	}
+
 	if (status >= 400) {
 		response.addHeader(Header("Content-Type", "text/html"));
 		return;

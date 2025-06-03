@@ -1,3 +1,4 @@
+#!/usr/bin/php-cgi
 <?php
 
 // Active l'affichage des erreurs pour le développement
@@ -18,7 +19,7 @@
 #error_log("------------------------");
 
 if ($_SERVER['REQUEST_METHOD'] == "GET") {
-	echo ("GET METHOD NOT SUITED TO THE SCRIPT\n");
+	echo ("GET METHOD NOT SUITED TO THE SCRIPT\r\n");
 	return ;
 }
 
@@ -31,15 +32,15 @@ if (isset($_FILES['file'])) {
         $upload_file = $upload_dir . basename($file['name']);
 
         if (move_uploaded_file($file['tmp_name'], $upload_file)) {
-            echo "File " . htmlspecialchars(basename($file['name'])) . " uploaded successfully.\n";
-            echo "Path : " . $upload_file . "\n";
+            echo "File " . htmlspecialchars(basename($file['name'])) . " uploaded successfully.\r\n";
+            echo "Path : " . $upload_file . "\r\n";
         } else {
-            echo "Error moving file.\n";
+            echo "Error moving file.\r\n";
             error_log("Error moving file: " . $file['tmp_name'] . " to " . $upload_file);
         }
   } else {
 
-        echo "Upload error : Code " . $file['error'] . "\n";
+        echo "Upload error : Code " . $file['error'] . "\r\n";
         error_log("Upload error code: " . $file['error']);
         switch ($file['error']) {
             case UPLOAD_ERR_INI_SIZE:
@@ -69,7 +70,7 @@ if (isset($_FILES['file'])) {
         }
     }
 } else {
-    echo "Error: 'file' key is missing.\n";
+    echo "Error: 'file' key is missing.\r\n";
     error_log("Error: 'file' key is missing in \$_FILES array.");
 }
 

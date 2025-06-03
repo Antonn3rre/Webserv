@@ -22,6 +22,7 @@ class AMessage {
 	std::pair<std::string, bool> getHeaderValue(const std::string &headerName) const;
 	const std::string           &getBody() const;
 	const std::vector<Header>   &getHeaders() const;
+	void                         setBody(const std::string &);
 
 	virtual std::string str() const = 0;
 
