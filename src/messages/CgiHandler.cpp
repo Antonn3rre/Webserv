@@ -1,9 +1,13 @@
 #include "CgiHandler.hpp"
+#include "Config.hpp"
+#include "MethodHandler.hpp"
+#include "RequestHandler.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <string>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
@@ -34,11 +38,16 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 	return (envVec);
 }
 
-std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri) {
+std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
+                                   const Config &config) {
+	struct stat sb;
 	if (access(uri.c_str(), F_OK) == -1)
 		throw AMessage::MessageError(404);
-	//	if (access(uri.c_str(), X_OK) == -1)
-	//		throw AMessage::MessageError("cgi, does not have authorization to execute", uri);
+	if (stat(uri.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR))
+		return (MethodHandler::getFileRequest(
+		    RequestHandler::findURILocation(config.getLocations(), uri), uri));
+	if (access(uri.c_str(), X_OK) == -1)
+		throw AMessage::MessageError(403);
 
 	// setEnv -> besoin de le faire ici car init en local
 	std::vector<std::string> env = _setEnv(request, uri);

@@ -63,12 +63,14 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	std::string        path = _getCompletePath(config, request.getRequestUri());
 
 	try {
-		if (path.find("cgi-bin") != std::string::npos) // mais si index.html ?
-			body = CgiHandler::executeCgi(request, path);
+		if (path.find("/cgi-bin/") != std::string::npos)
+			body = CgiHandler::executeCgi(request, path, config);
 		else if (method == "DELETE")
 			body = MethodHandler::deleteRequest(path);
-		else
-			body = MethodHandler::getRequest(path);
+		else {
+			std::cout << "YESSS GEEET\n";
+			body = MethodHandler::getRequest(path, config);
+		}
 		/*
 		    if (method == "GET") {
 		        body = MethodHandler::getRequest(path);
@@ -257,8 +259,8 @@ std::string RequestHandler::_loadFile(const std::string &filename) {
 	return bodyStream.str();
 }
 
-const Location &RequestHandler::_findURILocation(const std::vector<Location> &locations,
-                                                 const std::string           &uri) {
+const Location &RequestHandler::findURILocation(const std::vector<Location> &locations,
+                                                const std::string           &uri) {
 	const Location *longestValidLoc = NULL;
 	const Location *defaultLoc = NULL;
 
@@ -269,7 +271,7 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 		if (it->getName() == "/")
 			defaultLoc = &*it;
 		std::string path = uri.substr(0, it->getName().length());
-		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
+		if (*(path.end() - 1) != '/' && (uri[path.length()] && uri[path.length()] != '/'))
 			continue;
 		if (it->getName() == path &&
 		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
@@ -282,7 +284,7 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 }
 
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
-	std::string locRoot = _findURILocation(config.getLocations(), requestUri).getRoot();
+	std::string locRoot = findURILocation(config.getLocations(), requestUri).getRoot();
 	std::string path = locRoot + requestUri;
 	struct stat sb;
 
