@@ -289,6 +289,8 @@ void Config::_setDefaultLocation() {
 			(*it).setDefaultMethods();
 		if ((*it).getRoot().empty())
 			(*it).setDefaultRoot(getRoot());
+		if ((*it).getIndex().empty())
+			(*it).setDefaultIndex(getIndex());
 	}
 }
 
@@ -318,6 +320,10 @@ const std::pair<int, std::string> &Config::getLocRedirection(int index) const {
 const std::vector<std::string> &Config::getLocMethods(int index) const {
 	return _locations.at(index).getMethods();
 }
+const std::vector<std::string> &Config::getLocIndex(int index) const {
+	return _locations.at(index).getIndex();
+}
+
 const std::string &Config::getLocRoot(int index) const { return _locations.at(index).getRoot(); }
 const bool &Config::getLocAutoindex(int index) const { return _locations.at(index).getAutoindex(); }
 

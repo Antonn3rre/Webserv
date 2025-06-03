@@ -45,6 +45,7 @@ class Config {
 	const std::string                 &getLocName(int) const;
 	const std::pair<int, std::string> &getLocRedirection(int index) const;
 	const std::vector<std::string>    &getLocMethods(int) const;
+	const std::vector<std::string>    &getLocIndex(int) const;
 	const std::string                 &getLocRoot(int) const;
 	const bool                        &getLocAutoindex(int) const;
 

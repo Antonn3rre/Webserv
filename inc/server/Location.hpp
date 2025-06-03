@@ -19,21 +19,25 @@ class Location {
 	const std::string                 &getName() const;
 	const std::pair<int, std::string> &getRedirection() const;
 	const std::vector<std::string>    &getMethods() const;
+	const std::vector<std::string>    &getIndex() const;
 	const std::string                 &getRoot() const;
 	const bool                        &getAutoindex() const;
 
 	void setDefaultMethods();
+	void setDefaultIndex(const std::vector<std::string> &);
 	void setDefaultRoot(const std::string &);
 
 	private:
 	std::string                 _name;
 	std::pair<int, std::string> _redirection; // std::pair<>
 	std::vector<std::string>    _methods;
+	std::vector<std::string>    _index;
 	std::string                 _root;
 	bool                        _autoindex;
 
 	void _parseRedirection(std::string &, std::fstream &);
 	void _parseMethods(std::string &, std::fstream &);
+	void _parseIndex(std::string &, std::fstream &);
 	void _parseRoot(std::string &, std::fstream &);
 	void _parseIndent(std::string &, std::fstream &);
 };
