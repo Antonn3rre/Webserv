@@ -312,9 +312,7 @@ const std::vector<std::string> &Config::getLocMethods(int index) const {
 	return _locations.at(index).getMethods();
 }
 const std::string &Config::getLocRoot(int index) const { return _locations.at(index).getRoot(); }
-const bool        &Config::getLocAutoindent(int index) const {
-    return _locations.at(index).getAutoindent();
-}
+const bool &Config::getLocAutoindex(int index) const { return _locations.at(index).getAutoindex(); }
 
 // additionnal getters
 int Config::getNumOfLoc() const { return (int)_locations.size(); }

@@ -1,8 +1,8 @@
 #ifndef LOCATION_HPP
 #define LOCATION_HPP
 
-#include <vector>
 #include <string>
+#include <vector>
 
 class Location {
 	public:
@@ -18,9 +18,9 @@ class Location {
 
 	const std::string                 &getName() const;
 	const std::pair<int, std::string> &getRedirection() const;
-	const std::vector<std::string>     &getMethods() const;
+	const std::vector<std::string>    &getMethods() const;
 	const std::string                 &getRoot() const;
-	const bool                        &getAutoindent() const;
+	const bool                        &getAutoindex() const;
 
 	void setDefaultMethods();
 	void setDefaultRoot(const std::string &);
@@ -28,9 +28,9 @@ class Location {
 	private:
 	std::string                 _name;
 	std::pair<int, std::string> _redirection; // std::pair<>
-	std::vector<std::string>     _methods;
+	std::vector<std::string>    _methods;
 	std::string                 _root;
-	bool                        _autoindent;
+	bool                        _autoindex;
 
 	void _parseRedirection(std::string &, std::fstream &);
 	void _parseMethods(std::string &, std::fstream &);

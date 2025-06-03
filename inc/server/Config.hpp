@@ -47,7 +47,7 @@ class Config {
 	const std::pair<int, std::string> &getLocRedirection(int index) const;
 	const std::vector<std::string>    &getLocMethods(int) const;
 	const std::string                 &getLocRoot(int) const;
-	const bool                        &getLocAutoindent(int) const;
+	const bool                        &getLocAutoindex(int) const;
 
 	// Addtionnal getter
 	int getNumOfLoc() const;

@@ -61,10 +61,10 @@ int indexWork(const Config &config, std::string &url, Location &location) {
 			return (1);
 		}
 	}
-	if (location.getAutoindent())
+	if (location.getAutoindex())
 		return (0);
 
-	return (2); // liste autoindent a generer
+	return (2); // liste autoindex a generer
 }
 
 int checkRights(int type, const std::string &url, const std::string &method) {
@@ -111,13 +111,13 @@ std::pair<int, std::string> handleRequest(const Config &config, RequestMessage &
 	returnInfo.first = 200;
 
 	// check si dossier, si oui envoyer sur index   // voir differents comportements selon
-	// methode Si pas d'index, check autoindent et faire en fonction checkUrl -> return 0 si
+	// methode Si pas d'index, check autoindex et faire en fonction checkUrl -> return 0 si
 	// dir, 1 si file, error code si error
 	int resultCheckUrl = checkUrl(returnInfo.second);
 	if (resultCheckUrl > 1)
 		return std::make_pair(resultCheckUrl, config.getErrorPage(resultCheckUrl));
 
-	// Si dossier -> envoye sur index ou autoindent
+	// Si dossier -> envoye sur index ou autoindex
 	if (!resultCheckUrl && request.getMethod() == "GET") {
 		int resultIndex = indexWork(config, returnInfo.second, location);
 		if (!resultIndex)
@@ -125,7 +125,7 @@ std::pair<int, std::string> handleRequest(const Config &config, RequestMessage &
 		if (resultIndex == 2)
 			returnInfo.first = 2; // si list a generer
 	}
-	// return si pas d'index et autoindent off
+	// return si pas d'index et autoindex off
 
 	// check si CGI dans ce cas la, pas de droits a verif je return direct
 	// Pour l'instant on check pas, on executera avec python3, a voir ensuite

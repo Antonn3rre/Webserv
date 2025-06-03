@@ -7,8 +7,8 @@
 #include <string>
 
 Location::Location(std::string &token, std::fstream &file)
-    : _redirection(-1, ""), _autoindent(false) {
-	std::string list[] = {"return", "allow_methods", "root", "autoindent"};
+    : _redirection(-1, ""), _autoindex(false) {
+	std::string list[] = {"return", "allow_methods", "root", "autoindex"};
 	void (Location::*functionPointer[])(std::string &, std::fstream &) = {
 	    &Location::_parseRedirection, &Location::_parseMethods, &Location::_parseRoot,
 	    &Location::_parseIndent};
@@ -37,7 +37,7 @@ Location::Location(std::string &token, std::fstream &file)
 	}
 	//	std::cout << "Name = |" << _name << "|\n";
 	//	std::cout << "Root = |" << _root << "|\n";
-	//	std::cout << "autoindent = " << _autoindent << std::endl;
+	//	std::cout << "autoindex = " << _autoindex << std::endl;
 	//	std::cout << "redirection [301] = " << _redirection[301] << std::endl;
 	//	std::cout << "methods[0] = " << _methods[0] << std::endl;
 }
@@ -49,7 +49,7 @@ Location &Location::operator=(const Location &former) {
 		this->_redirection = former._redirection;
 		this->_methods = former._methods;
 		this->_root = former._root;
-		this->_autoindent = former._autoindent;
+		this->_autoindex = former._autoindex;
 	}
 	return *this;
 }
@@ -112,9 +112,9 @@ void Location::_parseIndent(std::string &str, std::fstream &file) {
 	str = str.substr(0, str.length() - 1);
 	str = trim(str);
 	if (str == "on")
-		_autoindent = true;
+		_autoindex = true;
 	else if (str == "off")
-		_autoindent = false;
+		_autoindex = false;
 	else
 		throw Location::Exception();
 }
@@ -129,6 +129,6 @@ void Location::setDefaultRoot(const std::string &root) { _root = root; }
 
 const std::string                 &Location::getName() const { return _name; }
 const std::pair<int, std::string> &Location::getRedirection() const { return _redirection; }
-const std::vector<std::string>     &Location::getMethods() const { return _methods; };
+const std::vector<std::string>    &Location::getMethods() const { return _methods; };
 const std::string                 &Location::getRoot() const { return _root; };
-const bool                        &Location::getAutoindent() const { return _autoindent; };
+const bool                        &Location::getAutoindex() const { return _autoindex; };
