@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "AMessage.hpp"
 #include "Application.hpp"
+#include "Header.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
@@ -14,6 +15,7 @@
 #include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 Server::Server(const std::string &filename) {
@@ -57,6 +59,42 @@ void Server::_sendAnswer(const std::string &answer, int clientfd) {
 	}
 }
 
+void Server::_listenChunkedRequest(int clientfd, RequestMessage &request,
+                                   unsigned long clientMaxBodySize) {
+	std::pair<std::string, bool> transferEncodingValue =
+	    request.getHeaderValue("Transfer-Encoding");
+	if (!transferEncodingValue.second || transferEncodingValue.first != "chunked")
+		return;
+
+	const int bufSize = 8192;
+	char      buffer[bufSize];
+
+	while (true) {
+		std::string result;
+		bzero(buffer, bufSize);
+		ssize_t bytesRead = 1;
+
+		while (bytesRead) {
+			bzero(buffer, bufSize);
+			bytesRead = read(clientfd, buffer, bufSize);
+			if (bytesRead < 0) {
+				close(clientfd);
+				throw std::runtime_error("error on read");
+			}
+			result.append(buffer, bytesRead);
+			if (result.find("\r\n") != result.rfind("\r\n") || result.find("\r\n") == 0)
+				break;
+		}
+		if (result == "0\r\n\r\n")
+			break;
+		if (clientMaxBodySize != 0 && result.length() >= clientMaxBodySize)
+			throw AMessage::MessageError(413);
+		std::cout << "-- chunk --\n" << result << std::endl;
+		request.appendChunk(result);
+	}
+	std::cout << "--- REQUEST ---" << request.str() << std::endl;
+}
+
 RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize) {
 	const int     bufSize = 8192;
 	char          buffer[bufSize];
@@ -64,24 +102,26 @@ RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMa
 	std::string   result;
 
 	bzero(buffer, bufSize);
-	ssize_t bytesRed = 1;
-	while (bytesRed) {
+	ssize_t bytesRead = 1;
+	while (bytesRead) {
 		bzero(buffer, bufSize);
-		bytesRed = read(clientfd, buffer, bufSize);
-		if (bytesRed < 0) {
+		bytesRead = read(clientfd, buffer, bufSize);
+		if (bytesRead < 0) {
 			close(clientfd);
 			throw std::runtime_error("error on read");
 		}
-		result.append(buffer, bytesRed);
-		count += bytesRed;
-		std::cout << "result --\n" << result << std::endl;
+		result.append(buffer, bytesRead);
+		count += bytesRead;
+		// std::cout << "result --\n" << result << std::endl;
 		if (clientMaxBodySize != 0 && count >= clientMaxBodySize) {
 			throw AMessage::MessageError(413);
 		}
 		if (result.find("\r\n\r\n") != std::string::npos)
 			break;
 	}
-	return RequestMessage(result);
+	RequestMessage request(result);
+	_listenChunkedRequest(clientfd, request, clientMaxBodySize);
+	return request;
 }
 
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
@@ -118,8 +158,6 @@ void Server::_serverLoop() {
 			if (!newClient) {
 				Config actualAppConfig = _getApplicationFromFD(events[i].data.fd).getConfig();
 				try {
-					std::string requestStr;
-
 					RequestMessage request = _listenClientRequest(
 					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
 					ResponseMessage answer =

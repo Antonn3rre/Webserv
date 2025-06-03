@@ -15,6 +15,8 @@ class Server {
 	std::map<int, Application *> _clientAppMap;
 
 	void                  _sendAnswer(const std::string &answer, int clientfd);
+	static void           _listenChunkedRequest(int clientfd, RequestMessage &request,
+	                                            unsigned long clientMaxBodySize);
 	static RequestMessage _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
 	void                  _initServer(void);
 	void                  _serverLoop(void);
