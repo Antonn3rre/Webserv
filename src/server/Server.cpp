@@ -1,7 +1,6 @@
 #include "Server.hpp"
 #include "AMessage.hpp"
 #include "Application.hpp"
-#include "Header.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
@@ -126,6 +125,16 @@ RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMa
 
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
 
+void Server::_evaluateClientConnection(int clientfd, const ResponseMessage &response) {
+	std::pair<std::string, bool> connectionValue = response.getHeaderValue("Connection");
+
+	if (!connectionValue.second || connectionValue.first != "close")
+		return;
+	_clientAppMap.erase(clientfd);
+	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientfd, NULL);
+	close(clientfd);
+}
+
 void Server::_serverLoop() {
 	struct epoll_event ev;
 	int                clientfd = -1;
@@ -160,9 +169,10 @@ void Server::_serverLoop() {
 				try {
 					RequestMessage request = _listenClientRequest(
 					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
-					ResponseMessage answer =
+					ResponseMessage response =
 					    RequestHandler::generateResponse(actualAppConfig, request);
-					_sendAnswer(answer.str(), events[i].data.fd);
+					_sendAnswer(response.str(), events[i].data.fd);
+					_evaluateClientConnection(clientfd, response);
 				} catch (AMessage::MessageError &e) {
 					ResponseMessage answer =
 					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
