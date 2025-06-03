@@ -9,6 +9,8 @@ class RequestMessage : public AMessage {
 	RequestMessage(const std::string &message);
 	RequestMessage(const RequestLine &requestLine, const std::string &body);
 
+	RequestMessage &operator=(const RequestMessage &other);
+
 	const std::string &getHttpVersion() const;
 	const std::string &getMethod() const;
 	const std::string &getRequestUri() const;
@@ -16,7 +18,7 @@ class RequestMessage : public AMessage {
 	std::string str() const;
 
 	private:
-	const RequestLine _startLine;
+	RequestLine _requestLine;
 };
 
 #endif

@@ -13,12 +13,13 @@ class AMessage {
 	AMessage(const std::string &subMessage);
 	AMessage(const std::string &body, const std::vector<Header> &headers);
 
-	virtual const std::string &getHttpVersion() const = 0;
+	AMessage &operator=(const AMessage &other);
 
 	void addHeader(const Header &header);
 
 	void appendChunk(const std::string &chunk);
 
+	virtual const std::string   &getHttpVersion() const = 0;
 	std::pair<std::string, bool> getHeaderValue(const std::string &headerName) const;
 	const std::string           &getBody() const;
 	const std::vector<Header>   &getHeaders() const;

@@ -7,8 +7,10 @@
 #include <cstddef>
 #include <exception>
 #include <iostream>
+#include <stdexcept>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -31,7 +33,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
@@ -55,11 +57,11 @@ void Server::_sendAnswer(const std::string &answer, int clientfd) {
 	}
 }
 
-bool Server::_listenClientRequest(int clientfd, std::string &result,
-                                  unsigned long clientMaxBodySize) {
+RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize) {
 	const int     bufSize = 8192;
 	char          buffer[bufSize];
 	unsigned long count = 0;
+	std::string   result;
 
 	bzero(buffer, bufSize);
 	ssize_t bytesRed = 1;
@@ -67,9 +69,8 @@ bool Server::_listenClientRequest(int clientfd, std::string &result,
 		bzero(buffer, bufSize);
 		bytesRed = read(clientfd, buffer, bufSize);
 		if (bytesRed < 0) {
-			std::cerr << "Error on read." << std::endl;
 			close(clientfd);
-			return true;
+			throw std::runtime_error("error on read");
 		}
 		result.append(buffer, bytesRed);
 		count += bytesRed;
@@ -80,7 +81,7 @@ bool Server::_listenClientRequest(int clientfd, std::string &result,
 		if (result.find("\r\n\r\n") != std::string::npos)
 			break;
 	}
-	return false;
+	return RequestMessage(result);
 }
 
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
@@ -119,11 +120,8 @@ void Server::_serverLoop() {
 				try {
 					std::string requestStr;
 
-					if (_listenClientRequest(events[i].data.fd, requestStr,
-					                         actualAppConfig.getClientMaxBodySize())) {
-						continue; // TODO: delete, instead: throw an error in the function
-					}
-					RequestMessage  request(requestStr);
+					RequestMessage request = _listenClientRequest(
+					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
 					ResponseMessage answer =
 					    RequestHandler::generateResponse(actualAppConfig, request);
 					_sendAnswer(answer.str(), events[i].data.fd);

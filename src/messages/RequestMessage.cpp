@@ -5,15 +5,21 @@
 RequestMessage::RequestMessage(const std::string &message)
     : AMessage(
           message.substr(message.find("\r\n") + 2, message.length() - message.find("\r\n") - 2)),
-      _startLine(message.substr(0, message.find("\r\n"))) {}
+      _requestLine(message.substr(0, message.find("\r\n"))) {}
 
 RequestMessage::RequestMessage(const RequestLine &requestLine, const std::string &body)
-    : AMessage(body, std::vector<Header>()), _startLine(requestLine) {}
+    : AMessage(body, std::vector<Header>()), _requestLine(requestLine) {}
 
-const std::string &RequestMessage::getHttpVersion() const { return _startLine.getHttpVersion(); }
+RequestMessage &RequestMessage::operator=(const RequestMessage &other) {
+	if (this != &other) {
+		AMessage::operator=(static_cast<const AMessage &>(other));
+		_requestLine = other._requestLine;
+	}
+	return *this;
+}
 
 std::string RequestMessage::str() const {
-	std::string str = _startLine.str();
+	std::string str = _requestLine.str();
 	str += "\r\n";
 	for (std::vector<Header>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
 		str += (*it).str();
@@ -25,6 +31,8 @@ std::string RequestMessage::str() const {
 	return str;
 }
 
-const std::string &RequestMessage::getMethod() const { return _startLine.getMethod(); }
+const std::string &RequestMessage::getHttpVersion() const { return _requestLine.getHttpVersion(); }
 
-const std::string &RequestMessage::getRequestUri() const { return _startLine.getRequestUri(); }
+const std::string &RequestMessage::getMethod() const { return _requestLine.getMethod(); }
+
+const std::string &RequestMessage::getRequestUri() const { return _requestLine.getRequestUri(); }

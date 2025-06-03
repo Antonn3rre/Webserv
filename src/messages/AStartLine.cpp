@@ -16,6 +16,13 @@ AStartLine::AStartLine(const std::string &line) {
 	_httpVersion = version;
 }
 
+AStartLine &AStartLine::operator=(const AStartLine &other) {
+	if (this != &other) {
+		_httpVersion = other._httpVersion;
+	}
+	return *this;
+}
+
 AStartLine::~AStartLine() {}
 
 const std::string &AStartLine::getHttpVersion() const { return _httpVersion; }

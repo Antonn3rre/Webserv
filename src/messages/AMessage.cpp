@@ -57,6 +57,14 @@ const char *AMessage::MessageError::what() const throw() { return _message.c_str
 
 unsigned short AMessage::MessageError::getStatusCode() const { return _statusCode; }
 
+AMessage &AMessage::operator=(const AMessage &other) {
+	if (this != &other) {
+		_headers = other._headers;
+		_body = other._body;
+	}
+	return *this;
+}
+
 void AMessage::addHeader(const Header &header) {
 	if (_isHeaderValid(header.getName()))
 		_headers.push_back(header);

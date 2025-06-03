@@ -28,6 +28,15 @@ RequestLine::RequestLine(const std::string &httpVersion, const std::string &meth
                          const std::string &requestUri)
     : AStartLine(httpVersion), _method(method), _requestUri(requestUri) {}
 
+RequestLine &RequestLine::operator=(const RequestLine &other) {
+	if (this != &other) {
+		AStartLine::operator=(static_cast<const AStartLine &>(other));
+		_method = other._method;
+		_requestUri = other._requestUri;
+	}
+	return *this;
+}
+
 const std::string &RequestLine::getMethod() const { return _method; }
 
 const std::string &RequestLine::getRequestUri() const { return _requestUri; }
