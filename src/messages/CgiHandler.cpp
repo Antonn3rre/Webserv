@@ -36,7 +36,7 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 
 std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri) {
 	if (access(uri.c_str(), F_OK) == -1)
-		throw AMessage::MessageError("cgi, does not exist", uri);
+		throw AMessage::MessageError(404);
 	//	if (access(uri.c_str(), X_OK) == -1)
 	//		throw AMessage::MessageError("cgi, does not have authorization to execute", uri);
 
