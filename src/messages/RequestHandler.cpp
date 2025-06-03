@@ -249,14 +249,6 @@ void RequestHandler::_addContentTypeHeader(const RequestMessage &request, Respon
 	}
 }
 
-std::string RequestHandler::_loadFile(const std::string &filename) {
-	std::ifstream      file(filename.c_str(), std::ios::binary);
-	std::ostringstream bodyStream;
-
-	bodyStream << file.rdbuf();
-	return bodyStream.str();
-}
-
 const Location &RequestHandler::_findURILocation(const std::vector<Location> &locations,
                                                  const std::string           &uri) {
 	const Location *longestValidLoc = NULL;
@@ -275,9 +267,7 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
 			longestValidLoc = &*it;
 	}
-	if (longestValidLoc) {
 		return *longestValidLoc;
-	}
 	return *defaultLoc;
 }
 

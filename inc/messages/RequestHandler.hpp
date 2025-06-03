@@ -19,17 +19,9 @@ class RequestHandler {
 		unsigned short _statusCode;
 	};
 	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
-	static std::string     _executeCgi(const RequestMessage &request, const std::string &uri);
 
 	private:
 	RequestHandler();
-
-	static void                     _executeMethod(const std::string &method);
-	static std::string              _loadFile(const std::string &filename);
-	static void                     _saveFile(const std::string &filename, const std::string &body);
-	static char                   **_setEnv();
-	static std::vector<std::string> _setEnv(const RequestMessage &, const std::string &);
-	// static std::string _executeCgi(const RequestMessage &request, const std::string &uri);
 
 	static ResponseMessage _createResponse(const Config &config, RequestMessage &request,
 	                                       std::pair<int, std::string> &handled);

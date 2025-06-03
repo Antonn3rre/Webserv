@@ -51,10 +51,6 @@ AMessage::MessageError::MessageError(unsigned short status, const std::string &e
 	_message = msgStream.str();
 }
 
-AMessage::MessageError::MessageError(const std::string &error, const std::string &argument) {
-	_message = "HTTP message error: " + error + ", " + argument;
-}
-
 AMessage::MessageError::~MessageError() throw() {}
 
 const char *AMessage::MessageError::what() const throw() { return _message.c_str(); }
