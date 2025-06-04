@@ -15,7 +15,6 @@
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -63,6 +62,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	std::string        path = _getCompletePath(config, request.getRequestUri());
 
 	try {
+		status = 200;
 		if (path.find("/cgi-bin/") != std::string::npos)
 			body = CgiHandler::executeCgi(request, path, config);
 		else if (method == "DELETE")
@@ -78,7 +78,6 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		        body = MethodHandler::deleteRequest(path);
 		    }
 		*/
-		status = 200;
 	} catch (AMessage::MessageError &e) {
 		status = e.getStatusCode();
 		return _generateErrorBody(status, config);
@@ -94,9 +93,9 @@ void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMe
                                       unsigned short status) {
 	// headerValue = _checkHost(request, "");
 	_addDateHeader(response);
-	_addContentLengthHeader(response);
 	_addConnectionHeader(request, response);
 	_addContentTypeHeader(request, response, status);
+	_addContentLengthHeader(response);
 	response.addHeader(Header("Server", "webserv"));
 }
 
@@ -252,14 +251,11 @@ void RequestHandler::_addContentTypeHeader(const RequestMessage &request, Respon
 const Location &RequestHandler::findURILocation(const std::vector<Location> &locations,
                                                 const std::string           &uri) {
 	const Location *longestValidLoc = NULL;
-	const Location *defaultLoc = NULL;
 
 	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end();
 	     ++it) {
 		if (it->getName().length() > uri.length())
 			continue;
-		if (it->getName() == "/")
-			defaultLoc = &*it;
 		std::string path = uri.substr(0, it->getName().length());
 		if (*(path.end() - 1) != '/' && (uri[path.length()] && uri[path.length()] != '/'))
 			continue;
@@ -267,8 +263,9 @@ const Location &RequestHandler::findURILocation(const std::vector<Location> &loc
 		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
 			longestValidLoc = &*it;
 	}
+	if (!longestValidLoc)
+		throw Config::Exception("No dedfault location found");
 	return *longestValidLoc;
-	return *defaultLoc;
 }
 
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {

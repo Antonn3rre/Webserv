@@ -180,6 +180,7 @@ void AMessage::_setValidHeaders() {
 	_insertKnownHeader("Sec-Fetch-Mode", Header::Request, false, false);
 	_insertKnownHeader("Sec-Fetch-Site", Header::Request, false, false);
 	_insertKnownHeader("Sec-Fetch-User", Header::Request, false, false);
+	_insertKnownHeader("Origin", Header::Request, false, false);
 	_insertKnownHeader("Priority", Header::Request, false, false);
 	// Response headers
 	_insertKnownHeader("WWW-Authenticate", Header::Response, false, false);

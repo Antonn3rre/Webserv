@@ -30,6 +30,7 @@ class Application {
 	};
 
 	void initApplication(int epollfd);
+	void close() const;
 
 	// Config getter
 	const Config &getConfig(void) const;

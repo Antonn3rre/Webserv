@@ -15,8 +15,9 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
-Application::Application(std::fstream &file) : _config(Config(file)) {};
+Application::Application(std::fstream &file) : _config(Config(file)){};
 
 Application::Application(const Application &former) : _config(former.getConfig()) {
 	_lsockfd = former.getLSockFd();
@@ -56,6 +57,8 @@ void Application::initApplication(int epollfd) {
 	}
 	_printAtLaunch();
 }
+
+void Application::close() const { ::close(_lsockfd); }
 
 void Application::_printAtLaunch(void) {
 	std::cout << "Server launch at this address: http://" << _config.getAddress() << ":"
