@@ -34,7 +34,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
@@ -46,7 +46,6 @@ void Server::_initServer(void) {
 
 void Server::startServer(void) {
 	_initServer();
-	std::cout << "TEST" << std::endl;
 	_serverLoop();
 }
 
@@ -172,6 +171,7 @@ void Server::_serverLoop() {
 					ResponseMessage response =
 					    RequestHandler::generateResponse(actualAppConfig, request);
 					_sendAnswer(response.str(), events[i].data.fd);
+					std::cout << "response str--\n" << response.str() << std::endl;
 					_evaluateClientConnection(clientfd, response);
 				} catch (AMessage::MessageError &e) {
 					ResponseMessage answer =
