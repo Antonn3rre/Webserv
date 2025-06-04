@@ -37,11 +37,11 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
-	sigint = 1;
+	g_sigint = 1;
 }
 
 void Server::_initServer(void) {
@@ -64,6 +64,7 @@ void Server::_shutdown(void) {
 	     it != _clientAppMap.end(); ++it) {
 		_disconnectClient(it->first);
 	}
+	_clientAppMap.clear();
 	for (std::vector<Application>::iterator it = _applicationList.begin();
 	     it != _applicationList.end(); ++it) {
 		it->close();
@@ -72,7 +73,7 @@ void Server::_shutdown(void) {
 }
 
 bool Server::_checkServerState() {
-	if (!sigint)
+	if (!g_sigint)
 		return false;
 	_shutdown();
 	return true;
@@ -153,8 +154,7 @@ RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMa
 
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
 
-void Server::_disconnectClient(int clientfd) {
-	_clientAppMap.erase(clientfd);
+void Server::_disconnectClient(int clientfd) const {
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientfd, NULL);
 	close(clientfd);
 }
@@ -164,6 +164,7 @@ void Server::_evaluateClientConnection(int clientfd, const ResponseMessage &resp
 
 	if (!connectionValue.second || connectionValue.first != "close")
 		return;
+	_clientAppMap.erase(clientfd);
 	_disconnectClient(clientfd);
 }
 
@@ -209,9 +210,9 @@ void Server::_serverLoop() {
 					std::cout << "response str--\n" << response.str() << std::endl;
 					_evaluateClientConnection(clientfd, response);
 				} catch (AMessage::MessageError &e) {
-					ResponseMessage answer =
+					ResponseMessage response =
 					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
-					_sendAnswer(answer.str(), events[i].data.fd);
+					_sendAnswer(response.str(), events[i].data.fd);
 				} catch (std::exception &e) {
 					std::cerr << "Error: " << e.what() << std::endl;
 					continue;

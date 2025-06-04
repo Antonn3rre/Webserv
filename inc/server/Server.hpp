@@ -9,7 +9,7 @@
 #define MAX_EVENTS 1000
 #define TIME_OUT   3000
 
-int sigint = 0;
+int g_sigint = 0;
 
 class Server {
 	private:
@@ -23,7 +23,7 @@ class Server {
 	void                  _sendAnswer(const std::string &answer, int clientfd);
 
 	void _evaluateClientConnection(int clientfd, const ResponseMessage &response);
-	void _disconnectClient(int clientfd);
+	void _disconnectClient(int clientfd) const;
 	void _initServer();
 	void _serverLoop();
 	bool _checkServerState();
