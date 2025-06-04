@@ -82,7 +82,8 @@ Config::Config(std::fstream &file) {
 	// std::cout << " Host = | " << _host << " | " << std::endl;
 	//
 	// std::cout << "Location : " << std::endl;
-	// //	std::cout << "Root = |" << _location[0]._root << "|" << std::endl;
+	// std::cout << "Root = |" << _locations[0].getRoot() << "|" << std::endl;
+	// std::cout << "Index = |" << _locations[0].getIndex().at(0) << "|" << std::endl;
 	// std::cout << "Root = |" << _location.front().getRoot() << "|" << std::endl;
 	// std::cout << "Nmae = |" << _location.front().getName() << "|" << std::endl;
 }
@@ -285,10 +286,12 @@ void Config::_setDefaultConfig() { _setDefaultErrorPages(); }
 
 void Config::_setDefaultLocation() {
 	for (std::vector<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
-		if ((*it).getMethods().empty())
-			(*it).setDefaultMethods();
-		if ((*it).getRoot().empty())
-			(*it).setDefaultRoot(getRoot());
+		if (it->getMethods().empty())
+			it->setDefaultMethods();
+		if (it->getRoot().empty())
+			it->setDefaultRoot(getRoot());
+		if (it->getIndex().empty())
+			it->setDefaultIndex(getIndex());
 	}
 }
 
@@ -318,6 +321,10 @@ const std::pair<int, std::string> &Config::getLocRedirection(int index) const {
 const std::vector<std::string> &Config::getLocMethods(int index) const {
 	return _locations.at(index).getMethods();
 }
+const std::vector<std::string> &Config::getLocIndex(int index) const {
+	return _locations.at(index).getIndex();
+}
+
 const std::string &Config::getLocRoot(int index) const { return _locations.at(index).getRoot(); }
 const bool &Config::getLocAutoindex(int index) const { return _locations.at(index).getAutoindex(); }
 

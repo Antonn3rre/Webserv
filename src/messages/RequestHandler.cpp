@@ -62,12 +62,12 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	std::string        path = _getCompletePath(config, request.getRequestUri());
 
 	try {
-		if (path.find("cgi-bin") != std::string::npos) // mais si index.html ?
-			body = CgiHandler::executeCgi(request, path);
+		if (path.find("/cgi-bin/") != std::string::npos)
+			body = CgiHandler::executeCgi(request, path, config);
 		else if (method == "DELETE")
 			body = MethodHandler::deleteRequest(path);
 		else
-			body = MethodHandler::getRequest(path);
+			body = MethodHandler::getRequest(request, path, config);
 		/*
 		    if (method == "GET") {
 		        body = MethodHandler::getRequest(path);
@@ -248,8 +248,8 @@ void RequestHandler::_addContentTypeHeader(const RequestMessage &request, Respon
 	}
 }
 
-const Location &RequestHandler::_findURILocation(const std::vector<Location> &locations,
-                                                 const std::string           &uri) {
+const Location &RequestHandler::findURILocation(const std::vector<Location> &locations,
+                                                const std::string           &uri) {
 	const Location *longestValidLoc = NULL;
 
 	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end();
@@ -257,7 +257,7 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 		if (it->getName().length() > uri.length())
 			continue;
 		std::string path = uri.substr(0, it->getName().length());
-		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
+		if (*(path.end() - 1) != '/' && (uri[path.length()] && uri[path.length()] != '/'))
 			continue;
 		if (it->getName() == path &&
 		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
@@ -269,15 +269,33 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 }
 
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
-	std::string locRoot = _findURILocation(config.getLocations(), requestUri).getRoot();
+	std::string locRoot = findURILocation(config.getLocations(), requestUri).getRoot();
 	std::string path = locRoot + requestUri;
 	struct stat sb;
 
-	if (path[path.length() - 1] == '/')
-		path += config.getIndex().at(0);
-	else if (stat(path.c_str(), &sb) == 0 &&
-	         (sb.st_mode & S_IFDIR)) // Is the path a directory but without the '/'
-		path += "/" + config.getIndex().at(0);
+	std::string testPath;
+	if (stat(path.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR)) {
+		int i = 0;
+		if (path[path.length() - 1] != '/')
+			path += '/';
+		while (true) {
+			try {
+				testPath =
+				    path + findURILocation(config.getLocations(), requestUri).getIndex().at(i);
+			} catch (const std::out_of_range &e) {
+				break;
+			}
+			if (!access(testPath.c_str(), F_OK) && !access(testPath.c_str(), R_OK))
+				return (testPath);
+			i++;
+		}
+	}
+
+	//	if (path[path.length() - 1] == '/')
+	//		path += findURILocation(config.getLocations(), requestUri).getIndex().at(0);
+	//	else if (stat(path.c_str(), &sb) == 0 &&
+	//	         (sb.st_mode & S_IFDIR)) // Is the path a directory but without the '/'
+	//		path += "/" + config.getIndex().at(0);
 
 	return path;
 }

@@ -16,6 +16,8 @@ RequestLine::RequestLine(const std::string &line) : AStartLine(line) {
 	if (spacePos2 == std::string::npos)
 		throw AMessage::MessageError(400, "bad request line", "no space after uri");
 	_requestUri = line.substr(spacePos + 1, spacePos2 - spacePos - 1);
+	if (_requestUri.rfind("?") == _requestUri.length() - 1)
+		_requestUri.resize(_requestUri.length() - 1);
 
 	std::map<std::string, bool>::iterator headerEntry = _validMethods.find(_method);
 	if (headerEntry == _validMethods.end())
