@@ -52,7 +52,7 @@ ResponseMessage RequestHandler::_createResponse(const Config &config, RequestMes
 	//	StatusLine  stLine(request.getHttpVersion(), handled.first, getReasonPhrase(handled.first));
 
 	if (handled.first == 1) {
-		body = CgiHandler::executeCgi(request, handled.second);
+		body = CgiHandler::executeCgi(request, handled.second, config);
 		handled.first = 200; // code a revoir
 	} else if (handled.first == 2) {
 		handled.first = 200;
