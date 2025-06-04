@@ -1,17 +1,142 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Herve Regnier</title>
-		<style type="text/css">/*! normalize.css v5.0.0 | MIT License | github.com/necolas/normalize.css */html{font-family:sans-serif;line-height:1.15;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}body{margin:0}article,aside,footer,header,nav,section{display:block}h1{font-size:2em;margin:.67em 0}figcaption,figure,main{display:block}figure{margin:1em 40px}hr{box-sizing:content-box;height:0;overflow:visible}pre{font-family:monospace,monospace;font-size:1em}a{background-color:transparent;-webkit-text-decoration-skip:objects}a:active,a:hover{outline-width:0}abbr[title]{border-bottom:none;text-decoration:underline;text-decoration:underline dotted}b,strong{font-weight:inherit}b,strong{font-weight:bolder}code,kbd,samp{font-family:monospace,monospace;font-size:1em}dfn{font-style:italic}mark{background-color:#ff0;color:#000}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}audio,video{display:inline-block}audio:not([controls]){display:none;height:0}img{border-style:none}svg:not(:root){overflow:hidden}button,input,optgroup,select,textarea{font-family:sans-serif;font-size:100%;line-height:1.15;margin:0}button,input{overflow:visible}button,select{text-transform:none}[type=reset],[type=submit],button,html [type=button]{-webkit-appearance:button}[type=button]::-moz-focus-inner,[type=reset]::-moz-focus-inner,[type=submit]::-moz-focus-inner,button::-moz-focus-inner{border-style:none;padding:0}[type=button]:-moz-focusring,[type=reset]:-moz-focusring,[type=submit]:-moz-focusring,button:-moz-focusring{outline:1px dotted ButtonText}fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}legend{box-sizing:border-box;color:inherit;display:table;max-width:100%;padding:0;white-space:normal}progress{display:inline-block;vertical-align:baseline}textarea{overflow:auto}[type=checkbox],[type=radio]{box-sizing:border-box;padding:0}[type=number]::-webkit-inner-spin-button,[type=number]::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}[type=search]::-webkit-search-cancel-button,[type=search]::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}details,menu{display:block}summary{display:list-item}canvas{display:inline-block}template{display:none}[hidden]{display:none}/*! Simple HttpErrorPages | MIT X11 License | https://github.com/AndiDittrich/HttpErrorPages */body,html{width:100%;height:100%;background-color:#21232a}body{color:#fff;text-align:center;text-shadow:0 2px 4px rgba(0,0,0,.5);padding:0;min-height:100%;-webkit-box-shadow:inset 0 0 100px rgba(0,0,0,.8);box-shadow:inset 0 0 100px rgba(0,0,0,.8);display:table;font-family:"Open Sans",Arial,sans-serif}h1{font-family:inherit;font-weight:500;line-height:1.1;color:inherit;font-size:36px}h1 small{font-size:68%;font-weight:400;line-height:1;color:#777}a{text-decoration:none;color:#fff;font-size:inherit;border-bottom:dotted 1px #707070}.lead{color:silver;font-size:21px;line-height:1.4}.cover{display:table-cell;vertical-align:middle;padding:0 20px}footer{position:fixed;width:100%;height:40px;left:0;bottom:0;color:#a0a0a0;font-size:14px}</style>
-	</head>
-	<body>
-		<h1>Herve Regnier</h1>
-		<img src="img/IMG_3935.JPG"></img>
-		<img src="img/herve.gif"></img>
-		<video width="640" height="480" controls>
-			<source src="img/dogs.mp4" type="video/mp4" >
-			Your browser does not support the video tag.
-		</video>
-	</body>
+<html lang="fr">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Webserv</title>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+	<style>
+		:root {
+			--primary: #2563eb;
+			--primary-dark: #1d4ed8;
+			--bg: #0f172a;
+			--card-bg: #ffffff;
+			--text: #1f2937;
+			--text-muted: #4b5563;
+			--radius: 12px;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			font-family: 'Inter', sans-serif;
+			background-color: var(--bg);
+			color: var(--text);
+		}
+
+		header {
+			background: transparent;
+			padding: 2rem 1rem;
+			text-align: center;
+		}
+
+		header h1 {
+			margin: 0;
+			font-size: 2.5rem;
+			color: white;
+		}
+
+		header p {
+			color: #cbd5e1;
+			margin-top: 0.5rem;
+			font-size: 1.1rem;
+		}
+
+		.container {
+			max-width: 1200px;
+			margin: 3rem auto;
+			padding: 0 1rem;
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+			gap: 2rem;
+		}
+
+		.card {
+			background: var(--card-bg);
+			border-radius: var(--radius);
+			padding: 2rem;
+			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+
+		.card:hover {
+			transform: translateY(-6px);
+			box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+		}
+
+		.card h3 {
+			margin-top: 0;
+			font-size: 1.4rem;
+			color: var(--text);
+		}
+
+		.card p {
+			font-size: 0.95rem;
+			color: var(--text-muted);
+			margin-bottom: 1.5rem;
+		}
+
+		.card form input[type="text"] {
+			width: 100%;
+			padding: 0.6rem 0.8rem;
+			border: 1px solid #d1d5db;
+			border-radius: var(--radius);
+			font-size: 1rem;
+			margin-bottom: 1rem;
+		}
+
+		.card button {
+			padding: 0.6rem 1.2rem;
+			background-color: var(--primary);
+			color: white;
+			font-weight: 600;
+			border: none;
+			border-radius: var(--radius);
+			cursor: pointer;
+			transition: background-color 0.2s ease;
+		}
+
+		.card button:hover {
+			background-color: var(--primary-dark);
+		}
+	</style>
+</head>
+
+<body>
+	<header>
+		<h1>Webserv</h1>
+		<p>Interface de test pour les méthodes HTTP</p>
+		<p>Second application -> localhost:4342</p>
+	</header>
+
+	<main class="container">
+		<div class="card">
+			<h3>GET Request</h3>
+			<p>Testez une requête GET vers votre serveur Webserv.</p>
+			<form action="#" method="GET">
+				<button type="submit">Envoyer GET</button>
+			</form>
+		</div>
+
+		<div class="card">
+			<h3>POST Request</h3>
+			<p>Formulaire simple pour tester une requête POST.</p>
+			<form method="POST" action="#">
+				<input type="text" name="data" placeholder="Votre message" required />
+				<button type="submit">Envoyer POST</button>
+			</form>
+		</div>
+
+		<div class="card">
+			<h3>DELETE Request</h3>
+			<p>Bouton simulant une requête DELETE (via JS ou fetch).</p>
+			<button onclick="alert('Remplacez par une requête DELETE via JavaScript')">Envoyer DELETE</button>
+		</div>
+	</main>
+</body>
+
 </html>
