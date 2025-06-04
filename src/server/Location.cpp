@@ -35,11 +35,13 @@ Location::Location(std::string &token, std::fstream &file)
 				throw Location::Exception();
 		}
 	}
-	//	std::cout << "Name = |" << _name << "|\n";
+	// std::cout << "Name = |" << _name << "|\n";
 	//	std::cout << "Root = |" << _root << "|\n";
 	//	std::cout << "autoindex = " << _autoindex << std::endl;
 	//	std::cout << "redirection [301] = " << _redirection[301] << std::endl;
 	//	std::cout << "methods[0] = " << _methods[0] << std::endl;
+	// if (!_index.empty())
+	//	std::cout << "index[0] = " << _index[0] << std::endl;
 }
 
 Location::Location(const Location &former) { *this = former; }
@@ -48,6 +50,7 @@ Location &Location::operator=(const Location &former) {
 		this->_name = former._name;
 		this->_redirection = former._redirection;
 		this->_methods = former._methods;
+		this->_index = former._index;
 		this->_root = former._root;
 		this->_autoindex = former._autoindex;
 	}
@@ -105,9 +108,8 @@ void Location::_parseIndex(std::string &str, std::fstream &file) {
 		throw Location::Exception();
 
 	std::istringstream iss(str);
-	while (iss >> str) {
+	while (iss >> str)
 		_index.push_back(str);
-	}
 }
 
 void Location::_parseRoot(std::string &str, std::fstream &file) {
@@ -143,7 +145,10 @@ void Location::setDefaultMethods() {
 	_methods.push_back("POST");
 }
 
-void Location::setDefaultIndex(const std::vector<std::string> &index) { _index = index; }
+void Location::setDefaultIndex(const std::vector<std::string> &index) {
+	if (!index.empty())
+		_index = index;
+}
 void Location::setDefaultRoot(const std::string &root) { _root = root; }
 
 const std::string                 &Location::getName() const { return _name; }

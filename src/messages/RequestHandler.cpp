@@ -286,12 +286,8 @@ std::string RequestHandler::_getCompletePath(const Config &config, const std::st
 	std::string path = locRoot + requestUri;
 	struct stat sb;
 
-	std::cout << "locRoot = " << locRoot << " et request = " << requestUri << " et path = " << path
-	          << std::endl;
-
 	std::string testPath;
 	if (stat(path.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR)) {
-		std::cout << "is a dir\n";
 		int i = 0;
 		if (path[path.length() - 1] != '/')
 			path += '/';
@@ -300,7 +296,6 @@ std::string RequestHandler::_getCompletePath(const Config &config, const std::st
 				testPath =
 				    path + findURILocation(config.getLocations(), requestUri).getIndex().at(i);
 			} catch (const std::out_of_range &e) {
-				std::cout << "tesst\n";
 				break;
 			}
 			if (!access(testPath.c_str(), F_OK) && !access(testPath.c_str(), R_OK))
