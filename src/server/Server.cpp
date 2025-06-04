@@ -7,11 +7,14 @@
 #include <cstddef>
 #include <exception>
 #include <iostream>
+#include <stdexcept>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <strings.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 Server::Server(const std::string &filename) {
@@ -31,7 +34,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
@@ -55,35 +58,82 @@ void Server::_sendAnswer(const std::string &answer, int clientfd) {
 	}
 }
 
-bool Server::_listenClientRequest(int clientfd, std::string &result,
-                                  unsigned long clientMaxBodySize) {
+void Server::_listenChunkedRequest(int clientfd, RequestMessage &request,
+                                   unsigned long clientMaxBodySize) {
+	std::pair<std::string, bool> transferEncodingValue =
+	    request.getHeaderValue("Transfer-Encoding");
+	if (!transferEncodingValue.second || transferEncodingValue.first != "chunked")
+		return;
+
+	const int bufSize = 8192;
+	char      buffer[bufSize];
+
+	while (true) {
+		std::string result;
+		bzero(buffer, bufSize);
+		ssize_t bytesRead = 1;
+
+		while (bytesRead) {
+			bzero(buffer, bufSize);
+			bytesRead = read(clientfd, buffer, bufSize);
+			if (bytesRead < 0) {
+				close(clientfd);
+				throw std::runtime_error("error on read");
+			}
+			result.append(buffer, bytesRead);
+			if (result.find("\r\n") != result.rfind("\r\n") || result.find("\r\n") == 0)
+				break;
+		}
+		if (result == "0\r\n\r\n")
+			break;
+		if (clientMaxBodySize != 0 && result.length() >= clientMaxBodySize)
+			throw AMessage::MessageError(413);
+		std::cout << "-- chunk --\n" << result << std::endl;
+		request.appendChunk(result);
+	}
+	std::cout << "--- REQUEST ---" << request.str() << std::endl;
+}
+
+RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize) {
 	const int     bufSize = 8192;
 	char          buffer[bufSize];
 	unsigned long count = 0;
+	std::string   result;
 
 	bzero(buffer, bufSize);
-	ssize_t bytesRed = 1;
-	while (bytesRed) {
+	ssize_t bytesRead = 1;
+	while (bytesRead) {
 		bzero(buffer, bufSize);
-		bytesRed = read(clientfd, buffer, bufSize);
-		if (bytesRed < 0) {
-			std::cerr << "Error on read." << std::endl;
+		bytesRead = read(clientfd, buffer, bufSize);
+		if (bytesRead < 0) {
 			close(clientfd);
-			return true;
+			throw std::runtime_error("error on read");
 		}
-		result.append(buffer, bytesRed);
-		count += bytesRed;
-		std::cout << "result --\n" << result << std::endl;
+		result.append(buffer, bytesRead);
+		count += bytesRead;
+		// std::cout << "result --\n" << result << std::endl;
 		if (clientMaxBodySize != 0 && count >= clientMaxBodySize) {
 			throw AMessage::MessageError(413);
 		}
 		if (result.find("\r\n\r\n") != std::string::npos)
 			break;
 	}
-	return false;
+	RequestMessage request(result);
+	_listenChunkedRequest(clientfd, request, clientMaxBodySize);
+	return request;
 }
 
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
+
+void Server::_evaluateClientConnection(int clientfd, const ResponseMessage &response) {
+	std::pair<std::string, bool> connectionValue = response.getHeaderValue("Connection");
+
+	if (!connectionValue.second || connectionValue.first != "close")
+		return;
+	_clientAppMap.erase(clientfd);
+	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientfd, NULL);
+	close(clientfd);
+}
 
 void Server::_serverLoop() {
 	struct epoll_event ev;
@@ -117,16 +167,12 @@ void Server::_serverLoop() {
 			if (!newClient) {
 				Config actualAppConfig = _getApplicationFromFD(events[i].data.fd).getConfig();
 				try {
-					std::string requestStr;
-
-					if (_listenClientRequest(events[i].data.fd, requestStr,
-					                         actualAppConfig.getClientMaxBodySize())) {
-						continue; // TODO: delete, instead: throw an error in the function
-					}
-					RequestMessage  request(requestStr);
-					ResponseMessage answer =
+					RequestMessage request = _listenClientRequest(
+					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
+					ResponseMessage response =
 					    RequestHandler::generateResponse(actualAppConfig, request);
-					_sendAnswer(answer.str(), events[i].data.fd);
+					_sendAnswer(response.str(), events[i].data.fd);
+					_evaluateClientConnection(clientfd, response);
 				} catch (AMessage::MessageError &e) {
 					ResponseMessage answer =
 					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());

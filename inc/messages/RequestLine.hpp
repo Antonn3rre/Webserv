@@ -11,6 +11,8 @@ class RequestLine : public AStartLine {
 	RequestLine(const std::string &httpVersion, const std::string &method,
 	            const std::string &requestUri);
 
+	RequestLine &operator=(const RequestLine &other);
+
 	const std::string &getMethod() const;
 	const std::string &getRequestUri() const;
 

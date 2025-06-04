@@ -2,6 +2,8 @@
 #define SERVER_HPP
 
 #include "Application.hpp"
+#include "RequestMessage.hpp"
+#include "ResponseMessage.hpp"
 #include <vector>
 
 #define MAX_EVENTS 1000
@@ -13,11 +15,13 @@ class Server {
 	int                          _epollfd;
 	std::map<int, Application *> _clientAppMap;
 
-	void        _sendAnswer(const std::string &answer, int clientfd);
-	static bool _listenClientRequest(int clientfd, std::string &result,
-	                                 unsigned long clientMaxBodySize);
-	void        _initServer(void);
-	void        _serverLoop(void);
+	void                  _sendAnswer(const std::string &answer, int clientfd);
+	static void           _listenChunkedRequest(int clientfd, RequestMessage &request,
+	                                            unsigned long clientMaxBodySize);
+	static RequestMessage _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
+	void                  _evaluateClientConnection(int clientfd, const ResponseMessage &response);
+	void                  _initServer(void);
+	void                  _serverLoop(void);
 
 	Application &_getApplicationFromFD(int sockfd) const;
 

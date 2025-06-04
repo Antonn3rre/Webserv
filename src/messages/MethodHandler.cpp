@@ -58,9 +58,9 @@ std::string MethodHandler::postRequest(const RequestMessage &request, const std:
 
 std::string MethodHandler::deleteRequest(const std::string &page) {
 	if (access(page.c_str(), F_OK))
-		throw AMessage::MessageError(404);
+		throw AMessage::MessageError(404, "delete method", "file does not exist");
 	if (access(page.c_str(), W_OK))
-		throw AMessage::MessageError(403);
+		throw AMessage::MessageError(403, "delete method", "cannot delete file");
 
 	std::string body = loadFile(page);
 	std::remove(page.c_str());
