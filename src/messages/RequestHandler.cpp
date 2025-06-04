@@ -62,6 +62,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	std::string        path = _getCompletePath(config, request.getRequestUri());
 
 	try {
+		status = 200;
 		if (path.find("/cgi-bin/") != std::string::npos)
 			body = CgiHandler::executeCgi(request, path, config);
 		else if (method == "DELETE")
@@ -77,7 +78,6 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		        body = MethodHandler::deleteRequest(path);
 		    }
 		*/
-		status = 200;
 	} catch (AMessage::MessageError &e) {
 		status = e.getStatusCode();
 		return _generateErrorBody(status, config);

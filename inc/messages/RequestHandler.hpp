@@ -12,7 +12,6 @@ class RequestHandler {
 	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
 
 	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
-	static std::string     _executeCgi(const RequestMessage &request, const std::string &uri);
 	static const Location &findURILocation(const std::vector<Location> &locations,
 	                                       const std::string           &uri);
 

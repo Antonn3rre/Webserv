@@ -103,7 +103,6 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		output.append(buffer, bytesRead);
 	close(pipefdOut[0]);
 
-	int status;
-	waitpid(pid, &status, 0);
+	waitpid(pid, NULL, 0);
 	return output;
 }
