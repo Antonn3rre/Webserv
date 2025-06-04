@@ -12,7 +12,8 @@ class MethodHandler {
 
 	public:
 	static std::string deleteRequest(const std::string &page);
-	static std::string getRequest(const std::string &page, const Config &config);
+	static std::string getRequest(const RequestMessage &request, const std::string &page,
+	                              const Config &config);
 	static std::string postRequest(const RequestMessage &request, const std::string &page);
 	static std::string getFileRequest(const Location &loc, const std::string &page);
 

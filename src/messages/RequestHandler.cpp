@@ -68,7 +68,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		else if (method == "DELETE")
 			body = MethodHandler::deleteRequest(path);
 		else
-			body = MethodHandler::getRequest(path, config);
+			body = MethodHandler::getRequest(request, path, config);
 		/*
 		    if (method == "GET") {
 		        body = MethodHandler::getRequest(path);

@@ -45,7 +45,7 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		throw AMessage::MessageError(404);
 	if (stat(uri.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR))
 		return (MethodHandler::getFileRequest(
-		    RequestHandler::findURILocation(config.getLocations(), uri), uri));
+		    RequestHandler::findURILocation(config.getLocations(), request.getRequestUri()), uri));
 	if (access(uri.c_str(), X_OK) == -1)
 		throw AMessage::MessageError(403);
 

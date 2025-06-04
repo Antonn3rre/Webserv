@@ -2,6 +2,7 @@
 #include "AMessage.hpp"
 #include "Config.hpp"
 #include "RequestHandler.hpp"
+#include "RequestMessage.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <dirent.h>
@@ -31,13 +32,15 @@ std::string MethodHandler::getFileRequest(const Location &loc, const std::string
 	return (body);
 }
 
-std::string MethodHandler::getRequest(const std::string &page, const Config &config) {
+std::string MethodHandler::getRequest(const RequestMessage &request, const std::string &page,
+                                      const Config &config) {
 	struct stat sb;
 	if (access(page.c_str(), F_OK)) {
 		throw AMessage::MessageError(404);
 	}
 	if (stat(page.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR))
-		return (getFileRequest(RequestHandler::findURILocation(config.getLocations(), page), page));
+		return (getFileRequest(
+		    RequestHandler::findURILocation(config.getLocations(), request.getRequestUri()), page));
 	if (access(page.c_str(), R_OK)) {
 		throw AMessage::MessageError(403);
 	}
