@@ -93,9 +93,9 @@ void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMe
                                       unsigned short status) {
 	// headerValue = _checkHost(request, "");
 	_addDateHeader(response);
-	_addContentLengthHeader(response);
 	_addConnectionHeader(request, response);
 	_addContentTypeHeader(request, response, status);
+	_addContentLengthHeader(response);
 	response.addHeader(Header("Server", "webserv"));
 }
 
