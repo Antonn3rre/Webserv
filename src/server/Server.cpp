@@ -4,9 +4,12 @@
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include <csignal>
 #include <cstddef>
+#include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <stdlib.h>
 #include <string.h>
@@ -36,18 +39,44 @@ Server::Server(const std::string &filename) {
 
 Server::~Server(void){};
 
+extern "C" void callServerShutdown(int signal) {
+	(void)signal;
+	sigint = 1;
+}
+
 void Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
 	for (std::vector<Application>::iterator itServer = _applicationList.begin();
 	     itServer != _applicationList.end(); ++itServer) {
 		itServer->initApplication(_epollfd);
 	}
+	signal(SIGINT, callServerShutdown);
 }
 
 void Server::startServer(void) {
 	_initServer();
 	std::cout << "TEST" << std::endl;
 	_serverLoop();
+}
+
+void Server::_shutdown(void) {
+	std::cout << "\nShutting down server" << std::endl;
+	for (std::map<int, Application *>::iterator it = _clientAppMap.begin();
+	     it != _clientAppMap.end(); ++it) {
+		_disconnectClient(it->first);
+	}
+	for (std::vector<Application>::iterator it = _applicationList.begin();
+	     it != _applicationList.end(); ++it) {
+		it->close();
+	}
+	close(_epollfd);
+}
+
+bool Server::_checkServerState() {
+	if (!sigint)
+		return false;
+	_shutdown();
+	return true;
 }
 
 void Server::_sendAnswer(const std::string &answer, int clientfd) {
@@ -125,14 +154,18 @@ RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMa
 
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
 
+void Server::_disconnectClient(int clientfd) {
+	_clientAppMap.erase(clientfd);
+	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientfd, NULL);
+	close(clientfd);
+}
+
 void Server::_evaluateClientConnection(int clientfd, const ResponseMessage &response) {
 	std::pair<std::string, bool> connectionValue = response.getHeaderValue("Connection");
 
 	if (!connectionValue.second || connectionValue.first != "close")
 		return;
-	_clientAppMap.erase(clientfd);
-	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientfd, NULL);
-	close(clientfd);
+	_disconnectClient(clientfd);
 }
 
 void Server::_serverLoop() {
@@ -143,6 +176,8 @@ void Server::_serverLoop() {
 	bool               newClient;
 
 	while (true) {
+		if (_checkServerState())
+			break;
 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
 
 		for (int i = 0; i < nfds; ++i) {

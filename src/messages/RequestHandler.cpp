@@ -15,7 +15,6 @@
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -252,14 +251,11 @@ void RequestHandler::_addContentTypeHeader(const RequestMessage &request, Respon
 const Location &RequestHandler::_findURILocation(const std::vector<Location> &locations,
                                                  const std::string           &uri) {
 	const Location *longestValidLoc = NULL;
-	const Location *defaultLoc = NULL;
 
 	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end();
 	     ++it) {
 		if (it->getName().length() > uri.length())
 			continue;
-		if (it->getName() == "/")
-			defaultLoc = &*it;
 		std::string path = uri.substr(0, it->getName().length());
 		if (*(path.end() - 1) != '/' && uri[path.length()] != '/')
 			continue;
@@ -267,8 +263,9 @@ const Location &RequestHandler::_findURILocation(const std::vector<Location> &lo
 		    (!longestValidLoc || it->getName().length() > longestValidLoc->getName().length()))
 			longestValidLoc = &*it;
 	}
-		return *longestValidLoc;
-	return *defaultLoc;
+	if (!longestValidLoc)
+		throw Config::Exception("No dedfault location found");
+	return *longestValidLoc;
 }
 
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {

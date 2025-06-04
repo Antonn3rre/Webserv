@@ -11,13 +11,6 @@ class RequestHandler {
 	public:
 	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
 
-	class RequestError : AMessage::MessageError {
-		public:
-		RequestError(const std::string &error, const std::string &argument);
-
-		private:
-		unsigned short _statusCode;
-	};
 	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
 
 	private:
