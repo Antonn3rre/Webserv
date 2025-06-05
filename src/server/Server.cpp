@@ -39,7 +39,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -119,10 +119,8 @@ void Server::_listenChunkedRequest(int clientfd, RequestMessage &request,
 			break;
 		if (clientMaxBodySize != 0 && result.length() >= clientMaxBodySize)
 			throw AMessage::MessageError(413);
-		std::cout << "-- chunk --\n" << result << std::endl;
 		request.appendChunk(result);
 	}
-	std::cout << "--- REQUEST ---" << request.str() << std::endl;
 }
 
 RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize) {
@@ -142,7 +140,6 @@ RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMa
 		}
 		result.append(buffer, bytesRead);
 		count += bytesRead;
-		// std::cout << "result --\n" << result << std::endl;
 		if (clientMaxBodySize != 0 && count >= clientMaxBodySize) {
 			throw AMessage::MessageError(413);
 		}
@@ -210,7 +207,6 @@ void Server::_serverLoop() {
 					ResponseMessage response =
 					    RequestHandler::generateResponse(actualAppConfig, request);
 					_sendAnswer(response.str(), events[i].data.fd);
-					// std::cout << "response str--\n" << response.str() << std::endl;
 					_evaluateClientConnection(clientfd, response);
 				} catch (AMessage::MessageError &e) {
 					ResponseMessage response =
