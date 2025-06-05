@@ -73,17 +73,10 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 			body = CgiHandler::executeCgi(request, path, config);
 		else if (method == "DELETE")
 			body = MethodHandler::deleteRequest(path);
-		else
+		else if (method == "POST") {
+			body = MethodHandler::postRequest(request, path);
+		} else
 			body = MethodHandler::getRequest(request, path, config);
-		/*
-		    if (method == "GET") {
-		        body = MethodHandler::getRequest(path);
-		    } else if (method == "POST") {
-		        body = MethodHandler::postRequest(request, path);
-		    } else if (method == "DELETE") {
-		        body = MethodHandler::deleteRequest(path);
-		    }
-		*/
 	} catch (AMessage::MessageError &e) {
 		status = e.getStatusCode();
 		return _generateErrorBody(status, config);

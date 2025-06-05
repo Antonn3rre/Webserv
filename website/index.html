@@ -124,9 +124,9 @@
 
 		<div class="card">
 			<h3>POST Request</h3>
-			<p>Formulaire simple pour tester une requête POST.</p>
+			<p>Formulaire simple pour initialiser un username.</p>
 			<form method="POST" action="#">
-				<input type="text" name="data" placeholder="Votre message" required />
+				<input type="text" name="username" placeholder="Votre username" required />
 				<button type="submit">Envoyer POST</button>
 			</form>
 		</div>
@@ -142,6 +142,15 @@
 			<p>Bouton simulant une requête CGI.</p>
 			<form action="/cgi-bin/helloworld.cgi" method="GET">
 				<button type="submit">Envoyer CGI</button>
+			</form>
+		</div>
+		<div class="card">
+			<h3>Upload FILE</h3>
+			<p>Bouton pour upload un fichier.</p>
+			<form enctype="multipart/form-data" action="/upload" method="POST">
+				<input type="hidden" name="MAX_FILE_SIZE" value="1000000000" />
+				<input name="uploadedfile" type="file" /><br />
+				<button type="submit" value="Upload File">Upload</button>
 			</form>
 		</div>
 	</main>

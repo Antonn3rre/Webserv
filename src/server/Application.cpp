@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Application::Application(std::fstream &file) : _config(Config(file)){};
+Application::Application(std::fstream &file) : _config(Config(file)) {};
 
 Application::Application(const Application &former) : _config(former.getConfig()) {
 	_lsockfd = former.getLSockFd();
@@ -26,7 +26,7 @@ Application::Application(const Application &former) : _config(former.getConfig()
 void Application::initApplication(int epollfd) {
 	struct epoll_event ev;
 	struct sockaddr_in servAddr;
-	_lsockfd = socket(AF_INET, SOCK_STREAM, 0);
+	_lsockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (_lsockfd == -1) {
 		std::cerr << "Error on socket." << std::endl;
 		exit(1);
@@ -49,7 +49,7 @@ void Application::initApplication(int epollfd) {
 		exit(1);
 	}
 
-	ev.events = EPOLLIN;
+	ev.events = EPOLLIN | EPOLLET;
 	ev.data.fd = _lsockfd;
 	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, _lsockfd, &ev) == -1) {
 		std::cerr << "Error on epoll_ctl." << std::endl;

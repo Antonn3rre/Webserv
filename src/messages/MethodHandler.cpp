@@ -47,14 +47,15 @@ std::string MethodHandler::getRequest(const RequestMessage &request, const std::
 
 	return (loadFile(page));
 }
-/*
+
 std::string MethodHandler::postRequest(const RequestMessage &request, const std::string &page) {
-    if (!access(page.c_str(), F_OK) && access(page.c_str(), W_OK))
-        throw AMessage::MessageError(403);
-    std::string body = CgiHandler::executeCgi(request, page);
-    return (body);
+	if (!access(page.c_str(), F_OK) && access(page.c_str(), W_OK))
+		throw AMessage::MessageError(403);
+	if (request.getRequestUri() == "/upload") {
+		_saveFile("test.txt", request.getBody());
+	}
+	return "";
 }
-*/
 
 std::string MethodHandler::deleteRequest(const std::string &page) {
 	if (access(page.c_str(), F_OK))
