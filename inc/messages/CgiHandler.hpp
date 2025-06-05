@@ -2,6 +2,7 @@
 
 #include "Config.hpp"
 #include "RequestMessage.hpp"
+#include "ResponseMessage.hpp"
 #include <string>
 #include <vector>
 
@@ -14,4 +15,5 @@ class CgiHandler {
 	public:
 	static std::string executeCgi(const RequestMessage &request, const std::string &uri,
 	                              const Config &config);
+	static void        divideCgiOutput(ResponseMessage &response);
 };
