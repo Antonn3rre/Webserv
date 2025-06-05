@@ -1,5 +1,6 @@
 #include "Header.hpp"
 #include "AMessage.hpp"
+#include "utilsParsing.hpp"
 #include <cstddef>
 
 Header::Header(const std::string &headerLine) {
@@ -8,8 +9,9 @@ Header::Header(const std::string &headerLine) {
 		throw AMessage::MessageError(400, "invalid header", "missing ':'");
 	_name = (headerLine.substr(0, nameLen));
 	size_t valueStart = headerLine.find_first_not_of(" \t", nameLen + 1);
-	size_t valueEnd = headerLine.find_first_of(" \t\r", valueStart);
+	size_t valueEnd = headerLine.find_first_of('\r', valueStart);
 	_value = (headerLine.substr(valueStart, valueEnd - valueStart));
+	_value = trim(_value);
 }
 
 Header::Header(const std::string &name, const std::string &value) : _name(name), _value(value) {}

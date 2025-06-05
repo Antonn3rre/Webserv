@@ -57,7 +57,13 @@ void RequestHandler::_generateErrorHeaders(ResponseMessage &response) {
 
 std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status,
                                           const Config &config) {
-	std::string        body;
+	std::string body;
+
+	if (request.getRequestUri()[0] != '/') {
+		status = 400;
+		return _generateErrorBody(status, config);
+	}
+
 	const std::string &method = request.getMethod();
 	std::string        path = _getCompletePath(config, request.getRequestUri());
 
