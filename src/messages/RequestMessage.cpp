@@ -3,8 +3,10 @@
 #include <vector>
 
 RequestMessage::RequestMessage(const std::string &message)
-    : AMessage(
-          message.substr(message.find("\r\n") + 2, message.length() - message.find("\r\n") - 2)),
+    : AMessage((message.find("\r\n") != std::string::npos)
+                   ? message.substr(message.find("\r\n") + 2,
+                                    message.length() - message.find("\r\n") - 2)
+                   : ""),
       _requestLine(message.substr(0, message.find("\r\n"))) {}
 
 RequestMessage::RequestMessage(const RequestLine &requestLine, const std::string &body)

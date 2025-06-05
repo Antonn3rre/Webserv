@@ -90,12 +90,8 @@ std::pair<std::string, bool> AMessage::getHeaderValue(const std::string &headerN
 
 bool AMessage::_isHeaderValid(const std::string &headerName) const {
 	std::map<std::string, Header>::const_iterator headerEntry = _validHeaders.find(headerName);
-	if (headerEntry != _validHeaders.end()) {
-		if (headerEntry->second.isSupported())
-			return true;
-		std::cerr << "Warning: unsupported header: " << headerName << std::endl;
-		return false;
-	}
+	if (headerEntry != _validHeaders.end())
+		return headerEntry->second.isSupported();
 	std::cerr << "Warning: invalid header: " << headerName << std::endl;
 	return false;
 }

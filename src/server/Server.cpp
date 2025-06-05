@@ -206,10 +206,11 @@ void Server::_serverLoop() {
 				try {
 					RequestMessage request = _listenClientRequest(
 					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
+					std::cout << "request str--\n" << request.str() << std::endl;
 					ResponseMessage response =
 					    RequestHandler::generateResponse(actualAppConfig, request);
 					_sendAnswer(response.str(), events[i].data.fd);
-					std::cout << "response str--\n" << response.str() << std::endl;
+					// std::cout << "response str--\n" << response.str() << std::endl;
 					_evaluateClientConnection(clientfd, response);
 				} catch (AMessage::MessageError &e) {
 					ResponseMessage response =
