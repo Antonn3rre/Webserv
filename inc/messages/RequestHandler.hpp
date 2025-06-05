@@ -7,8 +7,6 @@
 #include "StatusLine.hpp"
 #include <vector>
 
-#define MONTH_IN_SECS 2592000
-
 class RequestHandler {
 	public:
 	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);

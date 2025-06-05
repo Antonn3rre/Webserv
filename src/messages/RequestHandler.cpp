@@ -101,6 +101,8 @@ void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMe
 	_addContentTypeHeader(request, response, status);
 	response.addContentLengthHeader();
 	response.addHeader(Header("Server", "webserv"));
+	response.addSessionCookieHeader("test", "caca");
+	response.addSessionCookieHeader("test2", "prout");
 }
 
 void RequestHandler::_addConnectionHeader(const RequestMessage &request,

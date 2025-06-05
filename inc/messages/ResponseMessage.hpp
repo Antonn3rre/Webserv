@@ -13,9 +13,8 @@ class ResponseMessage : public AMessage {
 	unsigned short     getStatusCode() const;
 	const std::string &getReasonPhrase() const;
 
-	void addSetCookieHeader(const std::string &name, const std::string &value);
-	void addSetCookieHeader(const std::string &name, const std::string &value,
-	                        unsigned long maxAge);
+	void addSessionCookieHeader(const std::string &name, const std::string &value);
+	void addPermanentCookieHeader(const std::string &name, const std::string &value);
 	void addDateHeader();
 	void addContentLengthHeader();
 

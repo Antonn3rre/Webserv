@@ -16,15 +16,12 @@ unsigned short ResponseMessage::getStatusCode() const { return _startLine.getSta
 
 const std::string &ResponseMessage::getReasonPhrase() const { return _startLine.getReasonPhrase(); }
 
-void ResponseMessage::addSetCookieHeader(const std::string &name, const std::string &value) {
+void ResponseMessage::addSessionCookieHeader(const std::string &name, const std::string &value) {
 	addHeader(Header("Set-Cookie", name + "=" + value));
 }
 
-void ResponseMessage::addSetCookieHeader(const std::string &name, const std::string &value,
-                                         unsigned long maxAge) {
-	std::ostringstream ss;
-	ss << maxAge;
-	addHeader(Header("Set-Cookie", name + "=" + value + "; Max-Age=" + ss.str()));
+void ResponseMessage::addPermanentCookieHeader(const std::string &name, const std::string &value) {
+	addHeader(Header("Set-Cookie", name + "=" + value + "; Max-Age=2592000"));
 }
 
 void ResponseMessage::addDateHeader() { addHeader(Header("Date", _getTime())); }
