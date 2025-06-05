@@ -103,6 +103,9 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		output.append(buffer, bytesRead);
 	close(pipefdOut[0]);
 
-	waitpid(pid, NULL, 0);
+	int status;
+  waitpid(pid, &status, 0);
+  if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
+		throw AMessage::MessageError(500);
 	return output;
 }
