@@ -91,7 +91,6 @@ StatusLine RequestHandler::_generateStatusLine(unsigned short status) {
 
 void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMessage &request,
                                       unsigned short status) {
-	// headerValue = _checkHost(request, "");
 	_addDateHeader(response);
 	_addConnectionHeader(request, response);
 	_addContentTypeHeader(request, response, status);
@@ -298,12 +297,4 @@ std::string RequestHandler::_getCompletePath(const Config &config, const std::st
 	//		path += "/" + config.getIndex().at(0);
 
 	return path;
-}
-
-bool RequestHandler::_checkHostHeader(const RequestMessage &request, const std::string &host) {
-	std::pair<std::string, bool> hostValue = request.getHeaderValue("Host");
-
-	if (!hostValue.second)
-		return (false);
-	return (hostValue.first == host);
 }

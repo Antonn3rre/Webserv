@@ -21,7 +21,7 @@ AMessage::AMessage(const std::string &subMessage) {
 		addHeader(Header(line));
 	}
 	// _checkDuplicateHeaders();
-	// _checkHostHeader();
+	_checkHostHeader();
 
 	int i = 0;
 	while (std::getline(sstream, line)) {

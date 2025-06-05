@@ -9,7 +9,7 @@
 #define MAX_EVENTS 1000
 #define TIME_OUT   3000
 
-int g_sigint = 0;
+extern int g_sigint;
 
 class Server {
 	private:

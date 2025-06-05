@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+int g_sigint = 0;
+
 Server::Server(const std::string &filename) {
 	std::fstream file;
 	file.open(filename.c_str(), std::fstream::in);
@@ -214,7 +216,7 @@ void Server::_serverLoop() {
 					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
 					_sendAnswer(response.str(), events[i].data.fd);
 				} catch (std::exception &e) {
-					std::cerr << "Error: " << e.what() << std::endl;
+					std::cerr << "Error in handling request: " << e.what() << std::endl;
 					continue;
 				}
 			}
