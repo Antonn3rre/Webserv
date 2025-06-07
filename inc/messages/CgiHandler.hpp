@@ -11,6 +11,8 @@ class CgiHandler {
 	CgiHandler();
 
 	static std::vector<std::string> _setEnv(const RequestMessage &request, const std::string &uri);
+	static void _extractHeader(ResponseMessage &response, const std::string &body,
+	                           const std::string &headerName);
 
 	public:
 	static std::string executeCgi(const RequestMessage &request, const std::string &uri,

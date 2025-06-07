@@ -29,6 +29,8 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 	    "CONTENT_LENGTH", request.getHeaderValue("Content-Length").first));
 	// check si utile de recuperer server_name, si oui comment recuperer info
 	envMap.insert(std::pair<std::string, std::string>("SERVER_NAME", "localhost"));
+	envMap.insert(
+	    std::pair<std::string, std::string>("COOKIE", request.getHeaderValue("Cookie").first));
 	// voir quoi rajouter d'autre
 
 	std::vector<std::string> envVec;
@@ -39,23 +41,30 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 	return (envVec);
 }
 
-void CgiHandler::divideCgiOutput(ResponseMessage &response) {
-	std::string body = response.getBody();
-	size_t      headerEnd = body.find("\r\n\r\n");
-	if (headerEnd != std::string::npos) {
-		size_t contentTypePos = body.find("Content-type:", 0);
-		if (contentTypePos != std::string::npos && contentTypePos < headerEnd) {
-			size_t valueStart =
-			    body.find_first_not_of(" \t", contentTypePos + 13); // 13 = Taille de Content-Type:
-			size_t lineEnd = body.find("\r\n", valueStart);
-			if (lineEnd != std::string::npos) {
-				std::string contentTypeValue = body.substr(valueStart, lineEnd - valueStart);
-				response.addHeader(Header("Content-Type", contentTypeValue));
-				response.setBody(body.substr(headerEnd + 4));
-				return;
-			}
+void CgiHandler::_extractHeader(ResponseMessage &response, const std::string &body,
+                                const std::string &headerName) {
+	size_t headerEnd = body.rfind("\r\n\r\n");
+	size_t headerPos = body.find(headerName, 0);
+	if (headerPos != std::string::npos && headerPos < headerEnd) {
+		size_t valueStart = body.find_first_not_of(" \t", headerPos + body.size());
+		size_t lineEnd = body.find("\r\n", valueStart);
+		if (lineEnd != std::string::npos) {
+			std::string headerValue = body.substr(valueStart, lineEnd - valueStart);
+			response.addHeader(Header(headerName, headerValue));
 		}
 	}
+}
+
+void CgiHandler::divideCgiOutput(ResponseMessage &response) {
+	std::string body = response.getBody();
+	size_t      headerEnd = body.rfind("\r\n\r\n");
+	if (headerEnd == std::string::npos)
+		return;
+
+	_extractHeader(response, body, "Set-Cookie");
+	_extractHeader(response, body, "Content-Type");
+	body = body.substr(headerEnd + 4);
+	response.setBody(body);
 }
 
 std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
@@ -124,8 +133,8 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	close(pipefdOut[0]);
 
 	int status;
-  waitpid(pid, &status, 0);
-  if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
+	waitpid(pid, &status, 0);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
 		throw AMessage::MessageError(500);
 	return output;
 }
