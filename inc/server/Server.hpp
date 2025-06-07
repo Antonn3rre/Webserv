@@ -20,7 +20,8 @@ class Server {
 	static void           _listenChunkedRequest(int clientfd, RequestMessage &request,
 	                                            unsigned long clientMaxBodySize);
 	static RequestMessage _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
-	void                  _sendAnswer(const std::string &answer, int clientfd);
+	static void _listenBody(int clientfd, RequestMessage &request, unsigned long sizeLeft);
+	void        _sendAnswer(const std::string &answer, int clientfd);
 
 	void _evaluateClientConnection(int clientfd, const ResponseMessage &response);
 	void _disconnectClient(int clientfd) const;
