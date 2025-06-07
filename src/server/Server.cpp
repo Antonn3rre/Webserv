@@ -137,6 +137,10 @@ RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMa
 		if (clientMaxBodySize != 0 && count >= clientMaxBodySize) {
 			throw AMessage::MessageError(413);
 		}
+		if (result.find("\r\n") == 0) {
+			result = result.substr(2);
+			count -= 2;
+		}
 		if (result.find("\r\n\r\n") != std::string::npos)
 			break;
 	}
