@@ -15,6 +15,8 @@ class RequestHandler {
 	static const Location &findURILocation(const std::vector<Location> &locations,
 	                                       const std::string           &uri);
 
+	static std::string getCompletePath(const Config &config, const std::string &requestUri);
+
 	private:
 	RequestHandler();
 
@@ -34,8 +36,6 @@ class RequestHandler {
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);
 	static void _addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
 	                                  unsigned short status);
-
-	static std::string _getCompletePath(const Config &config, const std::string &requestUri);
 };
 
 #endif

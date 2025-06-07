@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "AMessage.hpp"
 #include "Application.hpp"
+#include "CgiHandler.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
@@ -65,7 +66,8 @@ void Server::_shutdown(void) {
 	std::cout << "\nShutting down server" << std::endl;
 	for (std::map<int, Application *>::iterator it = _clientAppMap.begin();
 	     it != _clientAppMap.end(); ++it) {
-		_disconnectClient(it->first);
+		epoll_ctl(_epollfd, EPOLL_CTL_DEL, it->first, NULL);
+		close(it->first);
 	}
 	_clientAppMap.clear();
 	for (std::vector<Application>::iterator it = _applicationList.begin();
@@ -104,7 +106,7 @@ void Server::_listenChunkedRequest(int clientfd, RequestMessage &request,
 			bzero(buffer, bufSize);
 			bytesRead = read(clientfd, buffer, bufSize);
 			if (bytesRead < 0) {
-				close(clientfd);
+				_disconnectClient(clientfd);
 				throw std::runtime_error("error on read");
 			}
 			result.append(buffer, bytesRead);
@@ -129,7 +131,7 @@ RequestMessage Server::_listenClientRequest(int clientfd, unsigned long clientMa
 		c = 0;
 		bytesRead = read(clientfd, &c, 1);
 		if (bytesRead < 0) {
-			close(clientfd);
+			_disconnectClient(clientfd);
 			throw std::runtime_error("error on read");
 		}
 		result += c;
@@ -165,7 +167,7 @@ void Server::_listenBody(int clientfd, RequestMessage &request, unsigned long si
 		c = 0;
 		bytesRead = read(clientfd, &c, 1);
 		if (bytesRead < 0) {
-			close(clientfd);
+			_disconnectClient(clientfd);
 			throw std::runtime_error("error on read");
 		}
 		body += c;
@@ -179,9 +181,21 @@ void Server::_listenBody(int clientfd, RequestMessage &request, unsigned long si
 	request.setBody(body);
 }
 
+std::string Server::_listenCgiOutput(int outfd) {
+	ssize_t     bytesRead;
+	std::string output;
+	char        buffer[1024];
+	while ((bytesRead = read(outfd, buffer, sizeof(buffer))) > 0)
+		output.append(buffer, bytesRead);
+	close(outfd);
+
+	return output;
+}
+
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
 
-void Server::_disconnectClient(int clientfd) const {
+void Server::_disconnectClient(int clientfd) {
+	_clientAppMap.erase(clientfd);
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientfd, NULL);
 	close(clientfd);
 }
@@ -191,16 +205,43 @@ void Server::_evaluateClientConnection(int clientfd, const ResponseMessage &resp
 
 	if (!connectionValue.second || connectionValue.first != "close")
 		return;
-	_clientAppMap.erase(clientfd);
 	_disconnectClient(clientfd);
 }
 
+bool Server::_handleCgiOutput(int fd, const Config &config) {
+	std::map<int, RequestMessage &>::iterator mapItem = _cgiOutputFds.find(fd);
+	if (mapItem == _cgiOutputFds.end())
+		return false;
+	std::string output = _listenCgiOutput(fd);
+	CgiHandler::generateCgiResponse(config, mapItem->second, output, _epollfd);
+	return true;
+}
+
+bool Server::_acceptNewClient(int eventfd) {
+	int clientfd = -1;
+
+	for (std::vector<Application>::iterator itServer = _applicationList.begin();
+	     itServer != _applicationList.end(); ++itServer) {
+		if (eventfd != itServer->getLSockFd())
+			continue;
+		clientfd = accept(itServer->getLSockFd(), NULL, NULL);
+		if (clientfd < 0) {
+			std::cerr << "Error on accept clients." << std::endl;
+			continue;
+		}
+		_clientAppMap[clientfd] = &(*itServer);
+		struct epoll_event ev;
+		ev.events = EPOLLIN | EPOLLET;
+		ev.data.fd = clientfd;
+		epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
+		return true;
+	}
+	return false;
+}
+
 void Server::_serverLoop() {
-	struct epoll_event ev;
-	int                clientfd = -1;
 	int                nfds;
 	struct epoll_event events[MAX_EVENTS];
-	bool               newClient;
 
 	while (true) {
 		if (_checkServerState())
@@ -208,43 +249,33 @@ void Server::_serverLoop() {
 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
 
 		for (int i = 0; i < nfds; ++i) {
-			newClient = false;
-			for (std::vector<Application>::iterator itServer = _applicationList.begin();
-			     itServer != _applicationList.end(); ++itServer) {
-				if (events[i].data.fd == itServer->getLSockFd()) {
-					clientfd = accept(itServer->getLSockFd(), NULL, NULL);
-					if (clientfd < 0) {
-						std::cerr << "Error on accept clients." << std::endl;
-						continue;
-					}
+			if (_acceptNewClient(events[i].data.fd))
+				continue;
 
-					_clientAppMap[clientfd] = &(*itServer);
+			Config actualAppConfig = _getApplicationFromFD(events[i].data.fd).getConfig();
 
-					ev.events = EPOLLIN | EPOLLET;
-					ev.data.fd = clientfd;
-					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
-					newClient = true;
-				}
-			}
-			if (!newClient) {
-				Config actualAppConfig = _getApplicationFromFD(events[i].data.fd).getConfig();
-				try {
-					RequestMessage request = _listenClientRequest(
-					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
-					request.displayCookies();
-					// std::cout << "request str--\n" << request.str() << std::endl;
-					ResponseMessage response =
-					    RequestHandler::generateResponse(actualAppConfig, request);
-					_sendAnswer(response.str(), events[i].data.fd);
-					_evaluateClientConnection(clientfd, response);
-				} catch (AMessage::MessageError &e) {
-					ResponseMessage response =
-					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
-					_sendAnswer(response.str(), events[i].data.fd);
-				} catch (std::exception &e) {
-					std::cerr << "Error in handling request: " << e.what() << std::endl;
+			try {
+				if (_handleCgiOutput(events[i].data.fd, actualAppConfig))
 					continue;
+				RequestMessage request =
+				    _listenClientRequest(events[i].data.fd, actualAppConfig.getClientMaxBodySize());
+				request.displayCookies();
+				// std::cout << "request str--\n" << request.str() << std::endl;
+				if (request.getRequestUri().find("/cgi-bin") != std::string::npos) {
+					int outfd = CgiHandler::executeCgi(request, actualAppConfig, _epollfd);
+					_cgiOutputFds.insert(std::pair<int, RequestMessage>(outfd, request));
 				}
+				ResponseMessage response =
+				    RequestHandler::generateResponse(actualAppConfig, request);
+				_sendAnswer(response.str(), events[i].data.fd);
+				_evaluateClientConnection(events[i].data.fd, response);
+			} catch (AMessage::MessageError &e) {
+				ResponseMessage response =
+				    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
+				_sendAnswer(response.str(), events[i].data.fd);
+			} catch (std::exception &e) {
+				std::cerr << "Error in handling request: " << e.what() << std::endl;
+				continue;
 			}
 		}
 	}

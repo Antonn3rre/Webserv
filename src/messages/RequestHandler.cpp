@@ -64,13 +64,13 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	}
 
 	const std::string &method = request.getMethod();
-	std::string        path = _getCompletePath(config, request.getRequestUri());
+	std::string        path = getCompletePath(config, request.getRequestUri());
 
 	try {
 		status = 200;
-		if (path.find("/cgi-bin/") != std::string::npos)
-			body = CgiHandler::executeCgi(request, path, config);
-		else if (method == "DELETE")
+		// if (path.find("/cgi-bin/") != std::string::npos)
+		// 	body = CgiHandler::executeCgi(request, config);
+		if (method == "DELETE")
 			body = MethodHandler::deleteRequest(path);
 		else
 			body = MethodHandler::getRequest(request, path, config);
@@ -158,7 +158,7 @@ const Location &RequestHandler::findURILocation(const std::vector<Location> &loc
 	return *longestValidLoc;
 }
 
-std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
+std::string RequestHandler::getCompletePath(const Config &config, const std::string &requestUri) {
 	std::string locRoot = findURILocation(config.getLocations(), requestUri).getRoot();
 	std::string path = locRoot + requestUri;
 	struct stat sb;

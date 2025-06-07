@@ -13,7 +13,8 @@ class CgiHandler {
 	static std::vector<std::string> _setEnv(const RequestMessage &request, const std::string &uri);
 
 	public:
-	static std::string executeCgi(const RequestMessage &request, const std::string &uri,
-	                              const Config &config);
-	static void        divideCgiOutput(ResponseMessage &response);
+	static int executeCgi(const RequestMessage &request, const Config &config, int epollfd);
+	static ResponseMessage generateCgiResponse(const Config &config, const RequestMessage &request,
+	                                           const std::string &output, int epollfd);
+	static void            divideCgiOutput(ResponseMessage &response);
 };

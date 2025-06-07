@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <string>
+#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -58,19 +59,23 @@ void CgiHandler::divideCgiOutput(ResponseMessage &response) {
 	}
 }
 
-std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
-                                   const Config &config) {
-	struct stat sb;
-	if (access(uri.c_str(), F_OK) == -1)
-		throw AMessage::MessageError(404);
-	if (stat(uri.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR))
-		return (MethodHandler::getFileRequest(
-		    RequestHandler::findURILocation(config.getLocations(), request.getRequestUri()), uri));
-	if (access(uri.c_str(), X_OK) == -1)
-		throw AMessage::MessageError(403);
+static ResponseMessage generateCgiResponse(const Config &config, const RequestMessage &request,
+                                           int epollfd);
+
+int CgiHandler::executeCgi(const RequestMessage &request, const Config &config, int epollfd) {
+	struct stat        sb;
+	const std::string &completePath =
+	    RequestHandler::getCompletePath(config, request.getRequestUri());
+
+	if (access(completePath.c_str(), F_OK) == -1)
+		throw AMessage::MessageError(404, "cgi does not exist", completePath);
+	if (stat(completePath.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR))
+		throw AMessage::MessageError(403, "cgi is a directory", completePath);
+	if (access(completePath.c_str(), X_OK) == -1)
+		throw AMessage::MessageError(403, "cannot execute cgi", completePath);
 
 	// setEnv -> besoin de le faire ici car init en local
-	std::vector<std::string> env = _setEnv(request, uri);
+	std::vector<std::string> env = _setEnv(request, completePath);
 	std::vector<char *>      envp;
 	envp.reserve(env.size());
 	for (size_t i = 0; i < env.size(); ++i) {
@@ -93,20 +98,20 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		dup2(pipefdOut[1], STDERR_FILENO);
 		close(pipefdOut[1]);
 
-		if (uri.find(".php", uri.length() - 4) != std::string::npos) {
-			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
+		if (completePath.find(".php", completePath.length() - 4) != std::string::npos) {
+			char *argv[] = {const_cast<char *>(completePath.c_str()), NULL};
 			execve(argv[0], argv, envp.data());
-		} else if (uri.find(".py", uri.length() - 3) != std::string::npos) {
-			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
+		} else if (completePath.find(".py", completePath.length() - 3) != std::string::npos) {
+			char *argv[] = {const_cast<char *>(completePath.c_str()), NULL};
 			execve(argv[0], argv, envp.data());
-		} else if (uri.find(".cgi", uri.length() - 4) != std::string::npos) {
-			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
+		} else if (completePath.find(".cgi", completePath.length() - 4) != std::string::npos) {
+			char *argv[] = {const_cast<char *>(completePath.c_str()), NULL};
 			execve(argv[0], argv, envp.data());
 		} else
 			std::cerr << "Format not supported" << std::endl;
 
 		std::cerr << "execve error" << std::endl;
-		exit(EXIT_FAILURE);
+		throw AMessage::MessageError(500, "server failed to execute cgi", completePath);
 	}
 	close(pipefdIn[0]);
 	close(pipefdOut[1]);
@@ -116,16 +121,14 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	write(pipefdIn[1], request.getBody().c_str(), request.getBody().length());
 	close(pipefdIn[1]);
 
-	ssize_t     bytesRead;
-	std::string output;
-	char        buffer[1024];
-	while ((bytesRead = read(pipefdOut[0], buffer, sizeof(buffer))) > 0)
-		output.append(buffer, bytesRead);
-	close(pipefdOut[0]);
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = pipefdOut[0];
+	epoll_ctl(epollfd, EPOLL_CTL_ADD, pipefdOut[0], &ev);
 
-	int status;
-  waitpid(pid, &status, 0);
-  if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
-		throw AMessage::MessageError(500);
-	return output;
+	return pipefdOut[0];
+	// int status;
+	// waitpid(pid, &status, 0);
+	// if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
+	// 	throw AMessage::MessageError(500, "error in cgi", completePath);
 }

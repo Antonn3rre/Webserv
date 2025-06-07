@@ -4,6 +4,7 @@
 #include "Application.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include <map>
 #include <vector>
 
 #define MAX_EVENTS 1000
@@ -13,20 +14,28 @@ extern int g_sigint;
 
 class Server {
 	private:
-	std::vector<Application>     _applicationList;
-	int                          _epollfd;
-	std::map<int, Application *> _clientAppMap;
+	std::vector<Application>        _applicationList;
+	int                             _epollfd;
+	std::map<int, Application *>    _clientAppMap;
+	std::map<int, RequestMessage &> _cgiOutputFds;
 
-	static void           _listenChunkedRequest(int clientfd, RequestMessage &request,
-	                                            unsigned long clientMaxBodySize);
-	static RequestMessage _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
-	static void _listenBody(int clientfd, RequestMessage &request, unsigned long sizeLeft);
-	void        _sendAnswer(const std::string &answer, int clientfd);
+	void               _listenChunkedRequest(int clientfd, RequestMessage &request,
+	                                         unsigned long clientMaxBodySize);
+	RequestMessage     _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
+	void               _listenBody(int clientfd, RequestMessage &request, unsigned long sizeLeft);
+	static std::string _listenCgiOutput(int outfd);
+
+	bool _handleCgiOutput(int fd, const Config &config);
+	bool _acceptNewClient(int eventfd);
+
+	void _sendAnswer(const std::string &answer, int clientfd);
 
 	void _evaluateClientConnection(int clientfd, const ResponseMessage &response);
-	void _disconnectClient(int clientfd) const;
+	void _disconnectClient(int clientfd);
+
 	void _initServer();
 	void _serverLoop();
+
 	bool _checkServerState();
 	void _shutdown();
 
