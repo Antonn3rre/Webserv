@@ -40,7 +40,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -158,7 +158,7 @@ void Server::_listenBody(int clientfd, RequestMessage &request, unsigned long si
 	std::string body;
 	ssize_t     bytesRead = 1;
 	char        c;
-	int         totalBody = 0;
+	ssize_t     totalBody = 0;
 	int         contentLength = atoi(request.getHeaderValue("Content-Length").first.c_str());
 
 	while (bytesRead && totalBody < contentLength) {
