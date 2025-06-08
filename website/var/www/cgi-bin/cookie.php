@@ -21,6 +21,7 @@
 // Si GET -> juste dire si on connait
 // Si POST -> dire si on connait et si non set
 
+echo "Content-Type: text/plain\r\n\r\n";
 // Recuperer le header cookie que le navigateur envoie
 if ($_SERVER['REQUEST_METHOD'] == "GET") {
 	// if le header existe return la valeur du cookie
@@ -39,6 +40,5 @@ else {
 		echo("Set-Cookie: username=" . $_POST['username'] . "; Path=/\r\n\r\n");
 	}
 }
-echo "Content-Type: text/plain\r\n\r\n";
 
 ?>

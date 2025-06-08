@@ -30,7 +30,7 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 	// check si utile de recuperer server_name, si oui comment recuperer info
 	envMap.insert(std::pair<std::string, std::string>("SERVER_NAME", "localhost"));
 	envMap.insert(
-	    std::pair<std::string, std::string>("COOKIE", request.getHeaderValue("Cookie").first));
+	    std::pair<std::string, std::string>("HTTP_COOKIE", request.getHeaderValue("Cookie").first));
 	// voir quoi rajouter d'autre
 
 	std::vector<std::string> envVec;
