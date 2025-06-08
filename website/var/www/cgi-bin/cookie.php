@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == "GET") {
 }
 else {
 	if ($_POST['username']) {
-		echo("Set-Cookie: username=" . $_POST['username'] . "\r\n\r\n");
+		echo("Set-Cookie: username=" . $_POST['username'] . "; Path=/\r\n\r\n");
 #		echo "Content-Type: test/plain\r\n\r\n";
 	}
 }

@@ -46,7 +46,7 @@ void CgiHandler::_extractHeader(ResponseMessage &response, const std::string &bo
 	size_t headerEnd = body.rfind("\r\n\r\n");
 	size_t headerPos = body.find(headerName, 0);
 	if (headerPos != std::string::npos && headerPos < headerEnd) {
-		size_t valueStart = body.find_first_not_of(" \t", headerPos + body.size());
+		size_t valueStart = body.find_first_not_of(" \t", headerPos + headerName.size() + 1);
 		size_t lineEnd = body.find("\r\n", valueStart);
 		if (lineEnd != std::string::npos) {
 			std::string headerValue = body.substr(valueStart, lineEnd - valueStart);

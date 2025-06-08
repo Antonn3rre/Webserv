@@ -98,11 +98,12 @@ void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMe
                                       unsigned short status) {
 	response.addDateHeader();
 	_addConnectionHeader(request, response);
+	CgiHandler::divideCgiOutput(response);
 	_addContentTypeHeader(request, response, status);
 	response.addContentLengthHeader();
 	response.addHeader(Header("Server", "webserv"));
-	response.addSessionCookieHeader("test", "caca");
-	response.addSessionCookieHeader("test2", "prout");
+	//	response.addSessionCookieHeader("test", "caca");
+	//	response.addSessionCookieHeader("test2", "prout");
 }
 
 void RequestHandler::_addConnectionHeader(const RequestMessage &request,
@@ -119,7 +120,7 @@ void RequestHandler::_addConnectionHeader(const RequestMessage &request,
 void RequestHandler::_addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
                                            unsigned short status) {
 	// Si le content type a deja ete ajoute par le CGI
-	CgiHandler::divideCgiOutput(response);
+	//	CgiHandler::divideCgiOutput(response);
 
 	if (status >= 400) {
 		response.addHeader(Header("Content-Type", "text/html"));
