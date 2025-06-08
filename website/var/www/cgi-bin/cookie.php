@@ -30,14 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] == "GET") {
 		parse_str(str_replace('; ', '&', $_SERVER['HTTP_COOKIE']), $cookies);
 #		echo "Content-Type: text/plain\r\n\r\n";
 		if (isset($cookies['username']))
-			echo $cookies['username'];
+			echo("Le cookie username connu est : " . $cookies['username']);
 		else
-			echo "Unkwown";
+			echo "Pas de cookie connu";
 	}
 }
 else {
 	if ($_POST['username']) {
 		echo("Set-Cookie: username=" . $_POST['username'] . "; Path=/\r\n\r\n");
+		echo("Cookie username enregistre : " . $_POST['username']);
 	}
 }
 
