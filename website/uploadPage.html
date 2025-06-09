@@ -26,8 +26,9 @@ const reponse = await fetch('/cgi-bin/upload.php', {
 		method: 'POST',
 		body: formData
 });
+  const resultText = await reponse.text();
 
-	if (reponse.ok) {
+  if (reponse.ok && resultText.includes('uploaded successfully')) {
 		showNotification('Upload successful');
 	} else {
 		showNotification('Error during upload', true);

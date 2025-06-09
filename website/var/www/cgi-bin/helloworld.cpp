@@ -21,7 +21,7 @@ int main() {
 		cout << "<h2>Hello World! This is my first CGI program</h2>\n";
 		cout << "</body>\n";
 		cout << "</html>\n";
-		sleep(10);
+		sleep(15);
 	}
 	return 0;
 }

@@ -13,10 +13,17 @@ class ResponseMessage : public AMessage {
 	unsigned short     getStatusCode() const;
 	const std::string &getReasonPhrase() const;
 
+	void addSessionCookieHeader(const std::string &name, const std::string &value);
+	void addPermanentCookieHeader(const std::string &name, const std::string &value);
+	void addDateHeader();
+	void addContentLengthHeader();
+
 	std::string str() const;
 
 	private:
 	const StatusLine _startLine;
+
+	static std::string _getTime();
 };
 
 #endif

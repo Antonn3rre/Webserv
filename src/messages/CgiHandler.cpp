@@ -2,6 +2,7 @@
 #include "Config.hpp"
 #include "MethodHandler.hpp"
 #include "RequestHandler.hpp"
+#include "ResponseMessage.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
@@ -28,6 +29,8 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 	    "CONTENT_LENGTH", request.getHeaderValue("Content-Length").first));
 	// check si utile de recuperer server_name, si oui comment recuperer info
 	envMap.insert(std::pair<std::string, std::string>("SERVER_NAME", "localhost"));
+	envMap.insert(
+	    std::pair<std::string, std::string>("HTTP_COOKIE", request.getHeaderValue("Cookie").first));
 	// voir quoi rajouter d'autre
 
 	std::vector<std::string> envVec;
@@ -36,6 +39,32 @@ std::vector<std::string> CgiHandler::_setEnv(const RequestMessage &request,
 		envVec.push_back(it->first + "=" + it->second);
 	}
 	return (envVec);
+}
+
+void CgiHandler::_extractHeader(ResponseMessage &response, const std::string &body,
+                                const std::string &headerName) {
+	size_t headerEnd = body.rfind("\r\n\r\n");
+	size_t headerPos = body.find(headerName, 0);
+	if (headerPos != std::string::npos && headerPos < headerEnd) {
+		size_t valueStart = body.find_first_not_of(" \t", headerPos + headerName.size() + 1);
+		size_t lineEnd = body.find("\r\n", valueStart);
+		if (lineEnd != std::string::npos) {
+			std::string headerValue = body.substr(valueStart, lineEnd - valueStart);
+			response.addHeader(Header(headerName, headerValue));
+		}
+	}
+}
+
+void CgiHandler::divideCgiOutput(ResponseMessage &response) {
+	std::string body = response.getBody();
+	size_t      headerEnd = body.rfind("\r\n\r\n");
+	if (headerEnd == std::string::npos)
+		return;
+
+	_extractHeader(response, body, "Set-Cookie");
+	_extractHeader(response, body, "Content-Type");
+	body = body.substr(headerEnd + 4);
+	response.setBody(body);
 }
 
 std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
@@ -103,6 +132,9 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		output.append(buffer, bytesRead);
 	close(pipefdOut[0]);
 
-	waitpid(pid, NULL, 0);
+	int status;
+	waitpid(pid, &status, 0);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
+		throw AMessage::MessageError(500);
 	return output;
 }
