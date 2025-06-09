@@ -131,16 +131,6 @@
       </form>
     </div>
 
-    <!-- POST Request -->
-    <div class="card">
-      <h3>POST Request</h3>
-      <p>Formulaire simple pour tester une requête POST.</p>
-      <form method="POST" action="#">
-        <input type="text" name="data" placeholder="Votre message" required />
-        <button type="submit">Envoyer POST</button>
-      </form>
-    </div>
-
     <!-- DELETE Request -->
     <div class="card">
       <h3>DELETE Request</h3>
@@ -163,17 +153,17 @@
       <p>Envoie le nom d’utilisateur en POST ou GET vers cookie.php</p>
       <form method="POST" action="/cgi-bin/cookie.php">
         <input type="text" id="username" name="username" placeholder="Nom d'utilisateur" required />
-        <button type="submit">Se connecter</button>
+        <button type="submit">POST : enregistrer cookie</button>
       </form>
       <form action="/cgi-bin/cookie.php" method="GET">
-        <button type="submit">Envoyer GET</button>
+        <button type="submit">GET : Test cookie</button>
       </form>
     </div>
 
     <!-- Upload fichier -->
     <div class="card">
       <h3>Upload de fichier</h3>
-      <p>Test d'envoi de fichier vers le CGI `upload.php`.</p>
+      <p>Test methode POST + CGI pour upload de fichier</p>
       <form id="uploadForm" enctype="multipart/form-data">
         <input type="file" name="file" required />
         <button type="submit">Envoyer</button>
