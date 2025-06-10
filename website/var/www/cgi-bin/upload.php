@@ -28,7 +28,7 @@ if (isset($_FILES['file'])) {
     $file = $_FILES['file'];
     // Vérifie s'il y a eu une erreur d'upload
     if ($file['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = '/tmp/'; // Assure-toi que ce dossier existe et est inscriptible
+        $upload_dir = '../../../../files/'; 
         $upload_file = $upload_dir . basename($file['name']);
 
         if (move_uploaded_file($file['tmp_name'], $upload_file)) {

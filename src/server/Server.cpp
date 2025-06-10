@@ -40,7 +40,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -231,7 +231,6 @@ void Server::_serverLoop() {
 				try {
 					RequestMessage request = _listenClientRequest(
 					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
-					request.displayCookies();
 					// std::cout << "request str--\n" << request.str() << std::endl;
 					ResponseMessage response =
 					    RequestHandler::generateResponse(actualAppConfig, request);

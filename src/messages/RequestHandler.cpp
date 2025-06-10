@@ -15,6 +15,7 @@
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
+#include <iostream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -154,7 +155,9 @@ const Location &RequestHandler::findURILocation(const std::vector<Location> &loc
 
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
 	std::string locRoot = findURILocation(config.getLocations(), requestUri).getRoot();
-	std::string path = locRoot + requestUri;
+	std::string path =
+	    (locRoot[locRoot.size() - 1] == '/' ? locRoot.substr(0, locRoot.size() - 1) : locRoot) +
+	    requestUri;
 	struct stat sb;
 
 	std::string testPath;
@@ -174,12 +177,5 @@ std::string RequestHandler::_getCompletePath(const Config &config, const std::st
 			i++;
 		}
 	}
-
-	//	if (path[path.length() - 1] == '/')
-	//		path += findURILocation(config.getLocations(), requestUri).getIndex().at(0);
-	//	else if (stat(path.c_str(), &sb) == 0 &&
-	//	         (sb.st_mode & S_IFDIR)) // Is the path a directory but without the '/'
-	//		path += "/" + config.getIndex().at(0);
-
 	return path;
 }
