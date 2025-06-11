@@ -3,11 +3,13 @@
 #include "MethodHandler.hpp"
 #include "RequestHandler.hpp"
 #include "ResponseMessage.hpp"
+#include "Server.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <string>
+#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -67,14 +69,17 @@ void CgiHandler::divideCgiOutput(ResponseMessage &response) {
 	response.setBody(body);
 }
 
-std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
-                                   const Config &config) {
+void CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
+                            const Config &config, int _epollfd,
+                            std::map<int, CgiContext> &cgiContexts) {
 	struct stat sb;
+	(void)config;
 	if (access(uri.c_str(), F_OK) == -1)
 		throw AMessage::MessageError(404);
 	if (stat(uri.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR))
-		return (MethodHandler::getFileRequest(
-		    RequestHandler::findURILocation(config.getLocations(), request.getRequestUri()), uri));
+		throw AMessage::MessageError(404);
+	// return (MethodHandler::getFileRequest(
+	//     RequestHandler::findURILocation(config.getLocations(), request.getRequestUri()), uri));
 	if (access(uri.c_str(), X_OK) == -1)
 		throw AMessage::MessageError(403);
 
@@ -92,7 +97,20 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	pipe(pipefdIn);
 	pipe(pipefdOut);
 
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = pipefdOut[0];
+	epoll_ctl(_epollfd, EPOLL_CTL_ADD, pipefdOut[0], &ev);
+
+	cgiContexts[pipefdOut[0]].fd_out = pipefdOut[0];
+	cgiContexts[pipefdOut[0]].fd_in = pipefdIn[1];
+	cgiContexts[pipefdOut[0]].buffer = "";
+	cgiContexts[pipefdOut[0]].body = request.getBody();
+	cgiContexts[pipefdOut[0]].body_written = 0;
+
 	int pid = fork();
+
+	cgiContexts[pipefdOut[0]].pid = pid;
 	if (pid == 0) {
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
@@ -125,16 +143,16 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	write(pipefdIn[1], request.getBody().c_str(), request.getBody().length());
 	close(pipefdIn[1]);
 
-	ssize_t     bytesRead;
-	std::string output;
-	char        buffer[1024];
-	while ((bytesRead = read(pipefdOut[0], buffer, sizeof(buffer))) > 0)
-		output.append(buffer, bytesRead);
+	// ssize_t     bytesRead;
+	// std::string output;
+	// char        buffer[1024];
+	// while ((bytesRead = read(pipefdOut[0], buffer, sizeof(buffer))) > 0)
+	// 	output.append(buffer, bytesRead);
 	close(pipefdOut[0]);
 
 	int status;
 	waitpid(pid, &status, 0);
 	if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
 		throw AMessage::MessageError(500);
-	return output;
+	// return "caca";
 }

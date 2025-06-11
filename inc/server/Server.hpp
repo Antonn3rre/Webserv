@@ -11,11 +11,21 @@
 
 extern int g_sigint;
 
+struct CgiContext {
+	int         pid;
+	int         fd_out;
+	int         fd_in;
+	std::string buffer;
+	size_t      body_written;
+	std::string body;
+};
+
 class Server {
 	private:
 	std::vector<Application>     _applicationList;
 	int                          _epollfd;
 	std::map<int, Application *> _clientAppMap;
+	std::map<int, CgiContext>    _cgiContexts;
 
 	static void           _listenChunkedRequest(int clientfd, RequestMessage &request,
 	                                            unsigned long clientMaxBodySize);

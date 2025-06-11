@@ -4,12 +4,14 @@
 #include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include "Server.hpp"
 #include "StatusLine.hpp"
 #include <vector>
 
 class RequestHandler {
 	public:
-	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
+	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request,
+	                                        int _epollfd, std::map<int, CgiContext> &cgiContexts);
 
 	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
 	static const Location &findURILocation(const std::vector<Location> &locations,
@@ -25,7 +27,8 @@ class RequestHandler {
 	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request,
 	                                    unsigned short status);
 	static std::string _generateBody(const RequestMessage &request, unsigned short &status,
-	                                 const Config &config);
+	                                 const Config &config, int _epollfd,
+	                                 std::map<int, CgiContext> &cgiContexts);
 	static std::string _generateErrorBody(unsigned short status, const Config &config);
 	static void        _generateErrorHeaders(ResponseMessage &response);
 

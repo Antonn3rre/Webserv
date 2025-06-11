@@ -4,11 +4,13 @@
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include "StatusLine.hpp"
 #include <csignal>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <fcntl.h>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -217,13 +219,35 @@ void Server::_serverLoop() {
 						std::cerr << "Error on accept clients." << std::endl;
 						continue;
 					}
-
 					_clientAppMap[clientfd] = &(*itServer);
 
 					ev.events = EPOLLIN | EPOLLET;
 					ev.data.fd = clientfd;
 					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
 					newClient = true;
+
+					int fd = events[i].data.fd;
+					if (_cgiContexts.count(fd)) {
+						CgiContext &ctx = _cgiContexts[fd];
+						char        buffer[1024];
+						ssize_t     bytesRead;
+
+						while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0) {
+							ctx.buffer.append(buffer, bytesRead);
+						}
+
+						if (bytesRead == 0) {
+							// CGI terminé
+							close(fd);
+							_cgiContexts.erase(fd);
+
+							// Génére la réponse
+							ResponseMessage response =
+							    ResponseMessage(StatusLine("HTTP1/1", 200), ctx.buffer);
+							_sendAnswer(response.str(), clientfd);
+						}
+						continue;
+					}
 				}
 			}
 			if (!newClient) {
@@ -232,8 +256,8 @@ void Server::_serverLoop() {
 					RequestMessage request = _listenClientRequest(
 					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
 					// std::cout << "request str--\n" << request.str() << std::endl;
-					ResponseMessage response =
-					    RequestHandler::generateResponse(actualAppConfig, request);
+					ResponseMessage response = RequestHandler::generateResponse(
+					    actualAppConfig, request, _epollfd, _cgiContexts);
 					_sendAnswer(response.str(), events[i].data.fd);
 					_evaluateClientConnection(clientfd, response);
 				} catch (AMessage::MessageError &e) {
