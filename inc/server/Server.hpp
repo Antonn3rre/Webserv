@@ -28,7 +28,6 @@ class Server {
 	std::vector<Application>     _applicationList;
 	int                          _epollfd;
 	std::map<int, Application *> _clientAppMap;
-	std::map<int, CgiContext>    _cgiContexts;
 
 	static void           _listenChunkedRequest(int clientfd, RequestMessage &request,
 	                                            unsigned long clientMaxBodySize);

@@ -1,9 +1,6 @@
 #include "CgiHandler.hpp"
 #include "Config.hpp"
-#include "MethodHandler.hpp"
-#include "RequestHandler.hpp"
 #include "ResponseMessage.hpp"
-#include "Server.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
@@ -69,9 +66,8 @@ void CgiHandler::divideCgiOutput(ResponseMessage &response) {
 	response.setBody(body);
 }
 
-void CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
-                            const Config &config, int _epollfd,
-                            std::map<int, CgiContext> &cgiContexts) {
+std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
+                                   const Config &config) {
 	struct stat sb;
 	(void)config;
 	if (access(uri.c_str(), F_OK) == -1)
@@ -97,20 +93,8 @@ void CgiHandler::executeCgi(const RequestMessage &request, const std::string &ur
 	pipe(pipefdIn);
 	pipe(pipefdOut);
 
-	struct epoll_event ev;
-	ev.events = EPOLLIN | EPOLLET;
-	ev.data.fd = pipefdOut[0];
-	epoll_ctl(_epollfd, EPOLL_CTL_ADD, pipefdOut[0], &ev);
-
-	cgiContexts[pipefdOut[0]].fd_out = pipefdOut[0];
-	cgiContexts[pipefdOut[0]].fd_in = pipefdIn[1];
-	cgiContexts[pipefdOut[0]].buffer = "";
-	cgiContexts[pipefdOut[0]].body = request.getBody();
-	cgiContexts[pipefdOut[0]].body_written = 0;
-
 	int pid = fork();
 
-	cgiContexts[pipefdOut[0]].pid = pid;
 	if (pid == 0) {
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
@@ -143,17 +127,17 @@ void CgiHandler::executeCgi(const RequestMessage &request, const std::string &ur
 	write(pipefdIn[1], request.getBody().c_str(), request.getBody().length());
 	close(pipefdIn[1]);
 
-	int status;
-	waitpid(pid, &status, WNOHANG);
-	if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
-		throw AMessage::MessageError(500);
-
 	ssize_t     bytesRead;
 	std::string output;
 	char        buffer[1024];
 	while ((bytesRead = read(pipefdOut[0], buffer, sizeof(buffer))) > 0)
 		output.append(buffer, bytesRead);
 	close(pipefdOut[0]);
+
+	int status;
+	waitpid(pid, &status, WNOHANG);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
+		throw AMessage::MessageError(500);
 
 	return output;
 }

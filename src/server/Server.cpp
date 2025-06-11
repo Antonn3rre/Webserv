@@ -4,7 +4,6 @@
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
-#include "StatusLine.hpp"
 #include <csignal>
 #include <cstddef>
 #include <cstdio>
@@ -234,29 +233,6 @@ void Server::_serverLoop() {
 					ev.data.fd = clientfd;
 					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
 					newClient = true;
-
-					int fd = events[i].data.fd;
-					if (_cgiContexts.count(fd)) {
-						CgiContext &ctx = _cgiContexts[fd];
-						char        buffer[1024];
-						ssize_t     bytesRead;
-
-						while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0) {
-							ctx.buffer.append(buffer, bytesRead);
-						}
-
-						if (bytesRead == 0) {
-							// CGI terminé
-							close(fd);
-							_cgiContexts.erase(fd);
-
-							// Génére la réponse
-							ResponseMessage response =
-							    ResponseMessage(StatusLine("HTTP1/1", 200), ctx.buffer);
-							_sendAnswer(response.str(), clientfd);
-						}
-						continue;
-					}
 				}
 			}
 			if (!newClient) {

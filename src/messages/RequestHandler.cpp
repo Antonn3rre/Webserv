@@ -7,7 +7,6 @@
 #include "MethodHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
-#include "Server.hpp"
 #include "StatusLine.hpp"
 #include <cerrno>
 #include <cstddef>
@@ -26,11 +25,10 @@
 RequestHandler::RequestHandler() {}
 
 ResponseMessage RequestHandler::generateResponse(const Config         &config,
-                                                 const RequestMessage &request, int _epollfd,
-                                                 std::map<int, CgiContext> &cgiContexts) {
+                                                 const RequestMessage &request) {
 	unsigned short status;
 
-	std::string     body = _generateBody(request, status, config, _epollfd, cgiContexts);
+	std::string     body = _generateBody(request, status, config);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
 	_generateHeaders(response, request, status);
@@ -58,8 +56,7 @@ void RequestHandler::_generateErrorHeaders(ResponseMessage &response) {
 }
 
 std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status,
-                                          const Config &config, int _epollfd,
-                                          std::map<int, CgiContext> &cgiContexts) {
+                                          const Config &config) {
 	std::string body;
 
 	if (request.getRequestUri()[0] != '/') {
@@ -73,7 +70,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	try {
 		status = 200;
 		if (path.find("/cgi-bin/") != std::string::npos)
-			CgiHandler::executeCgi(request, path, config, _epollfd, cgiContexts);
+			body = CgiHandler::executeCgi(request, path, config);
 		else if (method == "DELETE")
 			body = MethodHandler::deleteRequest(path);
 		else if (method == "POST") {

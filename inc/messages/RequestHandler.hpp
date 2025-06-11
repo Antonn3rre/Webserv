@@ -4,7 +4,6 @@
 #include "Config.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
-#include "Server.hpp"
 #include "StatusLine.hpp"
 #include <vector>
 
@@ -25,8 +24,7 @@ class RequestHandler {
 	static void        _generateHeaders(ResponseMessage &response, const RequestMessage &request,
 	                                    unsigned short status);
 	static std::string _generateBody(const RequestMessage &request, unsigned short &status,
-	                                 const Config &config, int _epollfd,
-	                                 std::map<int, CgiContext> &cgiContexts);
+	                                 const Config &config);
 	static std::string _generateErrorBody(unsigned short status, const Config &config);
 	static void        _generateErrorHeaders(ResponseMessage &response);
 
