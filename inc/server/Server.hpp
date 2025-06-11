@@ -4,6 +4,7 @@
 #include "Application.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include <string>
 #include <sys/epoll.h>
 #include <vector>
 
@@ -32,17 +33,32 @@ struct s_cgiSession {
 	      bytesWrittenToClient(0), event(event), request(request) {}
 };
 
+enum e_status { READING_INPUT, PROCESSING, WRITING_OUTPUT, FINISHED };
+
+struct s_connection {
+	int             clientFd;
+	std::string     bufferRead;
+	std::string     bufferWrite;
+	int             status;
+	int             bytesToRead;  // en fonction de contentLength
+	int             bytesWritten; // pour le send final
+	RequestMessage  request;
+	ResponseMessage response;
+	bool            chunk;
+
+	s_connection(int clientFd)
+	    : clientFd(clientFd), status(READING_INPUT), bytesToRead(-1), bytesWritten(-1),
+	      request(NULL), response(NULL), chunk(false) {} // NULL a verifier, mettre des pointeurs ?
+};
+
 class Server {
 	private:
 	std::vector<Application>     _applicationList;
 	int                          _epollfd;
 	std::map<int, Application *> _clientAppMap;
 
-	static void           _listenChunkedRequest(int clientfd, RequestMessage &request,
-	                                            unsigned long clientMaxBodySize);
-	static RequestMessage _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
-	static void _listenBody(int clientfd, RequestMessage &request, unsigned long sizeLeft);
-	void        _sendAnswer(const std::string &answer, struct epoll_event &ev);
+	void _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
+	void _sendAnswer(s_connection &con, struct epoll_event &ev);
 	// void        _sendAnswer(const std::string &answer, int clientfd);
 
 	void _modifySocketEpoll(int epollfd, int client_fd, int flags);
@@ -56,7 +72,7 @@ class Server {
 
 	Application &_getApplicationFromFD(int sockfd) const;
 
-	void _handleActiveCgi(struct epoll_event &event);
+	void _handleActiveCgi(struct epoll_event &event, s_connection *con);
 	void _stopWritingToCgi(s_cgiSession *session);
 	void _stopReadingFromCgi(s_cgiSession *session);
 	void _cleanupCgiSession(s_cgiSession *session);
@@ -69,6 +85,7 @@ class Server {
 
 	int                           getEpollFd() const;
 	std::map<int, s_cgiSession *> cgiSessions;
+	std::map<int, s_connection *> connections;
 	void                          startServer();
 };
 
