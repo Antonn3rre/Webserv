@@ -25,10 +25,10 @@
 RequestHandler::RequestHandler() {}
 
 ResponseMessage RequestHandler::generateResponse(const Config         &config,
-                                                 const RequestMessage &request) {
+                                                 const RequestMessage &request, int clientFd) {
 	unsigned short status;
 
-	std::string     body = _generateBody(request, status, config);
+	std::string     body = _generateBody(request, status, config, clientFd);
 	StatusLine      statusLine = _generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
 	_generateHeaders(response, request, status);
@@ -56,7 +56,7 @@ void RequestHandler::_generateErrorHeaders(ResponseMessage &response) {
 }
 
 std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status,
-                                          const Config &config) {
+                                          const Config &config, int clientFd) {
 	std::string body;
 
 	if (request.getRequestUri()[0] != '/') {
@@ -70,8 +70,8 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	try {
 		status = 200;
 		if (path.find("/cgi-bin/") != std::string::npos)
-			body = CgiHandler::executeCgi(request, path, config);
-		else if (method == "DELETE")
+			throw CgiRequestException(request, clientFd, path, config);
+		if (method == "DELETE")
 			body = MethodHandler::deleteRequest(path);
 		else if (method == "POST") {
 			body = MethodHandler::postRequest(request, path);

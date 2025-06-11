@@ -4,6 +4,7 @@
 #include "Application.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include <sys/epoll.h>
 #include <vector>
 
 #define REQUEST_FLAGS  EPOLLIN | EPOLLRDHUP | EPOLLERR
@@ -14,13 +15,21 @@
 
 extern int g_sigint;
 
-struct CgiContext {
-	int         pid;
-	int         fd_out;
-	int         fd_in;
-	std::string buffer;
-	size_t      body_written;
-	std::string body;
+struct s_cgiSession {
+	int                clientFd;
+	pid_t              cgiPid;
+	int                pipeToCgi;
+	int                pipeFromCgi;
+	std::string        requestBody;
+	std::string        cgiResponse;
+	size_t             bytesWrittenToCgi;
+	size_t             bytesWrittenToClient;
+	struct epoll_event event;
+	RequestMessage     request;
+
+	s_cgiSession(int cfd, const RequestMessage &request, struct epoll_event &event)
+	    : clientFd(cfd), cgiPid(-1), pipeToCgi(-1), pipeFromCgi(-1), bytesWrittenToCgi(0),
+	      bytesWrittenToClient(0), event(event), request(request) {}
 };
 
 class Server {
@@ -47,12 +56,20 @@ class Server {
 
 	Application &_getApplicationFromFD(int sockfd) const;
 
+	void _handleActiveCgi(struct epoll_event &event);
+	void _stopWritingToCgi(s_cgiSession *session);
+	void _stopReadingFromCgi(s_cgiSession *session);
+	void _cleanupCgiSession(s_cgiSession *session);
+	void _cleanupConnection(int fd);
+
 	public:
 	//	Server();
 	Server(const std::string &);
 	~Server();
 
-	void startServer();
+	int                           getEpollFd() const;
+	std::map<int, s_cgiSession *> cgiSessions;
+	void                          startServer();
 };
 
 #endif // !SERVER_HPP
