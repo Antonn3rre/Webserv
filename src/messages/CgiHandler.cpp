@@ -143,16 +143,17 @@ void CgiHandler::executeCgi(const RequestMessage &request, const std::string &ur
 	write(pipefdIn[1], request.getBody().c_str(), request.getBody().length());
 	close(pipefdIn[1]);
 
-	// ssize_t     bytesRead;
-	// std::string output;
-	// char        buffer[1024];
-	// while ((bytesRead = read(pipefdOut[0], buffer, sizeof(buffer))) > 0)
-	// 	output.append(buffer, bytesRead);
-	close(pipefdOut[0]);
-
 	int status;
-	waitpid(pid, &status, 0);
+	waitpid(pid, &status, WNOHANG);
 	if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
 		throw AMessage::MessageError(500);
-	// return "caca";
+
+	ssize_t     bytesRead;
+	std::string output;
+	char        buffer[1024];
+	while ((bytesRead = read(pipefdOut[0], buffer, sizeof(buffer))) > 0)
+		output.append(buffer, bytesRead);
+	close(pipefdOut[0]);
+
+	return output;
 }

@@ -6,7 +6,10 @@
 #include "ResponseMessage.hpp"
 #include <vector>
 
-#define MAX_EVENTS 1000
+#define REQUEST_FLAGS  EPOLLIN | EPOLLRDHUP | EPOLLERR
+#define RESPONSE_FLAGS EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT
+
+#define MAX_EVENTS 100
 #define TIME_OUT   3000
 
 extern int g_sigint;
@@ -31,9 +34,12 @@ class Server {
 	                                            unsigned long clientMaxBodySize);
 	static RequestMessage _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
 	static void _listenBody(int clientfd, RequestMessage &request, unsigned long sizeLeft);
-	void        _sendAnswer(const std::string &answer, int clientfd);
+	void        _sendAnswer(const std::string &answer, struct epoll_event &ev);
+	// void        _sendAnswer(const std::string &answer, int clientfd);
 
-	void _evaluateClientConnection(int clientfd, const ResponseMessage &response);
+	void _modifySocketEpoll(int epollfd, int client_fd, int flags);
+
+	bool _evaluateClientConnection(int clientfd, const ResponseMessage &response);
 	void _disconnectClient(int clientfd) const;
 	void _initServer();
 	void _serverLoop();

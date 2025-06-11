@@ -84,8 +84,9 @@ bool Server::_checkServerState() {
 	return true;
 }
 
-void Server::_sendAnswer(const std::string &answer, int clientfd) {
-	if (send(clientfd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
+void Server::_sendAnswer(const std::string &answer, struct epoll_event &ev) {
+	int clientfd = ev.data.fd;
+	if (ev.events & EPOLLIN && send(clientfd, answer.c_str(), answer.length(), MSG_NOSIGNAL) < 0) {
 		std::cerr << "Error on write." << std::endl;
 		_clientAppMap.erase(clientfd);
 		close(clientfd);
@@ -188,13 +189,21 @@ void Server::_disconnectClient(int clientfd) const {
 	close(clientfd);
 }
 
-void Server::_evaluateClientConnection(int clientfd, const ResponseMessage &response) {
+bool Server::_evaluateClientConnection(int clientfd, const ResponseMessage &response) {
 	std::pair<std::string, bool> connectionValue = response.getHeaderValue("Connection");
 
 	if (!connectionValue.second || connectionValue.first != "close")
-		return;
+		return 0;
 	_clientAppMap.erase(clientfd);
 	_disconnectClient(clientfd);
+	return 1;
+}
+
+void Server::_modifySocketEpoll(int epollfd, int clientfd, int flags) {
+	epoll_event ev;
+	ev.events = flags;
+	ev.data.fd = clientfd;
+	epoll_ctl(epollfd, EPOLL_CTL_MOD, clientfd, &ev);
 }
 
 void Server::_serverLoop() {
@@ -221,7 +230,7 @@ void Server::_serverLoop() {
 					}
 					_clientAppMap[clientfd] = &(*itServer);
 
-					ev.events = EPOLLIN | EPOLLET;
+					ev.events = REQUEST_FLAGS;
 					ev.data.fd = clientfd;
 					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
 					newClient = true;
@@ -255,15 +264,16 @@ void Server::_serverLoop() {
 				try {
 					RequestMessage request = _listenClientRequest(
 					    events[i].data.fd, actualAppConfig.getClientMaxBodySize());
-					// std::cout << "request str--\n" << request.str() << std::endl;
-					ResponseMessage response = RequestHandler::generateResponse(
-					    actualAppConfig, request, _epollfd, _cgiContexts);
-					_sendAnswer(response.str(), events[i].data.fd);
-					_evaluateClientConnection(clientfd, response);
+					ResponseMessage response =
+					    RequestHandler::generateResponse(actualAppConfig, request);
+					_modifySocketEpoll(_epollfd, events[i].data.fd, RESPONSE_FLAGS);
+					_sendAnswer(response.str(), events[i]);
+					if (!_evaluateClientConnection(clientfd, response))
+						_modifySocketEpoll(_epollfd, events[i].data.fd, REQUEST_FLAGS);
 				} catch (AMessage::MessageError &e) {
 					ResponseMessage response =
 					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
-					_sendAnswer(response.str(), events[i].data.fd);
+					_sendAnswer(response.str(), events[i]);
 				} catch (std::exception &e) {
 					std::cerr << "Error in handling request: " << e.what() << std::endl;
 					continue;

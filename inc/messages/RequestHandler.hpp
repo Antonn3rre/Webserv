@@ -10,9 +10,7 @@
 
 class RequestHandler {
 	public:
-	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request,
-	                                        int _epollfd, std::map<int, CgiContext> &cgiContexts);
-
+	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request);
 	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
 	static const Location &findURILocation(const std::vector<Location> &locations,
 	                                       const std::string           &uri);
