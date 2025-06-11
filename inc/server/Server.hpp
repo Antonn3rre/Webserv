@@ -11,6 +11,22 @@
 
 extern int g_sigint;
 
+struct s_cgiSession {
+	int            clientFd;
+	pid_t          cgiPid;
+	int            pipeToCgi;
+	int            pipeFromCgi;
+	std::string    requestBody;
+	std::string    cgiResponse;
+	size_t         bytesWrittenToCgi;
+	size_t         bytesWrittenToClient;
+	RequestMessage request;
+
+	s_cgiSession(int cfd, const RequestMessage &request)
+	    : clientFd(cfd), cgiPid(-1), pipeToCgi(-1), pipeFromCgi(-1), bytesWrittenToCgi(0),
+	      bytesWrittenToClient(0), request(request) {}
+};
+
 class Server {
 	private:
 	std::vector<Application>     _applicationList;
@@ -32,12 +48,20 @@ class Server {
 
 	Application &_getApplicationFromFD(int sockfd) const;
 
+	void _handleActiveCgi(const struct epoll_event &event);
+	void _stopWritingToCgi(s_cgiSession *session);
+	void _stopReadingFromCgi(s_cgiSession *session);
+	void _cleanupCgiSession(s_cgiSession *session);
+	void _cleanupConnection(int fd);
+
 	public:
 	//	Server();
 	Server(const std::string &);
 	~Server();
 
-	void startServer();
+	int                           getEpollFd() const;
+	std::map<int, s_cgiSession *> cgiSessions;
+	void                          startServer();
 };
 
 #endif // !SERVER_HPP

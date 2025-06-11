@@ -3,11 +3,15 @@
 #include "MethodHandler.hpp"
 #include "RequestHandler.hpp"
 #include "ResponseMessage.hpp"
+#include "Server.hpp"
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <fcntl.h>
 #include <iostream>
+#include <ostream>
 #include <string>
+#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -68,7 +72,7 @@ void CgiHandler::divideCgiOutput(ResponseMessage &response) {
 }
 
 std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
-                                   const Config &config) {
+                                   const Config &config, Server &server, int clientFd) {
 	struct stat sb;
 	if (access(uri.c_str(), F_OK) == -1)
 		throw AMessage::MessageError(404);
@@ -77,6 +81,9 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		    RequestHandler::findURILocation(config.getLocations(), request.getRequestUri()), uri));
 	if (access(uri.c_str(), X_OK) == -1)
 		throw AMessage::MessageError(403);
+
+	s_cgiSession *session = new s_cgiSession(clientFd, request);
+	session->requestBody = request.getBody();
 
 	// setEnv -> besoin de le faire ici car init en local
 	std::vector<std::string> env = _setEnv(request, uri);
@@ -89,17 +96,18 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 
 	int pipefdIn[2];
 	int pipefdOut[2];
-	pipe(pipefdIn);
-	pipe(pipefdOut);
+	if (pipe(pipefdIn) == -1 || pipe(pipefdOut) == -1) {
+		std::cout << "erreur de pipe\n";
+		throw std::exception();
+	}
 
-	int pid = fork();
-	if (pid == 0) {
+	session->cgiPid = fork();
+	if (session->cgiPid == 0) {
+		dup2(pipefdIn[0], STDIN_FILENO);
+		dup2(pipefdOut[1], STDOUT_FILENO);
 		close(pipefdIn[1]);
 		close(pipefdOut[0]);
-		dup2(pipefdIn[0], STDIN_FILENO);
 		close(pipefdIn[0]);
-		dup2(pipefdOut[1], STDOUT_FILENO);
-		dup2(pipefdOut[1], STDERR_FILENO);
 		close(pipefdOut[1]);
 
 		if (uri.find(".php", uri.length() - 4) != std::string::npos) {
@@ -122,19 +130,32 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	//	std::cerr << "DEBUG (C++): Longueur du corps à écrire : " << request.getBody().length()
 	//	          << std::endl;
 	//	std::cerr << "DEBUG (C++): Contenu du corps à écrire : " << request.getBody() << std::endl;
-	write(pipefdIn[1], request.getBody().c_str(), request.getBody().length());
-	close(pipefdIn[1]);
+	session->pipeToCgi = pipefdIn[1];
+	session->pipeFromCgi = pipefdOut[0];
 
-	ssize_t     bytesRead;
-	std::string output;
-	char        buffer[1024];
-	while ((bytesRead = read(pipefdOut[0], buffer, sizeof(buffer))) > 0)
-		output.append(buffer, bytesRead);
-	close(pipefdOut[0]);
+	struct epoll_event ev;
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.fd = session->pipeFromCgi;
+	epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, session->pipeFromCgi, &ev);
 
-	int status;
-	waitpid(pid, &status, 0);
-	if (WIFEXITED(status) && WEXITSTATUS(status) == 1)
-		throw AMessage::MessageError(500);
-	return output;
+	if (!session->requestBody.empty()) {
+		ev.events = EPOLLOUT | EPOLLET;
+		ev.data.fd = session->pipeToCgi;
+		epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, session->pipeToCgi, &ev);
+	} else {
+		close(session->pipeToCgi);
+		session->pipeToCgi = -1;
+	}
+
+	server.cgiSessions[clientFd] = session;
+	if (session->pipeFromCgi != -1) {
+		server.cgiSessions[session->pipeFromCgi] = session;
+	}
+
+	// Mapper le FD du pipe d'écriture (vers le CGI)
+	if (session->pipeToCgi != -1) {
+		server.cgiSessions[session->pipeToCgi] = session;
+	}
+
+	return ("wef");
 }
