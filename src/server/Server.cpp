@@ -250,6 +250,7 @@ void Server::_serverLoop() {
 					ResponseMessage response =
 					    RequestHandler::generateErrorResponse(actualAppConfig, e.getStatusCode());
 					_sendAnswer(response.str(), events[i]);
+					_modifySocketEpoll(_epollfd, events[i].data.fd, REQUEST_FLAGS);
 				} catch (std::exception &e) {
 					std::cerr << "Error in handling request: " << e.what() << std::endl;
 					continue;
