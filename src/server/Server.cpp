@@ -218,11 +218,12 @@ void Server::_serverLoop() {
 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
 
 		for (int i = 0; i < nfds; ++i) {
+			int currentFd = events[i].data.fd;
 			newClient = false;
 			for (std::vector<Application>::iterator itServer = _applicationList.begin();
 			     itServer != _applicationList.end(); ++itServer) {
-				if (events[i].data.fd == itServer->getLSockFd()) {
-					clientfd = accept(itServer->getLSockFd(), NULL, NULL);
+				if (currentFd == itServer->getLSockFd()) {
+					clientfd = accept(currentFd, NULL, NULL);
 					if (clientfd < 0) {
 						std::cerr << "Error on accept clients." << std::endl;
 						continue;
@@ -240,36 +241,30 @@ void Server::_serverLoop() {
 			if (newClient)
 				continue;
 
-			s_connection *con = connections[events[i].data.fd];
+			s_connection *con = connections[currentFd];
 			try {
-				if (cgiSessions.count(events[i].data.fd)) {
-					std::cout << "Rentre dans _handleActiveCgi\n";
-					_handleActiveCgi(events[i],
-					                 connections[cgiSessions[events[i].data.fd]->clientFd]);
+				if (cgiSessions.count(currentFd)) {
+					_handleActiveCgi(events[i], connections[cgiSessions[currentFd]->clientFd]);
 				} else {
 					if (events[i].events & EPOLLIN) {
-						Config actualAppConfig =
-						    _getApplicationFromFD(events[i].data.fd).getConfig();
-						_listenClientRequest(events[i].data.fd,
-						                     actualAppConfig.getClientMaxBodySize());
+						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
+						_listenClientRequest(currentFd, actualAppConfig.getClientMaxBodySize());
 						if (con->status == PROCESSING) {
-							responseMap[clientfd] = RequestHandler::generateResponse(
-							    actualAppConfig, requestMap[clientfd], clientfd);
-							con->bufferWrite = responseMap[clientfd].str();
+							responseMap[currentFd] = RequestHandler::generateResponse(
+							    actualAppConfig, requestMap[currentFd], currentFd);
+							con->bufferWrite = responseMap[currentFd].str();
 							con->status = WRITING_OUTPUT;
-							_modifySocketEpoll(_epollfd, events[i].data.fd, RESPONSE_FLAGS);
+							_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 						}
 					} else if (events[i].events & EPOLLOUT) {
-						std::cout << "Rentre dans event pret A recevoir reponse\n";
 						if (con->status == WRITING_OUTPUT) {
-							std::cout << "Rentre dans WRITING_OUTPUT ok\n";
-							bool doneSending = _sendAnswer(*con, ev, responseMap[clientfd]);
+							bool doneSending = _sendAnswer(*con, ev, responseMap[currentFd]);
 							if (doneSending) {
-								if (!_evaluateClientConnection(clientfd, responseMap[clientfd])) {
-									_clearForNewRequest(clientfd);
-									_modifySocketEpoll(_epollfd, events[i].data.fd, REQUEST_FLAGS);
+								if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
+									_clearForNewRequest(currentFd);
+									_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
 								} else {
-									_cleanupConnection(clientfd);
+									_cleanupConnection(currentFd);
 								}
 							}
 						}
@@ -278,14 +273,14 @@ void Server::_serverLoop() {
 			} catch (RequestHandler::CgiRequestException &e) {
 				CgiHandler::executeCgi(e.request, e.uri, e.config, *this, events[i]);
 			} catch (AMessage::MessageError &e) {
-				responseMap[events[i].data.fd] = RequestHandler::generateErrorResponse(
-				    _getApplicationFromFD(events[i].data.fd).getConfig(), e.getStatusCode());
-				con->bufferWrite = responseMap[events[i].data.fd].str();
+				responseMap[currentFd] = RequestHandler::generateErrorResponse(
+				    _getApplicationFromFD(currentFd).getConfig(), e.getStatusCode());
+				con->bufferWrite = responseMap[currentFd].str();
 				con->status = WRITING_OUTPUT;
-				_modifySocketEpoll(_epollfd, clientfd, RESPONSE_FLAGS);
+				_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 			} catch (std::exception &e) {
 				std::cerr << "Error in handling request: " << e.what() << std::endl;
-				_cleanupConnection(events[i].data.fd);
+				_cleanupConnection(currentFd);
 				continue;
 			}
 		}
@@ -297,7 +292,6 @@ int Server::getEpollFd() const { return this->_epollfd; }
 void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 	int activeFd = event.data.fd;
 
-	std::cout << "Dans handle active cgi\n";
 	// 1. Récupérer la session CGI associée à ce fd
 	if (cgiSessions.find(activeFd) == cgiSessions.end()) {
 		// Ne devrait pas arriver, mais par sécurité on nettoie
@@ -315,7 +309,6 @@ void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 
 	// Ecriture pipeFdIn
 	if (activeFd == session->pipeToCgi && (event.events & EPOLLOUT)) {
-		std::cout << "Dans ecriture pipefdin\n";
 		size_t bytesToWrite = session->requestBody.length() - session->bytesWrittenToCgi;
 		if (bytesToWrite == 0) {
 			_stopWritingToCgi(session);
@@ -342,7 +335,6 @@ void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 
 	// Lecture PipeFdOut
 	else if (activeFd == session->pipeFromCgi && (event.events & EPOLLIN)) {
-		std::cout << "\n[EPOLLIN sur pipe " << activeFd << "] Début de la lecture..." << std::endl;
 		char    buffer[4096];
 		ssize_t bytesRead = 0;
 
@@ -351,13 +343,9 @@ void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 
 			if (bytesRead > 0) {
 				session->cgiResponse.append(buffer, bytesRead);
-				std::cout << "--- BUUFFER LU  ---- \n" << buffer << "\n\n---FIN BUFFER---";
-				std::cout << "--- CGI RESPONSE ---- \n"
-				          << session->cgiResponse << "\n\n---FIN CGIRESPONSE---";
 			} else
 				break;
 		}
-		std::cout << "Sorti de la boucle, bytesRead =" << bytesRead << std::endl;
 		(void)con;
 		if (bytesRead == 0) {
 			_finalizeCgiRead(session);
@@ -368,18 +356,6 @@ void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 			}
 		}
 	}
-	/*
-	    // ÉCRIRE la réponse finale au CLIENT
-	    else if (activeFd == session->clientFd && (event.events & EPOLLOUT)) {
-	        StatusLine      statusLine = RequestHandler::_generateStatusLine(200);
-	        ResponseMessage response(statusLine, session->cgiResponse);
-	        RequestHandler::_generateHeaders(response, session->request, 200);
-	        _modifySocketEpoll(_epollfd, session->clientFd, RESPONSE_FLAGS);
-	        _sendAnswer(*con, session->event, responseMap[session->clientFd]);
-	        _evaluateClientConnection(session->clientFd, response);
-	        _cleanupCgiSession(session);
-	    }
-	*/
 }
 
 void Server::_stopWritingToCgi(s_cgiSession *session) {
