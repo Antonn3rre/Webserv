@@ -4,6 +4,7 @@
 #include "Application.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include <cstdio>
 #include <string>
 #include <sys/epoll.h>
 #include <vector>
@@ -36,19 +37,19 @@ struct s_cgiSession {
 enum e_status { READING_INPUT, PROCESSING, WRITING_OUTPUT, FINISHED };
 
 struct s_connection {
-	int             clientFd;
-	std::string     bufferRead;
-	std::string     bufferWrite;
-	int             status;
-	int             bytesToRead;  // en fonction de contentLength
-	int             bytesWritten; // pour le send final
-	RequestMessage  request;
-	ResponseMessage response;
-	bool            chunk;
+	int         clientFd;
+	std::string bufferRead;
+	std::string bufferWrite;
+	int         status;
+	int         bytesToRead;  // en fonction de contentLength
+	size_t      bytesWritten; // pour le send final
+	                          //	RequestMessage  request;
+	                          //	ResponseMessage response;
+	bool chunk;
 
 	s_connection(int clientFd)
-	    : clientFd(clientFd), status(READING_INPUT), bytesToRead(-1), bytesWritten(-1),
-	      request(NULL), response(NULL), chunk(false) {} // NULL a verifier, mettre des pointeurs ?
+	    : clientFd(clientFd), status(READING_INPUT), bytesToRead(-1), bytesWritten(0),
+	      chunk(false) {} // NULL a verifier, mettre des pointeurs ?
 };
 
 class Server {
@@ -58,7 +59,7 @@ class Server {
 	std::map<int, Application *> _clientAppMap;
 
 	void _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
-	void _sendAnswer(s_connection &con, struct epoll_event &ev);
+	bool _sendAnswer(s_connection &con, struct epoll_event &ev, const ResponseMessage &);
 	// void        _sendAnswer(const std::string &answer, int clientfd);
 
 	void _modifySocketEpoll(int epollfd, int client_fd, int flags);
@@ -78,15 +79,20 @@ class Server {
 	void _cleanupCgiSession(s_cgiSession *session);
 	void _cleanupConnection(int fd);
 
+	void _clearForNewRequest(int clientFd);
+	//	void _resetRequest(int clientfd);
+
 	public:
 	//	Server();
 	Server(const std::string &);
 	~Server();
 
-	int                           getEpollFd() const;
-	std::map<int, s_cgiSession *> cgiSessions;
-	std::map<int, s_connection *> connections;
-	void                          startServer();
+	int                            getEpollFd() const;
+	std::map<int, s_cgiSession *>  cgiSessions;
+	std::map<int, s_connection *>  connections;
+	std::map<int, ResponseMessage> responseMap;
+	std::map<int, RequestMessage>  requestMap;
+	void                           startServer();
 };
 
 #endif // !SERVER_HPP

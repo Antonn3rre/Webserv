@@ -6,8 +6,11 @@
 
 class ResponseMessage : public AMessage {
 	public:
+	ResponseMessage();
 	ResponseMessage(const std::string &message);
 	ResponseMessage(const StatusLine &statusLine, const std::string &body);
+
+	ResponseMessage &operator=(const ResponseMessage &other);
 
 	const std::string &getHttpVersion() const;
 	unsigned short     getStatusCode() const;
@@ -21,7 +24,7 @@ class ResponseMessage : public AMessage {
 	std::string str() const;
 
 	private:
-	const StatusLine _startLine;
+	StatusLine _startLine;
 
 	static std::string _getTime();
 };

@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+RequestMessage::RequestMessage() {}
+
 RequestMessage::RequestMessage(const std::string &message)
     : AMessage((message.find("\r\n") != std::string::npos)
                    ? message.substr(message.find("\r\n") + 2,
@@ -23,6 +25,7 @@ RequestMessage &RequestMessage::operator=(const RequestMessage &other) {
 	if (this != &other) {
 		AMessage::operator=(static_cast<const AMessage &>(other));
 		_requestLine = other._requestLine;
+		_cookies = other._cookies;
 	}
 	return *this;
 }

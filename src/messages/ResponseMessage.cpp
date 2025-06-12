@@ -2,6 +2,8 @@
 #include <ctime>
 #include <sstream>
 
+ResponseMessage::ResponseMessage() {}
+
 ResponseMessage::ResponseMessage(const std::string &message)
     : AMessage(
           message.substr(message.find("\r\n") + 2, message.length() - message.find("\r\n") - 2)),
@@ -9,6 +11,14 @@ ResponseMessage::ResponseMessage(const std::string &message)
 
 ResponseMessage::ResponseMessage(const StatusLine &statusLine, const std::string &body)
     : AMessage(body, std::vector<Header>()), _startLine(statusLine) {}
+
+ResponseMessage &ResponseMessage::operator=(const ResponseMessage &other) {
+	if (this != &other) {
+		AMessage::operator=(static_cast<const AMessage &>(other));
+		_startLine = other._startLine;
+	}
+	return *this;
+}
 
 const std::string &ResponseMessage::getHttpVersion() const { return _startLine.getHttpVersion(); }
 

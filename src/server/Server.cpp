@@ -19,6 +19,7 @@
 #include <string>
 #include <strings.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <utility>
@@ -68,6 +69,7 @@ void Server::_shutdown(void) {
 	std::cout << "\nShutting down server" << std::endl;
 	for (std::map<int, Application *>::iterator it = _clientAppMap.begin();
 	     it != _clientAppMap.end(); ++it) {
+		delete connections[it->first];
 		_disconnectClient(it->first);
 	}
 	_clientAppMap.clear();
@@ -85,20 +87,28 @@ bool Server::_checkServerState() {
 	return true;
 }
 
-void Server::_sendAnswer(s_connection &con, struct epoll_event &ev) {
-	int clientfd = ev.data.fd;
-	if (ev.events & EPOLLIN) {
-		ssize_t result =
-		    send(clientfd, con.response.str().c_str(), con.response.str().length(), MSG_NOSIGNAL);
-		if (result < 0) {
-			std::cerr << "Error on write." << std::endl;
-			_clientAppMap.erase(clientfd);
-			close(clientfd);
-		}
-		if (!result) {
-			con.status = FINISHED;
-		}
+bool Server::_sendAnswer(s_connection &con, struct epoll_event &ev,
+                         const ResponseMessage &response) {
+	(void)response;
+	(void)ev;
+	if (con.bufferWrite.empty()) {
+		return true;
 	}
+
+	size_t      ttSize = con.bufferWrite.length();
+	size_t      sizeLeft = ttSize - con.bytesWritten;
+	const char *bufferPos = con.bufferWrite.c_str() + con.bytesWritten;
+
+	ssize_t bytesSent = send(con.clientFd, bufferPos, sizeLeft, MSG_NOSIGNAL);
+	if (bytesSent > 0) {
+		con.bytesWritten += bytesSent;
+	} else if (bytesSent == -1) {
+		std::cerr << "Error on write\n";
+	}
+	if (con.bytesWritten >= ttSize) {
+		return true;
+	}
+	return false;
 }
 
 void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize) {
@@ -123,13 +133,13 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 		throw AMessage::MessageError(413);
 	con->bufferRead.append(buffer, bytesRead);
 	if (!con->bytesToRead) {
-		con->request = RequestMessage(connections[clientfd]->bufferRead);
+		requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
 		con->status = PROCESSING;
 	}
 	if (con->chunk) {
 		if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
 			// ajouter check si c'est bien la fin ?
-			con->request = RequestMessage(connections[clientfd]->bufferRead);
+			requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
 			con->status = PROCESSING;
 		}
 	}
@@ -142,7 +152,7 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 				// recuperer la valeur puis changer chunk si bonne valeur
 			} else {
 				// si aucun des 2, verifier que \r\n\r\n est a la fin (pas de body)
-				con->request = RequestMessage(connections[clientfd]->bufferRead);
+				requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
 				con->status = PROCESSING;
 			}
 		}
@@ -224,44 +234,55 @@ void Server::_serverLoop() {
 					ev.data.fd = clientfd;
 					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
 					newClient = true;
+					break;
 				}
 			}
-			if (!newClient) {
+			if (newClient)
+				continue;
+
+			s_connection *con = connections[events[i].data.fd];
+			try {
 				if (cgiSessions.count(events[i].data.fd)) {
-					_handleActiveCgi(events[i], connections[events[i].data.fd]);
+					_handleActiveCgi(events[i], con);
 				} else {
-					try {
-						s_connection *con = connections[events[i].data.fd];
-						Config        actualAppConfig =
+					if (events[i].events & EPOLLIN) {
+						Config actualAppConfig =
 						    _getApplicationFromFD(events[i].data.fd).getConfig();
 						_listenClientRequest(events[i].data.fd,
 						                     actualAppConfig.getClientMaxBodySize());
 						if (con->status == PROCESSING) {
-							con->response = RequestHandler::generateResponse(
-							    actualAppConfig, con->request, clientfd);
+							responseMap[clientfd] = RequestHandler::generateResponse(
+							    actualAppConfig, requestMap[clientfd], clientfd);
+							con->bufferWrite = responseMap[clientfd].str();
 							con->status = WRITING_OUTPUT;
-						}
-						if (con->status == WRITING_OUTPUT) {
 							_modifySocketEpoll(_epollfd, events[i].data.fd, RESPONSE_FLAGS);
-							_sendAnswer(*con, events[i]);
-							if (!_evaluateClientConnection(clientfd, con->response))
-								_modifySocketEpoll(_epollfd, events[i].data.fd, REQUEST_FLAGS);
 						}
-					} catch (RequestHandler::CgiRequestException &e) {
-						CgiHandler::executeCgi(e.request, e.uri, e.config, *this, events[i]);
-					} catch (AMessage::MessageError &e) {
-						connections[events[i].data.fd]->response =
-						    RequestHandler::generateErrorResponse(
-						        _getApplicationFromFD(events[i].data.fd).getConfig(),
-						        e.getStatusCode());
-						_sendAnswer(*connections[events[i].data.fd], events[i]);
-						_cleanupConnection(events[i].data.fd);
-					} catch (std::exception &e) {
-						std::cerr << "Error in handling request: " << e.what() << std::endl;
-						_cleanupConnection(events[i].data.fd);
-						continue;
+					} else if (events[i].events & EPOLLOUT) {
+						if (con->status == WRITING_OUTPUT) {
+							bool doneSending = _sendAnswer(*con, ev, responseMap[clientfd]);
+							if (doneSending) {
+								if (!_evaluateClientConnection(clientfd, responseMap[clientfd])) {
+									_clearForNewRequest(clientfd);
+									_modifySocketEpoll(_epollfd, events[i].data.fd, REQUEST_FLAGS);
+								} else {
+									_cleanupConnection(clientfd);
+								}
+							}
+						}
 					}
 				}
+			} catch (RequestHandler::CgiRequestException &e) {
+				CgiHandler::executeCgi(e.request, e.uri, e.config, *this, events[i]);
+			} catch (AMessage::MessageError &e) {
+				responseMap[events[i].data.fd] = RequestHandler::generateErrorResponse(
+				    _getApplicationFromFD(events[i].data.fd).getConfig(), e.getStatusCode());
+				con->bufferWrite = responseMap[events[i].data.fd].str();
+				con->status = WRITING_OUTPUT;
+				_modifySocketEpoll(_epollfd, clientfd, RESPONSE_FLAGS);
+			} catch (std::exception &e) {
+				std::cerr << "Error in handling request: " << e.what() << std::endl;
+				_cleanupConnection(events[i].data.fd);
+				continue;
 			}
 		}
 	}
@@ -339,7 +360,7 @@ void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 		ResponseMessage response(statusLine, session->cgiResponse);
 		RequestHandler::_generateHeaders(response, session->request, 200);
 		_modifySocketEpoll(_epollfd, session->clientFd, RESPONSE_FLAGS);
-		_sendAnswer(*con, session->event);
+		_sendAnswer(*con, session->event, responseMap[session->clientFd]);
 		_evaluateClientConnection(session->clientFd, response);
 		_cleanupCgiSession(session);
 	}
@@ -402,7 +423,19 @@ void Server::_cleanupConnection(int fd) {
 		_cleanupCgiSession(session);
 		return;
 	}
+	delete connections[fd];
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
 	_clientAppMap.erase(fd);
+}
+
+void Server::_clearForNewRequest(int clientFd) {
+	requestMap[clientFd] = RequestMessage();
+	responseMap[clientFd] = ResponseMessage();
+	connections[clientFd]->bufferRead.clear();
+	connections[clientFd]->bufferWrite.clear();
+	connections[clientFd]->bytesWritten = 0;
+	connections[clientFd]->bytesToRead = -1;
+	connections[clientFd]->status = FINISHED;
+	connections[clientFd]->chunk = false;
 }

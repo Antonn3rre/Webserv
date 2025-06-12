@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <string>
 
+AStartLine::AStartLine() {}
+
 AStartLine::AStartLine(const std::string &line) {
 	size_t versionPos = line.find("HTTP");
 	if (versionPos == std::string::npos)

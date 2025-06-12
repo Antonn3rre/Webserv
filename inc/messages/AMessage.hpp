@@ -10,6 +10,7 @@
 
 class AMessage {
 	public:
+	AMessage();
 	AMessage(const std::string &subMessage);
 	AMessage(const std::string &body, const std::vector<Header> &headers);
 

@@ -5,6 +5,8 @@
 #include <map>
 #include <string>
 
+RequestLine::RequestLine() {}
+
 RequestLine::RequestLine(const std::string &line) : AStartLine(line) {
 	_setValidMethods();
 
@@ -33,8 +35,9 @@ RequestLine::RequestLine(const std::string &httpVersion, const std::string &meth
 RequestLine &RequestLine::operator=(const RequestLine &other) {
 	if (this != &other) {
 		AStartLine::operator=(static_cast<const AStartLine &>(other));
-		_method = other._method;
-		_requestUri = other._requestUri;
+		_method = other.getMethod();
+		_requestUri = other.getRequestUri();
+		_validMethods = other.getValidMethods();
 	}
 	return *this;
 }
@@ -46,6 +49,8 @@ const std::string &RequestLine::getRequestUri() const { return _requestUri; }
 std::string RequestLine::str() const {
 	return _method + " " + _requestUri + " " + getHttpVersion();
 }
+
+const std::map<std::string, bool> &RequestLine::getValidMethods() const { return _validMethods; }
 
 void RequestLine::_setValidMethods() {
 	// SUPPORTED

@@ -7,6 +7,8 @@
 #include <sstream>
 #include <string>
 
+StatusLine::StatusLine() {}
+
 StatusLine::StatusLine(const std::string &line) : AStartLine(line) {
 	size_t startPos = line.find(' ');
 	if (startPos == std::string::npos)
@@ -22,6 +24,16 @@ StatusLine::StatusLine(const std::string &line) : AStartLine(line) {
 StatusLine::StatusLine(const std::string &httpVersion, unsigned short statusCode)
     : AStartLine(httpVersion), _statusCode(statusCode) {
 	_reasonPhrase = _getReasonPhrase(_statusCode);
+}
+
+StatusLine &StatusLine::operator=(const StatusLine &other) {
+	if (this != &other) {
+		AStartLine::operator=(static_cast<const AStartLine &>(other));
+		_statusCode = other.getStatusCode();
+		_reasonPhrase = other.getReasonPhrase();
+		_knownReasonPhrases = other.getKnownReasonPhrases();
+	}
+	return *this;
 }
 
 std::string StatusLine::_getReasonPhrase(unsigned short status) {
@@ -118,4 +130,8 @@ std::string StatusLine::str() const {
 
 	sstream << getHttpVersion() << " " << _statusCode << " " << _reasonPhrase;
 	return sstream.str();
+}
+
+std::map<unsigned short, std::string> StatusLine::getKnownReasonPhrases() const {
+	return _knownReasonPhrases;
 }

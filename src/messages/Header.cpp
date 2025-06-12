@@ -3,6 +3,7 @@
 #include "utilsParsing.hpp"
 #include <cstddef>
 
+Header::Header() {}
 Header::Header(const std::string &headerLine) {
 	size_t nameLen = headerLine.find(':');
 	if (nameLen == std::string::npos)
@@ -18,6 +19,17 @@ Header::Header(const std::string &name, const std::string &value) : _name(name),
 
 Header::Header(const std::string &name, HeaderType type, bool isSupported, bool isDuplicateAllowed)
     : _name(name), _type(type), _isSupported(isSupported), _isDuplicateAllowed(isDuplicateAllowed) {
+}
+
+Header &Header::operator=(const Header &other) {
+	if (this != &other) {
+		_type = other.getType();
+		_name = other.getName();
+		_value = other.getValue();
+		_isSupported = other.isSupported();
+		_isDuplicateAllowed = other.isDuplicateAllowed();
+	}
+	return (*this);
 }
 
 const Header::HeaderType &Header::getType() const { return _type; }

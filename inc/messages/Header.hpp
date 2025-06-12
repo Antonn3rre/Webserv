@@ -12,9 +12,12 @@ class Header {
 		Entity,
 	};
 
+	Header();
 	Header(const std::string &headerLine);
 	Header(const std::string &name, const std::string &value);
 	Header(const std::string &name, HeaderType type, bool isSupported, bool isDuplicateAllowed);
+
+	Header &operator=(const Header &other);
 
 	const HeaderType  &getType() const;
 	const std::string &getName() const;

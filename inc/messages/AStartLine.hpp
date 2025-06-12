@@ -5,6 +5,7 @@
 
 class AStartLine {
 	public:
+	AStartLine();
 	AStartLine(const std::string &line);
 	virtual ~AStartLine();
 

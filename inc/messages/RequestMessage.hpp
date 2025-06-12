@@ -9,6 +9,7 @@
 
 class RequestMessage : public AMessage {
 	public:
+	RequestMessage();
 	RequestMessage(const std::string &message);
 	RequestMessage(const RequestLine &requestLine, const std::string &body);
 

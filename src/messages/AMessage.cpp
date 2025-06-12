@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+AMessage::AMessage() {}
+
 AMessage::AMessage(const std::string &subMessage) {
 	std::stringstream sstream;
 	std::string       line;
@@ -59,6 +61,7 @@ unsigned short AMessage::MessageError::getStatusCode() const { return _statusCod
 
 AMessage &AMessage::operator=(const AMessage &other) {
 	if (this != &other) {
+		_validHeaders = other._validHeaders;
 		_headers = other._headers;
 		_body = other._body;
 	}

@@ -7,11 +7,15 @@
 
 class StatusLine : public AStartLine {
 	public:
+	StatusLine();
 	StatusLine(const std::string &line);
 	StatusLine(const std::string &httpVersion, unsigned short statusCode);
 
-	unsigned short     getStatusCode() const;
-	const std::string &getReasonPhrase() const;
+	StatusLine &operator=(const StatusLine &other);
+
+	unsigned short                        getStatusCode() const;
+	const std::string                    &getReasonPhrase() const;
+	std::map<unsigned short, std::string> getKnownReasonPhrases() const;
 
 	std::string str() const;
 
