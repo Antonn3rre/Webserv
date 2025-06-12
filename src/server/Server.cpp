@@ -5,6 +5,7 @@
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include <cerrno>
 #include <csignal>
 #include <cstddef>
 #include <cstdio>
@@ -124,6 +125,12 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 		close(clientfd);
 		throw std::runtime_error("error on read");
 	}
+	if (bytesRead == 0) {
+		std::cout << "[LIFECYCLE] FD " << clientfd << ": DISCONNECTED BY CLIENT (read=0)"
+		          << std::endl;
+		_cleanupConnection(clientfd);
+		return;
+	}
 	if (con->bytesToRead != -1) {
 		if (con->bytesToRead < bytesRead)
 			throw AMessage::MessageError(413);
@@ -223,17 +230,22 @@ void Server::_serverLoop() {
 			for (std::vector<Application>::iterator itServer = _applicationList.begin();
 			     itServer != _applicationList.end(); ++itServer) {
 				if (currentFd == itServer->getLSockFd()) {
-					clientfd = accept(currentFd, NULL, NULL);
-					if (clientfd < 0) {
-						std::cerr << "Error on accept clients." << std::endl;
-						continue;
-					}
-					_clientAppMap[clientfd] = &(*itServer);
+					while (true) {
+						clientfd = accept(currentFd, NULL, NULL);
+						if (clientfd < 0) {
+							if (errno == EAGAIN)
+								break;
+							std::cerr << "Error on accept clients." << std::endl;
+							break;
+						}
+						std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
+						_clientAppMap[clientfd] = &(*itServer);
 
-					connections[clientfd] = new s_connection(clientfd);
-					ev.events = REQUEST_FLAGS;
-					ev.data.fd = clientfd;
-					epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
+						connections[clientfd] = new s_connection(clientfd);
+						ev.events = REQUEST_FLAGS;
+						ev.data.fd = clientfd;
+						epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
+					}
 					newClient = true;
 					break;
 				}
@@ -458,13 +470,16 @@ void Server::_cleanupConnection(int fd) {
 		_cleanupCgiSession(session);
 		return;
 	}
+	std::cout << "[LIFECYCLE] FD " << fd << ": DESTROYED" << std::endl;
 	delete connections[fd];
+	connections.erase(fd);
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
 	_clientAppMap.erase(fd);
 }
 
 void Server::_clearForNewRequest(int clientFd) {
+	std::cout << "[LIFECYCLE] FD " << clientFd << ": RESET (Keep-Alive)" << std::endl;
 	requestMap[clientFd] = RequestMessage();
 	responseMap[clientFd] = ResponseMessage();
 	connections[clientFd]->bufferRead.clear();
