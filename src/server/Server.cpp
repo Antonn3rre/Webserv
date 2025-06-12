@@ -88,10 +88,7 @@ bool Server::_checkServerState() {
 	return true;
 }
 
-bool Server::_sendAnswer(s_connection &con, struct epoll_event &ev,
-                         const ResponseMessage &response) {
-	(void)response;
-	(void)ev;
+bool Server::_sendAnswer(s_connection &con) {
 	if (con.bufferWrite.empty()) {
 		return true;
 	}
@@ -256,7 +253,7 @@ void Server::_serverLoop() {
 			s_connection *con = connections[currentFd];
 			try {
 				if (cgiSessions.count(currentFd)) {
-					_handleActiveCgi(events[i], connections[cgiSessions[currentFd]->clientFd]);
+					_handleActiveCgi(events[i]);
 				} else {
 					if (events[i].events & EPOLLIN) {
 						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
@@ -270,7 +267,7 @@ void Server::_serverLoop() {
 						}
 					} else if (events[i].events & EPOLLOUT) {
 						if (con->status == WRITING_OUTPUT) {
-							bool doneSending = _sendAnswer(*con, ev, responseMap[currentFd]);
+							bool doneSending = _sendAnswer(*con);
 							if (doneSending) {
 								if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
 									_clearForNewRequest(currentFd);
@@ -301,7 +298,7 @@ void Server::_serverLoop() {
 
 int Server::getEpollFd() const { return this->_epollfd; }
 
-void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
+void Server::_handleActiveCgi(struct epoll_event &event) {
 	int activeFd = event.data.fd;
 
 	// 1. Récupérer la session CGI associée à ce fd
@@ -358,7 +355,6 @@ void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 			} else
 				break;
 		}
-		(void)con;
 		if (bytesRead == 0) {
 			_finalizeCgiRead(session);
 		} else {

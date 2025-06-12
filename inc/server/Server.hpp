@@ -59,8 +59,7 @@ class Server {
 	std::map<int, Application *> _clientAppMap;
 
 	void _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
-	bool _sendAnswer(s_connection &con, struct epoll_event &ev, const ResponseMessage &);
-	// void        _sendAnswer(const std::string &answer, int clientfd);
+	bool _sendAnswer(s_connection &con);
 
 	void _modifySocketEpoll(int epollfd, int client_fd, int flags);
 
@@ -73,7 +72,7 @@ class Server {
 
 	Application &_getApplicationFromFD(int sockfd) const;
 
-	void _handleActiveCgi(struct epoll_event &event, s_connection *con);
+	void _handleActiveCgi(struct epoll_event &event);
 	void _stopWritingToCgi(s_cgiSession *session);
 	void _stopReadingFromCgi(s_cgiSession *session);
 	void _cleanupCgiSession(s_cgiSession *session);
