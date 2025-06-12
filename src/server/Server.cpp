@@ -243,7 +243,9 @@ void Server::_serverLoop() {
 			s_connection *con = connections[events[i].data.fd];
 			try {
 				if (cgiSessions.count(events[i].data.fd)) {
-					_handleActiveCgi(events[i], con);
+					std::cout << "Rentre dans _handleActiveCgi\n";
+					_handleActiveCgi(events[i],
+					                 connections[cgiSessions[events[i].data.fd]->clientFd]);
 				} else {
 					if (events[i].events & EPOLLIN) {
 						Config actualAppConfig =
@@ -258,7 +260,9 @@ void Server::_serverLoop() {
 							_modifySocketEpoll(_epollfd, events[i].data.fd, RESPONSE_FLAGS);
 						}
 					} else if (events[i].events & EPOLLOUT) {
+						std::cout << "Rentre dans event pret A recevoir reponse\n";
 						if (con->status == WRITING_OUTPUT) {
+							std::cout << "Rentre dans WRITING_OUTPUT ok\n";
 							bool doneSending = _sendAnswer(*con, ev, responseMap[clientfd]);
 							if (doneSending) {
 								if (!_evaluateClientConnection(clientfd, responseMap[clientfd])) {
@@ -293,6 +297,7 @@ int Server::getEpollFd() const { return this->_epollfd; }
 void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 	int activeFd = event.data.fd;
 
+	std::cout << "Dans handle active cgi\n";
 	// 1. Récupérer la session CGI associée à ce fd
 	if (cgiSessions.find(activeFd) == cgiSessions.end()) {
 		// Ne devrait pas arriver, mais par sécurité on nettoie
@@ -310,6 +315,7 @@ void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 
 	// Ecriture pipeFdIn
 	if (activeFd == session->pipeToCgi && (event.events & EPOLLOUT)) {
+		std::cout << "Dans ecriture pipefdin\n";
 		size_t bytesToWrite = session->requestBody.length() - session->bytesWrittenToCgi;
 		if (bytesToWrite == 0) {
 			_stopWritingToCgi(session);
@@ -336,34 +342,44 @@ void Server::_handleActiveCgi(struct epoll_event &event, s_connection *con) {
 
 	// Lecture PipeFdOut
 	else if (activeFd == session->pipeFromCgi && (event.events & EPOLLIN)) {
+		std::cout << "\n[EPOLLIN sur pipe " << activeFd << "] Début de la lecture..." << std::endl;
+		char    buffer[4096];
+		ssize_t bytesRead = 0;
+
 		while (true) {
-			char    buffer[4096];
-			ssize_t bytesRead = read(activeFd, buffer, sizeof(buffer));
+			bytesRead = read(activeFd, buffer, sizeof(buffer));
 
 			if (bytesRead > 0) {
 				session->cgiResponse.append(buffer, bytesRead);
-			} else if (bytesRead == 0) {
-				_stopReadingFromCgi(session);
+				std::cout << "--- BUUFFER LU  ---- \n" << buffer << "\n\n---FIN BUFFER---";
+				std::cout << "--- CGI RESPONSE ---- \n"
+				          << session->cgiResponse << "\n\n---FIN CGIRESPONSE---";
+			} else
 				break;
-			} else {
-				if (errno != EAGAIN && errno != EWOULDBLOCK) {
-					std::cerr << "Erreur de lecture depuis le pipe du CGI" << std::endl;
-					_cleanupCgiSession(session);
-				}
+		}
+		std::cout << "Sorti de la boucle, bytesRead =" << bytesRead << std::endl;
+		(void)con;
+		if (bytesRead == 0) {
+			_finalizeCgiRead(session);
+		} else {
+			if (errno != EAGAIN && errno != EWOULDBLOCK) {
+				std::cerr << "Erreur de lecture depuis le pipe du CGI" << std::endl;
+				_cleanupCgiSession(session);
 			}
 		}
 	}
-
-	// ÉCRIRE la réponse finale au CLIENT
-	else if (activeFd == session->clientFd && (event.events & EPOLLOUT)) {
-		StatusLine      statusLine = RequestHandler::_generateStatusLine(200);
-		ResponseMessage response(statusLine, session->cgiResponse);
-		RequestHandler::_generateHeaders(response, session->request, 200);
-		_modifySocketEpoll(_epollfd, session->clientFd, RESPONSE_FLAGS);
-		_sendAnswer(*con, session->event, responseMap[session->clientFd]);
-		_evaluateClientConnection(session->clientFd, response);
-		_cleanupCgiSession(session);
-	}
+	/*
+	    // ÉCRIRE la réponse finale au CLIENT
+	    else if (activeFd == session->clientFd && (event.events & EPOLLOUT)) {
+	        StatusLine      statusLine = RequestHandler::_generateStatusLine(200);
+	        ResponseMessage response(statusLine, session->cgiResponse);
+	        RequestHandler::_generateHeaders(response, session->request, 200);
+	        _modifySocketEpoll(_epollfd, session->clientFd, RESPONSE_FLAGS);
+	        _sendAnswer(*con, session->event, responseMap[session->clientFd]);
+	        _evaluateClientConnection(session->clientFd, response);
+	        _cleanupCgiSession(session);
+	    }
+	*/
 }
 
 void Server::_stopWritingToCgi(s_cgiSession *session) {
@@ -395,12 +411,15 @@ void Server::_cleanupCgiSession(s_cgiSession *session) {
 	if (!session)
 		return;
 
+	int clientFd = session->clientFd;
+
 	if (session->pipeToCgi != -1)
 		_stopWritingToCgi(session);
 	if (session->pipeFromCgi != -1)
 		_stopReadingFromCgi(session);
 
 	// Retirer le client de epoll et le fermer
+	//	delete connections[session->clientFd];
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, session->clientFd, NULL);
 	close(session->clientFd);
 
@@ -414,7 +433,47 @@ void Server::_cleanupCgiSession(s_cgiSession *session) {
 		int status;
 		waitpid(session->cgiPid, &status, WNOHANG); // WNOHANG pour ne pas bloquer
 	}
+
+	if (connections.count(clientFd)) {
+		delete connections[clientFd];
+		connections.erase(clientFd);
+	}
+
 	delete session;
+}
+
+void Server::_finalizeCgiRead(s_cgiSession *session) {
+	if (!session)
+		return;
+	if (session->cgiPid > 0) {
+		int status;
+		waitpid(session->cgiPid, &status, WNOHANG);
+		session->cgiPid = -1;
+	}
+	if (session->pipeFromCgi != -1) {
+		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session->pipeFromCgi, NULL);
+		close(session->pipeFromCgi);
+
+		cgiSessions.erase(session->pipeFromCgi);
+		session->pipeFromCgi = -1;
+	}
+	if (session->pipeToCgi != -1) {
+		cgiSessions.erase(session->pipeToCgi);
+		close(session->pipeToCgi);
+		session->pipeToCgi = -1;
+	}
+
+	s_connection *con = connections[session->clientFd];
+	if (con) {
+		StatusLine      statusLine = RequestHandler::_generateStatusLine(200);
+		ResponseMessage response(statusLine, session->cgiResponse);
+		RequestHandler::_generateHeaders(response, session->request, 200);
+		con->bufferWrite = response.str();
+		con->status = WRITING_OUTPUT;
+		_modifySocketEpoll(_epollfd, session->clientFd, RESPONSE_FLAGS);
+		cgiSessions.erase(session->clientFd);
+		delete session;
+	}
 }
 
 void Server::_cleanupConnection(int fd) {

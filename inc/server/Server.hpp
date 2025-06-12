@@ -80,6 +80,7 @@ class Server {
 	void _cleanupConnection(int fd);
 
 	void _clearForNewRequest(int clientFd);
+	void _finalizeCgiRead(s_cgiSession *session);
 	//	void _resetRequest(int clientfd);
 
 	public:
