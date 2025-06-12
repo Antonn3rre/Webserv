@@ -8,7 +8,7 @@ SRCS_MAIN = main.cpp
 
 SRCS_SERVER = Location.cpp Application.cpp Config.cpp Server.cpp
 SRCS_MESSAGES = AMessage.cpp AStartLine.cpp CgiHandler.cpp Header.cpp ResponseMessage.cpp RequestLine.cpp \
-				MethodHandler.cpp RequestMessage.cpp StatusLine.cpp RequestHandler.cpp
+				MethodHandler.cpp RequestMessage.cpp StatusLine.cpp RequestHandler.cpp cgiSession.cpp
 
 SRCS_UTILS = utilsSpace.cpp utilsParsing.cpp
 
