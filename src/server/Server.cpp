@@ -142,8 +142,8 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 	}
 	if (con->chunk) {
 		if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
-			// ajouter check si c'est bien la fin ?
-			requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
+        // Recree pour omettre ce qui peut etre apres 0\r\n\r\n
+      requestMap[clientfd] = RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
 			con->status = PROCESSING;
 		}
 	}
@@ -163,14 +163,16 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 			} else if (request.getHeaderValue("Transfer-Encoding").second &&
               request.getHeaderValue("Transfer-Encoding").first == "chunked") {
 
-				  if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) { // ajouter check bien a la fin
-            requestMap[clientfd] = request;
+				  if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
+          // Recree pour omettre ce qui peut etre apres 0\r\n\r\n
+            requestMap[clientfd] = RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
 				    con->status = PROCESSING;
         }
           con->chunk = true;
 			} else {
-				// si aucun des 2, verifier que \r\n\r\n est a la fin (pas de body)
 				requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
+        if (!requestMap[clientfd].getBody().empty())
+          throw AMessage::MessageError(400);
 				con->status = PROCESSING;
 			}
 		}
