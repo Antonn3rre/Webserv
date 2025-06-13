@@ -148,12 +148,26 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 		}
 	}
 
-	if (con->bytesToRead == -1) {
+	if (con->bytesToRead == -1 && !con->chunk) {
 		if (con->bufferRead.find("\r\n\r\n") != std::string::npos) {
-			if (con->bufferRead.find("Content-Length") != std::string::npos) {
-				// recuperer la valeur puis changer bytesToRead
-			} else if (con->bufferRead.find("chunk jspu") != std::string::npos) {
-				// recuperer la valeur puis changer chunk si bonne valeur
+        RequestMessage request(connections[clientfd]->bufferRead);
+			if (request.getHeaderValue("Content-Length").second) {
+				// recuperer la valeur puis changer bytesToRead     // verifier que first de content length est bon
+        con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) - request.getBody().size();
+        if (con->bytesToRead < 0)
+          throw AMessage::MessageError(413);
+        if (con->bytesToRead == 0) {
+          requestMap[clientfd] = request;
+          con->status = PROCESSING;
+        }
+			} else if (request.getHeaderValue("Transfer-Encoding").second &&
+              request.getHeaderValue("Transfer-Encoding").first == "chunked") {
+
+				  if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) { // ajouter check bien a la fin
+            requestMap[clientfd] = request;
+				    con->status = PROCESSING;
+        }
+          con->chunk = true;
 			} else {
 				// si aucun des 2, verifier que \r\n\r\n est a la fin (pas de body)
 				requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
@@ -161,28 +175,6 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 			}
 		}
 	}
-
-	/*
-	    if (result.find("\r\n") != result.rfind("\r\n") || result.find("\r\n") == 0)
-	        break;
-
-	// POur eviter les \r\n au tout debut
-	if (result.find("\r\n") == 0) {
-	    result = result.substr(2);
-	    count -= 2;
-	}
-	if (result.find("\r\n\r\n") != std::string::npos)
-	    break;
-	}
-	RequestMessage request(result);
-
-	if (request.getHeaderValue("Transfer-Encoding").second &&
-	    request.getHeaderValue("Transfer-Encoding").first == "chunked")
-	    _listenChunkedRequest(clientfd, request, clientMaxBodySize);
-	else if (request.getHeaderValue("Content-Length").second)
-	    _listenBody(clientfd, request, clientMaxBodySize ? clientMaxBodySize - count : 0);
-	return request;
-	*/
 }
 
 Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
