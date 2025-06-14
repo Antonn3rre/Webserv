@@ -70,9 +70,8 @@ void CgiHandler::divideCgiOutput(ResponseMessage &response) {
 	response.setBody(body);
 }
 
-std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
-                                   const Config &config, Server &server,
-                                   struct epoll_event &event) {
+void CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
+                            const Config &config, Server &server, struct epoll_event &event) {
 	struct stat sb;
 	(void)config;
 	if (access(uri.c_str(), F_OK) == -1)
@@ -159,6 +158,4 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	if (session->getPipeToCgi() != -1) {
 		server.cgiSessions[session->getPipeToCgi()] = session;
 	}
-
-	return ("wef");
 }

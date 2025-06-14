@@ -2,6 +2,7 @@
 #define SERVER_HPP
 
 #include "Application.hpp"
+#include "Client.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "cgiSession.hpp"
@@ -38,14 +39,14 @@ struct s_connection {
 
 class Server {
 	private:
-	std::vector<Application>     _applicationList;
-	int                          _epollfd;
-	std::map<int, Application *> _clientAppMap;
+	std::vector<Application> _applicationList;
+	int                      _epollfd;
+	std::map<int, Client>    _clientMap;
 
 	void _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
 	bool _sendAnswer(s_connection &con);
 
-	void _modifySocketEpoll(int epollfd, int client_fd, int flags);
+	static void _modifySocketEpoll(int epollfd, int clientfd, int flags);
 
 	bool _evaluateClientConnection(int clientfd, const ResponseMessage &response);
 	void _disconnectClient(int clientfd) const;
@@ -71,7 +72,8 @@ class Server {
 	Server(const std::string &);
 	~Server();
 
-	int                            getEpollFd() const;
+	int getEpollFd() const;
+
 	std::map<int, cgiSession *>    cgiSessions;
 	std::map<int, s_connection *>  connections;
 	std::map<int, ResponseMessage> responseMap;

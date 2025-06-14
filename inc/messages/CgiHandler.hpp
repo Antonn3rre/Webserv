@@ -16,7 +16,7 @@ class CgiHandler {
 	                           const std::string &headerName);
 
 	public:
-	static std::string executeCgi(const RequestMessage &request, const std::string &uri,
-	                              const Config &config, Server &server, struct epoll_event &event);
-	static void        divideCgiOutput(ResponseMessage &response);
+	static void executeCgi(const RequestMessage &request, const std::string &uri,
+	                       const Config &config, Server &server, struct epoll_event &event);
+	static void divideCgiOutput(ResponseMessage &response);
 };

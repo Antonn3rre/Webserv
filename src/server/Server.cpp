@@ -2,6 +2,7 @@
 #include "AMessage.hpp"
 #include "Application.hpp"
 #include "CgiHandler.hpp"
+#include "Client.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
@@ -45,7 +46,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -68,12 +69,11 @@ void Server::startServer(void) {
 
 void Server::_shutdown(void) {
 	std::cout << "\nShutting down server" << std::endl;
-	for (std::map<int, Application *>::iterator it = _clientAppMap.begin();
-	     it != _clientAppMap.end(); ++it) {
+	for (std::map<int, Client>::iterator it = _clientMap.begin(); it != _clientMap.end(); ++it) {
 		delete connections[it->first];
 		_disconnectClient(it->first);
 	}
-	_clientAppMap.clear();
+	_clientMap.clear();
 	for (std::vector<Application>::iterator it = _applicationList.begin();
 	     it != _applicationList.end(); ++it) {
 		it->close();
@@ -113,6 +113,8 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 	const int     bufSize = 8192;
 	char          buffer[bufSize];
 	s_connection *con = connections[clientfd];
+	Client        client(clientfd);
+	_clientMap.insert(std::pair<int, Client &>(clientfd, client));
 
 	ssize_t bytesRead = 1;
 
@@ -142,44 +144,49 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 	}
 	if (con->chunk) {
 		if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
-        // Recree pour omettre ce qui peut etre apres 0\r\n\r\n
-      requestMap[clientfd] = RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
+			// Recree pour omettre ce qui peut etre apres 0\r\n\r\n
+			requestMap[clientfd] =
+			    RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
 			con->status = PROCESSING;
 		}
 	}
 
 	if (con->bytesToRead == -1 && !con->chunk) {
 		if (con->bufferRead.find("\r\n\r\n") != std::string::npos) {
-        RequestMessage request(connections[clientfd]->bufferRead);
+			RequestMessage request(connections[clientfd]->bufferRead);
 			if (request.getHeaderValue("Content-Length").second) {
-				// recuperer la valeur puis changer bytesToRead     // verifier que first de content length est bon
-        con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) - request.getBody().size();
-        if (con->bytesToRead < 0)
-          throw AMessage::MessageError(413);
-        if (con->bytesToRead == 0) {
-          requestMap[clientfd] = request;
-          con->status = PROCESSING;
-        }
+				// recuperer la valeur puis changer bytesToRead     // verifier que first de content
+				// length est bon
+				con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) -
+				                   request.getBody().size();
+				if (con->bytesToRead < 0)
+					throw AMessage::MessageError(413);
+				if (con->bytesToRead == 0) {
+					requestMap[clientfd] = request;
+					con->status = PROCESSING;
+				}
 			} else if (request.getHeaderValue("Transfer-Encoding").second &&
-              request.getHeaderValue("Transfer-Encoding").first == "chunked") {
-
-				  if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
-          // Recree pour omettre ce qui peut etre apres 0\r\n\r\n
-            requestMap[clientfd] = RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
-				    con->status = PROCESSING;
-        }
-          con->chunk = true;
+			           request.getHeaderValue("Transfer-Encoding").first == "chunked") {
+				if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
+					// Recree pour omettre ce qui peut etre apres 0\r\n\r\n
+					requestMap[clientfd] = RequestMessage(
+					    con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
+					con->status = PROCESSING;
+				}
+				con->chunk = true;
 			} else {
 				requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
-        if (!requestMap[clientfd].getBody().empty())
-          throw AMessage::MessageError(400);
+				if (!requestMap[clientfd].getBody().empty())
+					throw AMessage::MessageError(400);
 				con->status = PROCESSING;
 			}
 		}
 	}
 }
 
-Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
+Application &Server::_getApplicationFromFD(int sockfd) const {
+	return _clientMap.at(sockfd).getApplication();
+}
 
 void Server::_disconnectClient(int clientfd) const {
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientfd, NULL);
@@ -190,10 +197,10 @@ bool Server::_evaluateClientConnection(int clientfd, const ResponseMessage &resp
 	std::pair<std::string, bool> connectionValue = response.getHeaderValue("Connection");
 
 	if (!connectionValue.second || connectionValue.first != "close")
-		return 0;
-	_clientAppMap.erase(clientfd);
+		return false;
+	_clientMap.erase(clientfd);
 	_disconnectClient(clientfd);
-	return 1;
+	return true;
 }
 
 void Server::_modifySocketEpoll(int epollfd, int clientfd, int flags) {
@@ -218,9 +225,9 @@ void Server::_serverLoop() {
 		for (int i = 0; i < nfds; ++i) {
 			int currentFd = events[i].data.fd;
 			newClient = false;
-			for (std::vector<Application>::iterator itServer = _applicationList.begin();
-			     itServer != _applicationList.end(); ++itServer) {
-				if (currentFd == itServer->getLSockFd()) {
+			for (std::vector<Application>::iterator it = _applicationList.begin();
+			     it != _applicationList.end(); ++it) {
+				if (currentFd == it->getLSockFd()) {
 					while (true) {
 						clientfd = accept(currentFd, NULL, NULL);
 						if (clientfd < 0) {
@@ -230,7 +237,8 @@ void Server::_serverLoop() {
 							break;
 						}
 						std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
-						_clientAppMap[clientfd] = &(*itServer);
+						_clientMap[clientfd] = Client(clientfd);
+						_clientMap[clientfd].setApplication(&(*it));
 
 						connections[clientfd] = new s_connection(clientfd);
 						ev.events = REQUEST_FLAGS;
@@ -266,9 +274,8 @@ void Server::_serverLoop() {
 								if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
 									_clearForNewRequest(currentFd);
 									_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
-								} else {
+								} else
 									_cleanupConnection(currentFd);
-								}
 							}
 						}
 					}
@@ -405,7 +412,7 @@ void Server::_cleanupCgiSession(cgiSession &session) {
 	cgiSessions.erase(session.getPipeToCgi());
 	cgiSessions.erase(session.getPipeFromCgi());
 	cgiSessions.erase(session.getClientFd());
-	_clientAppMap.erase(session.getClientFd());
+	_clientMap.erase(session.getClientFd());
 
 	if (session.getCgiPid() > 0) {
 		int status;
@@ -462,7 +469,7 @@ void Server::_cleanupConnection(int fd) {
 	connections.erase(fd);
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
-	_clientAppMap.erase(fd);
+	_clientMap.erase(fd);
 }
 
 void Server::_clearForNewRequest(int clientFd) {
