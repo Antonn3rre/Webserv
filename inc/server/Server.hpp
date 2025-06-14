@@ -47,6 +47,11 @@ struct s_connection {
 	                          //	ResponseMessage response;
 	bool chunk;
 
+
+	s_connection()
+	    : clientFd(-1), status(READING_INPUT), bytesToRead(-1), bytesWritten(0),
+	      chunk(false) {} // NULL a verifier, mettre des pointeurs ?
+
 	s_connection(int clientFd)
 	    : clientFd(clientFd), status(READING_INPUT), bytesToRead(-1), bytesWritten(0),
 	      chunk(false) {} // NULL a verifier, mettre des pointeurs ?
@@ -89,7 +94,7 @@ class Server {
 
 	int                            getEpollFd() const;
 	std::map<int, s_cgiSession *>  cgiSessions;
-	std::map<int, s_connection *>  connections;
+	std::map<int, s_connection>  connections;
 	std::map<int, ResponseMessage> responseMap;
 	std::map<int, RequestMessage>  requestMap;
 	void                           startServer();

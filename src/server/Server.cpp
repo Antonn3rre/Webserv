@@ -70,7 +70,6 @@ void Server::_shutdown(void) {
 	std::cout << "\nShutting down server" << std::endl;
 	for (std::map<int, Application *>::iterator it = _clientAppMap.begin();
 	     it != _clientAppMap.end(); ++it) {
-		delete connections[it->first];
 		_disconnectClient(it->first);
 	}
 	_clientAppMap.clear();
@@ -112,7 +111,7 @@ bool Server::_sendAnswer(s_connection &con) {
 void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize) {
 	const int     bufSize = 8192;
 	char          buffer[bufSize];
-	s_connection *con = connections[clientfd];
+	s_connection *con = &connections[clientfd];
 
 	ssize_t bytesRead = 1;
 
@@ -137,7 +136,7 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 		throw AMessage::MessageError(413);
 	con->bufferRead.append(buffer, bytesRead);
 	if (!con->bytesToRead) {
-		requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
+		requestMap[clientfd] = RequestMessage(connections[clientfd].bufferRead);
 		con->status = PROCESSING;
 	}
 	if (con->chunk) {
@@ -150,7 +149,7 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 
 	if (con->bytesToRead == -1 && !con->chunk) {
 		if (con->bufferRead.find("\r\n\r\n") != std::string::npos) {
-        RequestMessage request(connections[clientfd]->bufferRead);
+        RequestMessage request(connections[clientfd].bufferRead);
 			if (request.getHeaderValue("Content-Length").second) {
 				// recuperer la valeur puis changer bytesToRead     // verifier que first de content length est bon
         con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) - request.getBody().size();
@@ -170,7 +169,7 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
         }
           con->chunk = true;
 			} else {
-				requestMap[clientfd] = RequestMessage(connections[clientfd]->bufferRead);
+				requestMap[clientfd] = RequestMessage(connections[clientfd].bufferRead);
         if (!requestMap[clientfd].getBody().empty())
           throw AMessage::MessageError(400);
 				con->status = PROCESSING;
@@ -232,7 +231,7 @@ void Server::_serverLoop() {
 						std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
 						_clientAppMap[clientfd] = &(*itServer);
 
-						connections[clientfd] = new s_connection(clientfd);
+						connections[clientfd] = s_connection(clientfd);
 						ev.events = REQUEST_FLAGS;
 						ev.data.fd = clientfd;
 						epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
@@ -244,7 +243,6 @@ void Server::_serverLoop() {
 			if (newClient)
 				continue;
 
-			s_connection *con = connections[currentFd];
 			try {
 				if (cgiSessions.count(currentFd)) {
 					_handleActiveCgi(events[i]);
@@ -252,6 +250,7 @@ void Server::_serverLoop() {
 					if (events[i].events & EPOLLIN) {
 						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
 						_listenClientRequest(currentFd, actualAppConfig.getClientMaxBodySize());
+			s_connection *con = &connections[currentFd];
 						if (con->status == PROCESSING) {
 							responseMap[currentFd] = RequestHandler::generateResponse(
 							    actualAppConfig, requestMap[currentFd], currentFd);
@@ -260,6 +259,7 @@ void Server::_serverLoop() {
 							_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 						}
 					} else if (events[i].events & EPOLLOUT) {
+			s_connection *con = &connections[currentFd];
 						if (con->status == WRITING_OUTPUT) {
 							bool doneSending = _sendAnswer(*con);
 							if (doneSending) {
@@ -278,8 +278,9 @@ void Server::_serverLoop() {
 			} catch (AMessage::MessageError &e) {
 				responseMap[currentFd] = RequestHandler::generateErrorResponse(
 				    _getApplicationFromFD(currentFd).getConfig(), e.getStatusCode());
-				con->bufferWrite = responseMap[currentFd].str();
-				con->status = WRITING_OUTPUT;
+        connections[currentFd] = s_connection(currentFd);
+				connections[currentFd].bufferWrite = responseMap[currentFd].str();
+				connections[currentFd].status = WRITING_OUTPUT;
 				_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 			} catch (std::exception &e) {
 				std::cerr << "Error in handling request: " << e.what() << std::endl;
@@ -413,7 +414,6 @@ void Server::_cleanupCgiSession(s_cgiSession *session) {
 	}
 
 	if (connections.count(clientFd)) {
-		delete connections[clientFd];
 		connections.erase(clientFd);
 	}
 
@@ -441,7 +441,7 @@ void Server::_finalizeCgiRead(s_cgiSession *session) {
 		session->pipeToCgi = -1;
 	}
 
-	s_connection *con = connections[session->clientFd];
+	s_connection *con = &connections[session->clientFd];
 	if (con) {
 		StatusLine      statusLine = RequestHandler::_generateStatusLine(200);
 		ResponseMessage response(statusLine, session->cgiResponse);
@@ -461,7 +461,6 @@ void Server::_cleanupConnection(int fd) {
 		return;
 	}
 	std::cout << "[LIFECYCLE] FD " << fd << ": DESTROYED" << std::endl;
-	delete connections[fd];
 	connections.erase(fd);
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
@@ -472,10 +471,10 @@ void Server::_clearForNewRequest(int clientFd) {
 	std::cout << "[LIFECYCLE] FD " << clientFd << ": RESET (Keep-Alive)" << std::endl;
 	requestMap[clientFd] = RequestMessage();
 	responseMap[clientFd] = ResponseMessage();
-	connections[clientFd]->bufferRead.clear();
-	connections[clientFd]->bufferWrite.clear();
-	connections[clientFd]->bytesWritten = 0;
-	connections[clientFd]->bytesToRead = -1;
-	connections[clientFd]->status = FINISHED;
-	connections[clientFd]->chunk = false;
+	connections[clientFd].bufferRead.clear();
+	connections[clientFd].bufferWrite.clear();
+	connections[clientFd].bytesWritten = 0;
+	connections[clientFd].bytesToRead = -1;
+	connections[clientFd].status = FINISHED;
+	connections[clientFd].chunk = false;
 }
