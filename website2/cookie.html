@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Connexion</title>
+</head>
+<body>
+  <h1>Connexion utilisateur</h1>
+  <form method="POST" action="/cgi-bin/cookie.php">
+    <label for="username">Nom d'utilisateur :</label>
+    <input type="text" id="username" name="username" required>
+    <button type="submit">Se connecter</button>
+  </form>
+	<form action="/cgi-bin/cookie.php" method="GET">
+				<button type="submit">Envoyer GET</button>
+</body>
+</html>
