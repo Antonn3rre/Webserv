@@ -210,8 +210,34 @@ void Server::_modifySocketEpoll(int epollfd, int clientfd, int flags) {
 	epoll_ctl(epollfd, EPOLL_CTL_MOD, clientfd, &ev);
 }
 
+bool Server::_acceptClientConnection(int currentFd, int &clientfd) {
+	for (std::vector<Application>::iterator it = _applicationList.begin();
+	     it != _applicationList.end(); ++it) {
+		if (currentFd != it->getLSockFd())
+			continue;
+		while (true) {
+			clientfd = accept(currentFd, NULL, NULL);
+			if (clientfd < 0) {
+				if (errno != EAGAIN)
+					std::cerr << "Error on accept clients." << std::endl;
+				break;
+			}
+			std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
+			_clientMap[clientfd] = Client(clientfd);
+			_clientMap[clientfd].setApplication(&(*it));
+
+			connections[clientfd] = new s_connection(clientfd);
+			struct epoll_event ev;
+			ev.events = REQUEST_FLAGS;
+			ev.data.fd = clientfd;
+			epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
+		}
+		return true;
+	}
+	return false;
+}
+
 void Server::_serverLoop() {
-	struct epoll_event ev;
 	int                clientfd = -1;
 	int                nfds;
 	struct epoll_event events[MAX_EVENTS];
@@ -224,31 +250,7 @@ void Server::_serverLoop() {
 
 		for (int i = 0; i < nfds; ++i) {
 			int currentFd = events[i].data.fd;
-			newClient = false;
-			for (std::vector<Application>::iterator it = _applicationList.begin();
-			     it != _applicationList.end(); ++it) {
-				if (currentFd == it->getLSockFd()) {
-					while (true) {
-						clientfd = accept(currentFd, NULL, NULL);
-						if (clientfd < 0) {
-							if (errno == EAGAIN)
-								break;
-							std::cerr << "Error on accept clients." << std::endl;
-							break;
-						}
-						std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
-						_clientMap[clientfd] = Client(clientfd);
-						_clientMap[clientfd].setApplication(&(*it));
-
-						connections[clientfd] = new s_connection(clientfd);
-						ev.events = REQUEST_FLAGS;
-						ev.data.fd = clientfd;
-						epoll_ctl(_epollfd, EPOLL_CTL_ADD, clientfd, &ev);
-					}
-					newClient = true;
-					break;
-				}
-			}
+			newClient = _acceptClientConnection(currentFd, clientfd);
 			if (newClient)
 				continue;
 
@@ -256,27 +258,27 @@ void Server::_serverLoop() {
 			try {
 				if (cgiSessions.count(currentFd)) {
 					_handleActiveCgi(events[i]);
-				} else {
-					if (events[i].events & EPOLLIN) {
-						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
-						_listenClientRequest(currentFd, actualAppConfig.getClientMaxBodySize());
-						if (con->status == PROCESSING) {
-							responseMap[currentFd] = RequestHandler::generateResponse(
-							    actualAppConfig, requestMap[currentFd], currentFd);
-							con->bufferWrite = responseMap[currentFd].str();
-							con->status = WRITING_OUTPUT;
-							_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
-						}
-					} else if (events[i].events & EPOLLOUT) {
-						if (con->status == WRITING_OUTPUT) {
-							bool doneSending = _sendAnswer(*con);
-							if (doneSending) {
-								if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
-									_clearForNewRequest(currentFd);
-									_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
-								} else
-									_cleanupConnection(currentFd);
-							}
+					continue;
+				}
+				if (events[i].events & EPOLLIN) {
+					Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
+					_listenClientRequest(currentFd, actualAppConfig.getClientMaxBodySize());
+					if (con->status == PROCESSING) {
+						responseMap[currentFd] = RequestHandler::generateResponse(
+						    actualAppConfig, requestMap[currentFd], currentFd);
+						con->bufferWrite = responseMap[currentFd].str();
+						con->status = WRITING_OUTPUT;
+						_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
+					}
+				} else if (events[i].events & EPOLLOUT) {
+					if (con->status == WRITING_OUTPUT) {
+						bool doneSending = _sendAnswer(*con);
+						if (doneSending) {
+							if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
+								_clearForNewRequest(currentFd);
+								_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
+							} else
+								_cleanupConnection(currentFd);
 						}
 					}
 				}
@@ -291,7 +293,6 @@ void Server::_serverLoop() {
 			} catch (std::exception &e) {
 				std::cerr << "Error in handling request: " << e.what() << std::endl;
 				_cleanupConnection(currentFd);
-				continue;
 			}
 		}
 	}

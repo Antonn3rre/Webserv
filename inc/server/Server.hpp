@@ -49,6 +49,7 @@ class Server {
 	static void _modifySocketEpoll(int epollfd, int clientfd, int flags);
 
 	bool _evaluateClientConnection(int clientfd, const ResponseMessage &response);
+	bool _acceptClientConnection(int currentFd, int &clientfd);
 	void _disconnectClient(int clientfd) const;
 	void _initServer();
 	void _serverLoop();
