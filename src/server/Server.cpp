@@ -270,17 +270,15 @@ void Server::_serverLoop() {
 						con->status = WRITING_OUTPUT;
 						_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 					}
-				} else if (events[i].events & EPOLLOUT) {
-					if (con->status == WRITING_OUTPUT) {
-						bool doneSending = _sendAnswer(*con);
-						if (doneSending) {
-							if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
-								_clearForNewRequest(currentFd);
-								_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
-							} else
-								_cleanupConnection(currentFd);
-						}
-					}
+				} else if (events[i].events & EPOLLOUT && con->status == WRITING_OUTPUT) {
+					bool doneSending = _sendAnswer(*con);
+					if (!doneSending)
+						continue;
+					if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
+						_clearForNewRequest(currentFd);
+						_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
+					} else
+						_cleanupConnection(currentFd);
 				}
 			} catch (RequestHandler::CgiRequestException &e) {
 				CgiHandler::executeCgi(e.request, e.uri, e.config, *this, events[i]);
