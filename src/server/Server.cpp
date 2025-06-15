@@ -141,37 +141,40 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 	}
 	if (con->chunk) {
 		if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
-        // Recree pour omettre ce qui peut etre apres 0\r\n\r\n
-      requestMap[clientfd] = RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
+			// Recree pour omettre ce qui peut etre apres 0\r\n\r\n
+			requestMap[clientfd] =
+			    RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
 			con->status = PROCESSING;
 		}
 	}
 
 	if (con->bytesToRead == -1 && !con->chunk) {
 		if (con->bufferRead.find("\r\n\r\n") != std::string::npos) {
-        RequestMessage request(connections[clientfd].bufferRead);
+			RequestMessage request(connections[clientfd].bufferRead);
 			if (request.getHeaderValue("Content-Length").second) {
-				// recuperer la valeur puis changer bytesToRead     // verifier que first de content length est bon
-        con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) - request.getBody().size();
-        if (con->bytesToRead < 0)
-          throw AMessage::MessageError(413);
-        if (con->bytesToRead == 0) {
-          requestMap[clientfd] = request;
-          con->status = PROCESSING;
-        }
+				// recuperer la valeur puis changer bytesToRead     // verifier que first de content
+				// length est bon
+				con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) -
+				                   (request.getBody().size() + 1);
+				if (con->bytesToRead < 0)
+					throw AMessage::MessageError(413);
+				if (con->bytesToRead == 0) {
+					requestMap[clientfd] = request;
+					con->status = PROCESSING;
+				}
 			} else if (request.getHeaderValue("Transfer-Encoding").second &&
-              request.getHeaderValue("Transfer-Encoding").first == "chunked") {
-
-				  if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
-          // Recree pour omettre ce qui peut etre apres 0\r\n\r\n
-            requestMap[clientfd] = RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
-				    con->status = PROCESSING;
-        }
-          con->chunk = true;
+			           request.getHeaderValue("Transfer-Encoding").first == "chunked") {
+				if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
+					// Recree pour omettre ce qui peut etre apres 0\r\n\r\n
+					requestMap[clientfd] = RequestMessage(
+					    con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
+					con->status = PROCESSING;
+				}
+				con->chunk = true;
 			} else {
 				requestMap[clientfd] = RequestMessage(connections[clientfd].bufferRead);
-        if (!requestMap[clientfd].getBody().empty())
-          throw AMessage::MessageError(400);
+				if (!requestMap[clientfd].getBody().empty())
+					throw AMessage::MessageError(400);
 				con->status = PROCESSING;
 			}
 		}
@@ -250,7 +253,7 @@ void Server::_serverLoop() {
 					if (events[i].events & EPOLLIN) {
 						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
 						_listenClientRequest(currentFd, actualAppConfig.getClientMaxBodySize());
-			s_connection *con = &connections[currentFd];
+						s_connection *con = &connections[currentFd];
 						if (con->status == PROCESSING) {
 							responseMap[currentFd] = RequestHandler::generateResponse(
 							    actualAppConfig, requestMap[currentFd], currentFd);
@@ -259,7 +262,7 @@ void Server::_serverLoop() {
 							_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 						}
 					} else if (events[i].events & EPOLLOUT) {
-			s_connection *con = &connections[currentFd];
+						s_connection *con = &connections[currentFd];
 						if (con->status == WRITING_OUTPUT) {
 							bool doneSending = _sendAnswer(*con);
 							if (doneSending) {
@@ -278,7 +281,7 @@ void Server::_serverLoop() {
 			} catch (AMessage::MessageError &e) {
 				responseMap[currentFd] = RequestHandler::generateErrorResponse(
 				    _getApplicationFromFD(currentFd).getConfig(), e.getStatusCode());
-        connections[currentFd] = s_connection(currentFd);
+				connections[currentFd] = s_connection(currentFd);
 				connections[currentFd].bufferWrite = responseMap[currentFd].str();
 				connections[currentFd].status = WRITING_OUTPUT;
 				_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
