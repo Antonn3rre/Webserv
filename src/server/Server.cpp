@@ -152,8 +152,7 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 		if (con->bufferRead.find("\r\n\r\n") != std::string::npos) {
 			RequestMessage request(connections[clientfd].bufferRead);
 			if (request.getHeaderValue("Content-Length").second) {
-				// recuperer la valeur puis changer bytesToRead     // verifier que first de content
-				// length est bon
+				// verifier que first de content length est bon
 				con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) -
 				                   (request.getBody().size() + 1);
 				if (con->bytesToRead < 0)
@@ -308,44 +307,44 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 		close(activeFd);
 		return;
 	}
-	cgiSession *session = &cgiSessions[activeFd];
+	int clientFd = cgiSessions[activeFd].getClientFd();
 
 	// Gestion erreurs
 	if (event.events & (EPOLLERR | EPOLLHUP)) {
-		_cleanupCgiSession(cgiSessions[session->getClientFd()]);
+		_cleanupCgiSession(cgiSessions[clientFd]);
 		return;
 	}
 
 	// Ecriture pipeFdIn
-	if (activeFd == session->getPipeToCgi() && (event.events & EPOLLOUT)) {
-		size_t bytesToWrite = session->request.getBody().length() -
-		                      cgiSessions[session->getClientFd()].bytesWrittenToCgi;
+	if (activeFd == cgiSessions[clientFd].getPipeToCgi() && (event.events & EPOLLOUT)) {
+		size_t bytesToWrite = cgiSessions[clientFd].request.getBody().length() -
+		                      cgiSessions[clientFd].bytesWrittenToCgi;
 		if (bytesToWrite == 0) {
-			_stopWritingToCgi(cgiSessions[session->getClientFd()]);
+			_stopWritingToCgi(cgiSessions[clientFd]);
 			return;
 		}
-		std::string requestBody = session->request.getBody();
-		const char *buffer = requestBody.c_str() + session->bytesWrittenToCgi;
+		std::string requestBody = cgiSessions[clientFd].request.getBody();
+		const char *buffer = requestBody.c_str() + cgiSessions[clientFd].bytesWrittenToCgi;
 		ssize_t     bytesWritten = write(activeFd, buffer, bytesToWrite);
 
 		if (bytesWritten > 0) {
-			cgiSessions[session->getClientFd()].bytesWrittenToCgi += bytesWritten;
+			cgiSessions[clientFd].bytesWrittenToCgi += bytesWritten;
 		} else if (bytesWritten == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
 			return;
 		} else {
 			std::cerr << "Erreur d'écriture sur le pipe du CGI" << std::endl;
-			_cleanupCgiSession(cgiSessions[session->getClientFd()]);
+			_cleanupCgiSession(cgiSessions[clientFd]);
 			return;
 		}
 
-		if (cgiSessions[session->getClientFd()].bytesWrittenToCgi >=
-		    session->request.getBody().length()) {
-			_stopWritingToCgi(cgiSessions[session->getClientFd()]);
+		if (cgiSessions[clientFd].bytesWrittenToCgi >=
+		    cgiSessions[clientFd].request.getBody().length()) {
+			_stopWritingToCgi(cgiSessions[clientFd]);
 		}
 	}
 
 	// Lecture PipeFdOut
-	else if (activeFd == session->getPipeFromCgi() && (event.events & EPOLLIN)) {
+	else if (activeFd == cgiSessions[clientFd].getPipeFromCgi() && (event.events & EPOLLIN)) {
 		char    buffer[4096];
 		ssize_t bytesRead = 0;
 
@@ -353,7 +352,7 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 			bytesRead = read(activeFd, buffer, sizeof(buffer));
 
 			if (bytesRead > 0) {
-				cgiSessions[session->getClientFd()].cgiResponse.append(buffer, bytesRead);
+				cgiSessions[clientFd].cgiResponse.append(buffer, bytesRead);
 			} else
 				break;
 		}
@@ -362,7 +361,7 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 		} else {
 			if (errno != EAGAIN && errno != EWOULDBLOCK) {
 				std::cerr << "Erreur de lecture depuis le pipe du CGI" << std::endl;
-				_cleanupCgiSession(cgiSessions[session->getClientFd()]);
+				_cleanupCgiSession(cgiSessions[clientFd]);
 			}
 		}
 	}
@@ -372,8 +371,7 @@ void Server::_stopWritingToCgi(cgiSession &session) {
 	if (session.getPipeToCgi() != -1) {
 		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session.getPipeToCgi(), NULL);
 		close(session.getPipeToCgi());
-		//		cgiSessions.erase(session.getPipeToCgi());
-		//		session.setPipeToCgi(-1);
+		cgiSessions.erase(session.getPipeToCgi());
 	}
 }
 
@@ -382,8 +380,7 @@ void Server::_stopReadingFromCgi(cgiSession &session) {
 	if (session.getPipeFromCgi() != -1) {
 		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session.getPipeFromCgi(), NULL);
 		close(session.getPipeFromCgi());
-		//	cgiSessions.erase(session.getPipeFromCgi());
-		//		session.setPipeFromCgi(-1);
+		cgiSessions.erase(session.getPipeFromCgi());
 	}
 
 	// Maintenant que la réponse est prête, on change la surveillance sur le client
@@ -403,7 +400,6 @@ void Server::_cleanupCgiSession(cgiSession &session) {
 		_stopReadingFromCgi(session);
 
 	// Retirer le client de epoll et le fermer
-	//	delete connections[session->clientFd];
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientFd, NULL);
 	close(clientFd);
 
@@ -412,9 +408,7 @@ void Server::_cleanupCgiSession(cgiSession &session) {
 		waitpid(session.getCgiPid(), &status, WNOHANG); // WNOHANG pour ne pas bloquer
 	}
 
-	// Retirer les FDs de la map de suivi
-	cgiSessions.erase(session.getPipeToCgi());
-	cgiSessions.erase(session.getPipeFromCgi());
+	// Retirer les FDs de la map de suivi (ceux de to et from cgi sont supp dans fonction stop..)
 	cgiSessions.erase(clientFd);
 	_clientAppMap.erase(clientFd);
 
@@ -434,14 +428,11 @@ void Server::_finalizeCgiRead(cgiSession &session) {
 		close(session.getPipeFromCgi());
 
 		cgiSessions.erase(session.getPipeFromCgi());
-		//	session.setPipeFromCgi(-1);
 	}
 	if (session.getPipeToCgi() != -1) {
 		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session.getPipeToCgi(), NULL);
 		close(session.getPipeToCgi());
 		cgiSessions.erase(session.getPipeToCgi());
-		//	close(session.getPipeToCgi());
-		//	session.setPipeToCgi(-1);
 	}
 
 	s_connection *con = &connections[session.getClientFd()];
