@@ -8,7 +8,7 @@ SRCS_MAIN = main.cpp
 
 SRCS_SERVER = Location.cpp Application.cpp Config.cpp Server.cpp
 SRCS_MESSAGES = AMessage.cpp AStartLine.cpp CgiHandler.cpp Header.cpp ResponseMessage.cpp RequestLine.cpp \
-				MethodHandler.cpp RequestMessage.cpp StatusLine.cpp RequestHandler.cpp
+				MethodHandler.cpp RequestMessage.cpp StatusLine.cpp RequestHandler.cpp cgiSession.cpp
 
 SRCS_UTILS = utilsSpace.cpp utilsParsing.cpp
 
@@ -25,7 +25,7 @@ CXX = c++
 
 INCLUDE_FLAGS = -I$(HEADERS_DIR) -I$(HEADERS_DIR)server -I$(HEADERS_DIR)messages -I$(HEADERS_DIR)utils
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 $(INCLUDE_FLAGS) -MMD -MP
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 $(INCLUDE_FLAGS) -MMD -MP -g
 
 $(NAME): $(OBJS)
 	@ echo " \033[33mCompiling Webserv \033[m"

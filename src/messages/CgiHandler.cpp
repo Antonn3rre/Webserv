@@ -2,6 +2,7 @@
 #include "Config.hpp"
 #include "ResponseMessage.hpp"
 #include "Server.hpp"
+#include "cgiSession.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -69,9 +70,8 @@ void CgiHandler::divideCgiOutput(ResponseMessage &response) {
 	response.setBody(body);
 }
 
-std::string CgiHandler::executeCgi(const RequestMessage &request, const std::string &uri,
-                                   const Config &config, Server &server,
-                                   struct epoll_event &event) {
+void CgiHandler::executeCgi(const std::string &uri, const Config &config, cgiSession &session,
+                            Server &server, int eventFd) {
 	struct stat sb;
 	(void)config;
 	if (access(uri.c_str(), F_OK) == -1)
@@ -83,11 +83,8 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	if (access(uri.c_str(), X_OK) == -1)
 		throw AMessage::MessageError(403);
 
-	s_cgiSession *session = new s_cgiSession(event.data.fd, request, event);
-	session->requestBody = request.getBody();
-
 	// setEnv -> besoin de le faire ici car init en local
-	std::vector<std::string> env = _setEnv(request, uri);
+	std::vector<std::string> env = _setEnv(session.request, uri);
 	std::vector<char *>      envp;
 	envp.reserve(env.size());
 	for (size_t i = 0; i < env.size(); ++i) {
@@ -102,8 +99,8 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 		throw std::exception();
 	}
 
-	session->cgiPid = fork();
-	if (session->cgiPid == 0) {
+	session.setCgiPid(fork());
+	if (session.getCgiPid() == 0) {
 		dup2(pipefdIn[0], STDIN_FILENO);
 		dup2(pipefdOut[1], STDOUT_FILENO);
 		close(pipefdIn[1]);
@@ -131,32 +128,30 @@ std::string CgiHandler::executeCgi(const RequestMessage &request, const std::str
 	//	std::cerr << "DEBUG (C++): Longueur du corps à écrire : " << request.getBody().length()
 	//	          << std::endl;
 	//	std::cerr << "DEBUG (C++): Contenu du corps à écrire : " << request.getBody() << std::endl;
-	session->pipeToCgi = pipefdIn[1];
-	session->pipeFromCgi = pipefdOut[0];
+	session.setPipeToCgi(pipefdIn[1]);
+	session.setPipeFromCgi(pipefdOut[0]);
 
 	struct epoll_event ev;
 	ev.events = EPOLLIN | EPOLLET;
-	ev.data.fd = session->pipeFromCgi;
-	epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, session->pipeFromCgi, &ev);
+	ev.data.fd = session.getPipeFromCgi();
+	epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, session.getPipeFromCgi(), &ev);
 
-	if (!session->requestBody.empty()) {
+	if (!session.request.getBody().empty()) {
 		ev.events = EPOLLOUT | EPOLLET;
-		ev.data.fd = session->pipeToCgi;
-		epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, session->pipeToCgi, &ev);
+		ev.data.fd = session.getPipeToCgi();
+		epoll_ctl(server.getEpollFd(), EPOLL_CTL_ADD, session.getPipeToCgi(), &ev);
 	} else {
-		close(session->pipeToCgi);
-		session->pipeToCgi = -1;
+		close(session.getPipeToCgi());
+		session.setPipeToCgi(-1);
 	}
 
-	server.cgiSessions[event.data.fd] = session;
-	if (session->pipeFromCgi != -1) {
-		server.cgiSessions[session->pipeFromCgi] = session;
+	server.cgiSessions[eventFd] = session;
+	if (session.getPipeFromCgi() != -1) {
+		server.cgiSessions[session.getPipeFromCgi()] = session;
 	}
 
 	// Mapper le FD du pipe d'écriture (vers le CGI)
-	if (session->pipeToCgi != -1) {
-		server.cgiSessions[session->pipeToCgi] = session;
+	if (session.getPipeToCgi() != -1) {
+		server.cgiSessions[session.getPipeToCgi()] = session;
 	}
-
-	return ("wef");
 }

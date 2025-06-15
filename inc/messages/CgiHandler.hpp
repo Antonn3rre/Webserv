@@ -4,6 +4,7 @@
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "Server.hpp"
+#include "cgiSession.hpp"
 #include <string>
 #include <vector>
 
@@ -16,9 +17,7 @@ class CgiHandler {
 	                           const std::string &headerName);
 
 	public:
-	// static std::string executeCgi(const RequestMessage &request, const std::string &uri,
-	//                               const Config &config, Server &server, int clientFd);
-	static std::string executeCgi(const RequestMessage &request, const std::string &uri,
-	                              const Config &config, Server &server, struct epoll_event &event);
-	static void        divideCgiOutput(ResponseMessage &response);
+	static void executeCgi(const std::string &uri, const Config &config, cgiSession &session,
+	                       Server &server, int eventFd);
+	static void divideCgiOutput(ResponseMessage &response);
 };

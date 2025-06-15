@@ -277,7 +277,9 @@ void Server::_serverLoop() {
 					}
 				}
 			} catch (RequestHandler::CgiRequestException &e) {
-				CgiHandler::executeCgi(e.request, e.uri, e.config, *this, events[i]);
+				cgiSessions[currentFd] = cgiSession(events[i].data.fd, e.request, events[i]);
+				CgiHandler::executeCgi(e.uri, e.config, cgiSessions[currentFd], *this,
+				                       events[i].data.fd);
 			} catch (AMessage::MessageError &e) {
 				responseMap[currentFd] = RequestHandler::generateErrorResponse(
 				    _getApplicationFromFD(currentFd).getConfig(), e.getStatusCode());
@@ -306,42 +308,44 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 		close(activeFd);
 		return;
 	}
-	s_cgiSession *session = cgiSessions[activeFd];
+	cgiSession *session = &cgiSessions[activeFd];
 
 	// Gestion erreurs
 	if (event.events & (EPOLLERR | EPOLLHUP)) {
-		_cleanupCgiSession(session);
+		_cleanupCgiSession(cgiSessions[session->getClientFd()]);
 		return;
 	}
 
 	// Ecriture pipeFdIn
-	if (activeFd == session->pipeToCgi && (event.events & EPOLLOUT)) {
-		size_t bytesToWrite = session->requestBody.length() - session->bytesWrittenToCgi;
+	if (activeFd == session->getPipeToCgi() && (event.events & EPOLLOUT)) {
+		size_t bytesToWrite = session->request.getBody().length() -
+		                      cgiSessions[session->getClientFd()].bytesWrittenToCgi;
 		if (bytesToWrite == 0) {
-			_stopWritingToCgi(session);
+			_stopWritingToCgi(cgiSessions[session->getClientFd()]);
 			return;
 		}
-
-		const char *buffer = session->requestBody.c_str() + session->bytesWrittenToCgi;
+		std::string requestBody = session->request.getBody();
+		const char *buffer = requestBody.c_str() + session->bytesWrittenToCgi;
 		ssize_t     bytesWritten = write(activeFd, buffer, bytesToWrite);
 
 		if (bytesWritten > 0) {
-			session->bytesWrittenToCgi += bytesWritten;
+			cgiSessions[session->getClientFd()].bytesWrittenToCgi += bytesWritten;
 		} else if (bytesWritten == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
 			return;
 		} else {
 			std::cerr << "Erreur d'écriture sur le pipe du CGI" << std::endl;
-			_cleanupCgiSession(session);
+			_cleanupCgiSession(cgiSessions[session->getClientFd()]);
 			return;
 		}
 
-		if (session->bytesWrittenToCgi >= session->requestBody.length()) {
-			_stopWritingToCgi(session);
+		if (cgiSessions[session->getClientFd()].bytesWrittenToCgi >=
+		    session->request.getBody().length()) {
+			_stopWritingToCgi(cgiSessions[session->getClientFd()]);
 		}
 	}
 
 	// Lecture PipeFdOut
-	else if (activeFd == session->pipeFromCgi && (event.events & EPOLLIN)) {
+	else if (activeFd == session->getPipeFromCgi() && (event.events & EPOLLIN)) {
 		char    buffer[4096];
 		ssize_t bytesRead = 0;
 
@@ -349,118 +353,112 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 			bytesRead = read(activeFd, buffer, sizeof(buffer));
 
 			if (bytesRead > 0) {
-				session->cgiResponse.append(buffer, bytesRead);
+				cgiSessions[session->getClientFd()].cgiResponse.append(buffer, bytesRead);
 			} else
 				break;
 		}
 		if (bytesRead == 0) {
-			_finalizeCgiRead(session);
+			_finalizeCgiRead(cgiSessions[cgiSessions[activeFd].getClientFd()]);
 		} else {
 			if (errno != EAGAIN && errno != EWOULDBLOCK) {
 				std::cerr << "Erreur de lecture depuis le pipe du CGI" << std::endl;
-				_cleanupCgiSession(session);
+				_cleanupCgiSession(cgiSessions[session->getClientFd()]);
 			}
 		}
 	}
 }
 
-void Server::_stopWritingToCgi(s_cgiSession *session) {
-	if (session->pipeToCgi != -1) {
-		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session->pipeToCgi, NULL);
-		close(session->pipeToCgi);
-		cgiSessions.erase(session->pipeToCgi);
-		session->pipeToCgi = -1;
+void Server::_stopWritingToCgi(cgiSession &session) {
+	if (session.getPipeToCgi() != -1) {
+		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session.getPipeToCgi(), NULL);
+		close(session.getPipeToCgi());
+		//		cgiSessions.erase(session.getPipeToCgi());
+		//		session.setPipeToCgi(-1);
 	}
 }
 
-void Server::_stopReadingFromCgi(s_cgiSession *session) {
-	if (session->pipeFromCgi != -1) {
-		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session->pipeFromCgi, NULL);
-		close(session->pipeFromCgi);
-		cgiSessions.erase(session->pipeFromCgi);
-		session->pipeFromCgi = -1;
+void Server::_stopReadingFromCgi(cgiSession &session) {
+	int clientFd = session.getClientFd();
+	if (session.getPipeFromCgi() != -1) {
+		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session.getPipeFromCgi(), NULL);
+		close(session.getPipeFromCgi());
+		//	cgiSessions.erase(session.getPipeFromCgi());
+		//		session.setPipeFromCgi(-1);
 	}
 
 	// Maintenant que la réponse est prête, on change la surveillance sur le client
 	// pour ÉCRIRE au lieu de LIRE.
 	struct epoll_event ev;
 	ev.events = EPOLLOUT | EPOLLET; // On veut être notifié quand on peut écrire au client
-	ev.data.fd = session->clientFd;
-	epoll_ctl(_epollfd, EPOLL_CTL_MOD, session->clientFd, &ev);
+	ev.data.fd = clientFd;
+	epoll_ctl(_epollfd, EPOLL_CTL_MOD, clientFd, &ev);
 }
 
-void Server::_cleanupCgiSession(s_cgiSession *session) {
-	if (!session)
-		return;
+void Server::_cleanupCgiSession(cgiSession &session) {
+	int clientFd = session.getClientFd();
 
-	int clientFd = session->clientFd;
-
-	if (session->pipeToCgi != -1)
+	if (session.getPipeToCgi() != -1)
 		_stopWritingToCgi(session);
-	if (session->pipeFromCgi != -1)
+	if (session.getPipeFromCgi() != -1)
 		_stopReadingFromCgi(session);
 
 	// Retirer le client de epoll et le fermer
 	//	delete connections[session->clientFd];
-	epoll_ctl(_epollfd, EPOLL_CTL_DEL, session->clientFd, NULL);
-	close(session->clientFd);
+	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientFd, NULL);
+	close(clientFd);
+
+	if (session.getCgiPid() > 0) {
+		int status;
+		waitpid(session.getCgiPid(), &status, WNOHANG); // WNOHANG pour ne pas bloquer
+	}
 
 	// Retirer les FDs de la map de suivi
-	cgiSessions.erase(session->pipeToCgi);
-	cgiSessions.erase(session->pipeFromCgi);
-	cgiSessions.erase(session->clientFd);
-	_clientAppMap.erase(session->clientFd);
-
-	if (session->cgiPid > 0) {
-		int status;
-		waitpid(session->cgiPid, &status, WNOHANG); // WNOHANG pour ne pas bloquer
-	}
+	cgiSessions.erase(session.getPipeToCgi());
+	cgiSessions.erase(session.getPipeFromCgi());
+	cgiSessions.erase(clientFd);
+	_clientAppMap.erase(clientFd);
 
 	if (connections.count(clientFd)) {
 		connections.erase(clientFd);
 	}
-
-	delete session;
 }
 
-void Server::_finalizeCgiRead(s_cgiSession *session) {
-	if (!session)
-		return;
-	if (session->cgiPid > 0) {
+void Server::_finalizeCgiRead(cgiSession &session) {
+	if (session.getCgiPid() > 0) {
 		int status;
-		waitpid(session->cgiPid, &status, WNOHANG);
-		session->cgiPid = -1;
+		waitpid(session.getCgiPid(), &status, WNOHANG);
+		session.setCgiPid(-1);
 	}
-	if (session->pipeFromCgi != -1) {
-		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session->pipeFromCgi, NULL);
-		close(session->pipeFromCgi);
+	if (session.getPipeFromCgi() != -1) {
+		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session.getPipeFromCgi(), NULL);
+		close(session.getPipeFromCgi());
 
-		cgiSessions.erase(session->pipeFromCgi);
-		session->pipeFromCgi = -1;
+		cgiSessions.erase(session.getPipeFromCgi());
+		//	session.setPipeFromCgi(-1);
 	}
-	if (session->pipeToCgi != -1) {
-		cgiSessions.erase(session->pipeToCgi);
-		close(session->pipeToCgi);
-		session->pipeToCgi = -1;
+	if (session.getPipeToCgi() != -1) {
+		epoll_ctl(_epollfd, EPOLL_CTL_DEL, session.getPipeToCgi(), NULL);
+		close(session.getPipeToCgi());
+		cgiSessions.erase(session.getPipeToCgi());
+		//	close(session.getPipeToCgi());
+		//	session.setPipeToCgi(-1);
 	}
 
-	s_connection *con = &connections[session->clientFd];
+	s_connection *con = &connections[session.getClientFd()];
 	if (con) {
 		StatusLine      statusLine = RequestHandler::_generateStatusLine(200);
-		ResponseMessage response(statusLine, session->cgiResponse);
-		RequestHandler::_generateHeaders(response, session->request, 200);
+		ResponseMessage response(statusLine, session.cgiResponse);
+		RequestHandler::_generateHeaders(response, session.request, 200);
 		con->bufferWrite = response.str();
 		con->status = WRITING_OUTPUT;
-		_modifySocketEpoll(_epollfd, session->clientFd, RESPONSE_FLAGS);
-		cgiSessions.erase(session->clientFd);
-		delete session;
+		_modifySocketEpoll(_epollfd, session.getClientFd(), RESPONSE_FLAGS);
+		cgiSessions.erase(session.getClientFd());
 	}
 }
 
 void Server::_cleanupConnection(int fd) {
 	if (cgiSessions.count(fd)) {
-		s_cgiSession *session = cgiSessions[fd];
-		_cleanupCgiSession(session);
+		_cleanupCgiSession(cgiSessions[fd]);
 		return;
 	}
 	std::cout << "[LIFECYCLE] FD " << fd << ": DESTROYED" << std::endl;

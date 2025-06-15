@@ -4,6 +4,7 @@
 #include "Application.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include "cgiSession.hpp"
 #include <cstdio>
 #include <string>
 #include <sys/epoll.h>
@@ -16,23 +17,24 @@
 #define TIME_OUT   3000
 
 extern int g_sigint;
-
+/*
 struct s_cgiSession {
-	int                clientFd;
-	pid_t              cgiPid;
-	int                pipeToCgi;
-	int                pipeFromCgi;
-	std::string        requestBody;
-	std::string        cgiResponse;
-	size_t             bytesWrittenToCgi;
-	size_t             bytesWrittenToClient;
-	struct epoll_event event;
-	RequestMessage     request;
+    int                clientFd;
+    pid_t              cgiPid;
+    int                pipeToCgi;
+    int                pipeFromCgi;
+    std::string        requestBody;
+    std::string        cgiResponse;
+    size_t             bytesWrittenToCgi;
+    size_t             bytesWrittenToClient;
+    struct epoll_event event;
+    RequestMessage     request;
 
-	s_cgiSession(int cfd, const RequestMessage &request, struct epoll_event &event)
-	    : clientFd(cfd), cgiPid(-1), pipeToCgi(-1), pipeFromCgi(-1), bytesWrittenToCgi(0),
-	      bytesWrittenToClient(0), event(event), request(request) {}
+    s_cgiSession(int cfd, const RequestMessage &request, struct epoll_event &event)
+        : clientFd(cfd), cgiPid(-1), pipeToCgi(-1), pipeFromCgi(-1), bytesWrittenToCgi(0),
+          bytesWrittenToClient(0), event(event), request(request) {}
 };
+*/
 
 enum e_status { READING_INPUT, PROCESSING, WRITING_OUTPUT, FINISHED };
 
@@ -47,10 +49,9 @@ struct s_connection {
 	                          //	ResponseMessage response;
 	bool chunk;
 
-
 	s_connection()
-	    : clientFd(-1), status(READING_INPUT), bytesToRead(-1), bytesWritten(0),
-	      chunk(false) {} // NULL a verifier, mettre des pointeurs ?
+	    : clientFd(-1), status(READING_INPUT), bytesToRead(-1), bytesWritten(0), chunk(false) {
+	} // NULL a verifier, mettre des pointeurs ?
 
 	s_connection(int clientFd)
 	    : clientFd(clientFd), status(READING_INPUT), bytesToRead(-1), bytesWritten(0),
@@ -78,13 +79,13 @@ class Server {
 	Application &_getApplicationFromFD(int sockfd) const;
 
 	void _handleActiveCgi(struct epoll_event &event);
-	void _stopWritingToCgi(s_cgiSession *session);
-	void _stopReadingFromCgi(s_cgiSession *session);
-	void _cleanupCgiSession(s_cgiSession *session);
+	void _stopWritingToCgi(cgiSession &session);
+	void _stopReadingFromCgi(cgiSession &session);
+	void _cleanupCgiSession(cgiSession &session);
 	void _cleanupConnection(int fd);
 
 	void _clearForNewRequest(int clientFd);
-	void _finalizeCgiRead(s_cgiSession *session);
+	void _finalizeCgiRead(cgiSession &session);
 	//	void _resetRequest(int clientfd);
 
 	public:
@@ -93,8 +94,8 @@ class Server {
 	~Server();
 
 	int                            getEpollFd() const;
-	std::map<int, s_cgiSession *>  cgiSessions;
-	std::map<int, s_connection>  connections;
+	std::map<int, cgiSession>      cgiSessions;
+	std::map<int, s_connection>    connections;
 	std::map<int, ResponseMessage> responseMap;
 	std::map<int, RequestMessage>  requestMap;
 	void                           startServer();
