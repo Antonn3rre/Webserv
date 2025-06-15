@@ -1,15 +1,11 @@
 #pragma once
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main
 #include "Application.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include <sys/epoll.h>
 #include <unistd.h>
 
-    class Client {
+class Client {
 	public:
 	Client();
 	Client(int clientFd);

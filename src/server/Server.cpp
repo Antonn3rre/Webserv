@@ -220,7 +220,9 @@ bool Server::_acceptClientConnection(int currentFd, int &clientfd) {
 					std::cerr << "Error on accept clients." << std::endl;
 				break;
 			}
-			std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
+			std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED, current = " << currentFd
+			          << std::endl;
+			sleep(3);
 			_clientMap[clientfd] = Client(clientfd);
 			_clientMap[clientfd].setApplication(&(*it));
 
@@ -245,53 +247,54 @@ void Server::_serverLoop() {
 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
 
 		for (int i = 0; i < nfds; ++i) {
+			int  currentFd = events[i].data.fd;
 			bool isNewClient = _acceptClientConnection(events[i].data.fd, clientfd);
 			if (isNewClient)
 				continue;
 			// si ne fonctionne pas, remplacer clientfd par events[i].data.fd
 			try {
-				if (cgiSessions.count(clientfd)) {
+				if (cgiSessions.count(currentFd)) {
 					_handleActiveCgi(events[i]);
 					continue;
 				}
 				if (events[i].events & EPOLLIN) {
-					Config actualAppConfig = _getApplicationFromFD(clientfd).getConfig();
-					_listenClientRequest(clientfd, actualAppConfig.getClientMaxBodySize());
-					s_connection *con = &connections[clientfd];
+					Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
+					_listenClientRequest(currentFd, actualAppConfig.getClientMaxBodySize());
+					s_connection *con = &connections[currentFd];
 					if (con->status == PROCESSING) {
-						responseMap[clientfd] = RequestHandler::generateResponse(
-						    actualAppConfig, requestMap[clientfd], clientfd);
-						con->bufferWrite = responseMap[clientfd].str();
+						responseMap[currentFd] = RequestHandler::generateResponse(
+						    actualAppConfig, requestMap[currentFd], currentFd);
+						con->bufferWrite = responseMap[currentFd].str();
 						con->status = WRITING_OUTPUT;
-						_modifySocketEpoll(_epollfd, clientfd, RESPONSE_FLAGS);
+						_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 					}
 				} else if (events[i].events & EPOLLOUT) {
-					s_connection *con = &connections[clientfd];
+					s_connection *con = &connections[currentFd];
 					if (con->status == WRITING_OUTPUT) {
 						bool doneSending = _sendAnswer(*con);
 						if (!doneSending)
 							continue;
-						if (!_evaluateClientConnection(clientfd, responseMap[clientfd])) {
-							_clearForNewRequest(clientfd);
-							_modifySocketEpoll(_epollfd, clientfd, REQUEST_FLAGS);
+						if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
+							_clearForNewRequest(currentFd);
+							_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
 						} else
-							_cleanupConnection(clientfd);
+							_cleanupConnection(currentFd);
 					}
 				}
 			} catch (RequestHandler::CgiRequestException &e) {
-				cgiSessions[clientfd] = cgiSession(events[i].data.fd, e.request, events[i]);
-				CgiHandler::executeCgi(e.uri, e.config, cgiSessions[clientfd], *this,
+				cgiSessions[currentFd] = cgiSession(events[i].data.fd, e.request, events[i]);
+				CgiHandler::executeCgi(e.uri, e.config, cgiSessions[currentFd], *this,
 				                       events[i].data.fd);
 			} catch (AMessage::MessageError &e) {
-				responseMap[clientfd] = RequestHandler::generateErrorResponse(
-				    _getApplicationFromFD(clientfd).getConfig(), e.getStatusCode());
-				connections[clientfd] = s_connection(clientfd);
-				connections[clientfd].bufferWrite = responseMap[clientfd].str();
-				connections[clientfd].status = WRITING_OUTPUT;
-				_modifySocketEpoll(_epollfd, clientfd, RESPONSE_FLAGS);
+				responseMap[currentFd] = RequestHandler::generateErrorResponse(
+				    _getApplicationFromFD(currentFd).getConfig(), e.getStatusCode());
+				connections[currentFd] = s_connection(currentFd);
+				connections[currentFd].bufferWrite = responseMap[currentFd].str();
+				connections[currentFd].status = WRITING_OUTPUT;
+				_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 			} catch (std::exception &e) {
 				std::cerr << "Error in handling request: " << e.what() << std::endl;
-				_cleanupConnection(clientfd);
+				_cleanupConnection(currentFd);
 			}
 		}
 	}
