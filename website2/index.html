@@ -150,17 +150,21 @@
     </div>
 
     <!-- Connexion utilisateur -->
-    <div class="card">
-      <h3>Connexion utilisateur</h3>
-      <p>Envoie le nom d’utilisateur en POST ou GET vers cookie.php</p>
-      <form method="POST" action="/cgi-bin/cookie.php">
-        <input type="text" id="username" name="username" placeholder="Nom d'utilisateur" required />
-        <button type="submit">POST : enregistrer cookie</button>
-      </form>
-      <form action="/cgi-bin/cookie.php" method="GET">
-        <button type="submit">GET : Test cookie</button>
-      </form>
-    </div>
+<div class="card">
+  <h3>Connexion utilisateur</h3>
+  <p>Envoie le nom d’utilisateur en POST ou GET vers cookie.php</p>
+  
+  <form id="cookiePostForm">
+    <input type="text" id="username" name="username" placeholder="Nom d'utilisateur" required />
+    <button type="submit">POST : enregistrer cookie</button>
+  </form>
+
+  <form id="cookieGetForm">
+    <button type="submit">GET : Test cookie</button>
+  </form>
+
+    <div id="notification"></div>
+</div>
 
     <!-- Upload fichier -->
     <div class="card">
@@ -241,6 +245,38 @@ try {
         showNotification('Erreur réseau', true);
       }
     });
+
+  // POST form handler
+  document.getElementById('cookiePostForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+
+    try {
+      const response = await fetch('/cgi-bin/cookie.php', {
+        method: 'POST',
+        body: formData
+      });
+
+      const body = await response.text();
+		showNotification(body, !response.ok);
+    } catch (err) {
+		showNotification('Erreur reseau', true);
+    }
+  });
+
+  // GET form handler
+  document.getElementById('cookieGetForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    try {
+      const response = await fetch('/cgi-bin/cookie.php');
+      const body = await response.text();
+		showNotification(body, !response.ok);
+    } catch (err) {
+		showNotification('Erreur reseau', true);
+    }
+  });
 
     function showNotification(message, isError = false) {
       const notif = document.getElementById('notification');
