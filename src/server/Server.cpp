@@ -68,11 +68,10 @@ void Server::startServer(void) {
 
 void Server::_shutdown(void) {
 	std::cout << "\nShutting down server" << std::endl;
-	for (std::map<int, Application *>::iterator it = _clientAppMap.begin();
-	     it != _clientAppMap.end(); ++it) {
+	for (std::map<int, Client>::iterator it = _clientMap.begin(); it != _clientMap.end(); ++it) {
 		_disconnectClient(it->first);
 	}
-	_clientAppMap.clear();
+	_clientMap.clear();
 	for (std::vector<Application>::iterator it = _applicationList.begin();
 	     it != _applicationList.end(); ++it) {
 		it->close();
@@ -112,6 +111,8 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 	const int     bufSize = 8192;
 	char          buffer[bufSize];
 	s_connection *con = &connections[clientfd];
+	Client        client(clientfd);
+	_clientMap.insert(std::pair<int, Client &>(clientfd, client));
 
 	ssize_t bytesRead = 1;
 
@@ -180,7 +181,9 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 	}
 }
 
-Application &Server::_getApplicationFromFD(int sockfd) const { return *_clientAppMap.at(sockfd); }
+Application &Server::_getApplicationFromFD(int sockfd) const {
+	return _clientMap.at(sockfd).getApplication();
+}
 
 void Server::_disconnectClient(int clientfd) const {
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, clientfd, NULL);
@@ -191,10 +194,10 @@ bool Server::_evaluateClientConnection(int clientfd, const ResponseMessage &resp
 	std::pair<std::string, bool> connectionValue = response.getHeaderValue("Connection");
 
 	if (!connectionValue.second || connectionValue.first != "close")
-		return 0;
-	_clientAppMap.erase(clientfd);
+		return false;
+	_clientMap.erase(clientfd);
 	_disconnectClient(clientfd);
-	return 1;
+	return true;
 }
 
 void Server::_modifySocketEpoll(int epollfd, int clientfd, int flags) {
@@ -219,9 +222,9 @@ void Server::_serverLoop() {
 		for (int i = 0; i < nfds; ++i) {
 			int currentFd = events[i].data.fd;
 			newClient = false;
-			for (std::vector<Application>::iterator itServer = _applicationList.begin();
-			     itServer != _applicationList.end(); ++itServer) {
-				if (currentFd == itServer->getLSockFd()) {
+			for (std::vector<Application>::iterator it = _applicationList.begin();
+			     it != _applicationList.end(); ++it) {
+				if (currentFd == it->getLSockFd()) {
 					while (true) {
 						clientfd = accept(currentFd, NULL, NULL);
 						if (clientfd < 0) {
@@ -231,7 +234,8 @@ void Server::_serverLoop() {
 							break;
 						}
 						std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
-						_clientAppMap[clientfd] = &(*itServer);
+						_clientMap[clientfd] = Client(clientfd);
+						_clientMap[clientfd].setApplication(&(*it));
 
 						connections[clientfd] = s_connection(clientfd);
 						ev.events = REQUEST_FLAGS;
@@ -410,7 +414,7 @@ void Server::_cleanupCgiSession(cgiSession &session) {
 
 	// Retirer les FDs de la map de suivi (ceux de to et from cgi sont supp dans fonction stop..)
 	cgiSessions.erase(clientFd);
-	_clientAppMap.erase(clientFd);
+	_clientMap.erase(clientFd);
 
 	if (connections.count(clientFd)) {
 		connections.erase(clientFd);
@@ -456,7 +460,7 @@ void Server::_cleanupConnection(int fd) {
 	connections.erase(fd);
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
-	_clientAppMap.erase(fd);
+	_clientMap.erase(fd);
 }
 
 void Server::_clearForNewRequest(int clientFd) {
