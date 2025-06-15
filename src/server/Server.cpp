@@ -220,12 +220,11 @@ bool Server::_acceptClientConnection(int currentFd, int &clientfd) {
 					std::cerr << "Error on accept clients." << std::endl;
 				break;
 			}
-			std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED, current = " << currentFd
-			          << std::endl;
-			sleep(3);
+			std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
 			_clientMap[clientfd] = Client(clientfd);
 			_clientMap[clientfd].setApplication(&(*it));
 
+			connections[clientfd] = s_connection(clientfd);
 			struct epoll_event ev;
 			ev.events = REQUEST_FLAGS;
 			ev.data.fd = clientfd;
