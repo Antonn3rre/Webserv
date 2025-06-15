@@ -25,12 +25,7 @@ AMessage::AMessage(const std::string &subMessage) {
 	// _checkDuplicateHeaders();
 	_checkHostHeader();
 
-	int i = 0;
-	while (std::getline(sstream, line)) {
-		if (i++ > 0)
-			_body += "\n";
-		_body += line;
-	}
+	_body = subMessage.substr(subMessage.find("\r\n\r\n") + 4);
 }
 
 AMessage::AMessage(const std::string &body, const std::vector<Header> &headers) : _body(body) {

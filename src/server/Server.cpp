@@ -156,7 +156,7 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 			if (request.getHeaderValue("Content-Length").second) {
 				// verifier que first de content length est bon
 				con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) -
-				                   (request.getBody().size() + 1);
+				                   (request.getBody().size());
 				if (con->bytesToRead < 0)
 					throw AMessage::MessageError(413);
 				if (con->bytesToRead == 0) {
