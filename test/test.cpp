@@ -74,8 +74,7 @@ int main() {
 		test.startServer();
 	}
 	// CGI execution
-	{
-	}
+	{}
 	// Config test
 	// {
 	// 	std::cout << "\e[33mTEST CONFIG\e[0m" << std::endl;

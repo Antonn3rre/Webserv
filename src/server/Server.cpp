@@ -46,7 +46,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -141,44 +141,42 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 		requestMap[clientfd] = RequestMessage(connections[clientfd].bufferRead);
 		con->status = PROCESSING;
 	}
-	if (con->chunk) {
+	if (con->chunk && con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
+		// Recree pour omettre ce qui peut etre apres 0\r\n\r\n
+		requestMap[clientfd] =
+		    RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
+		con->status = PROCESSING;
+	}
+
+	if (con->bytesToRead != -1 || con->chunk)
+		return;
+	if (con->bufferRead.find("\r\n\r\n") == std::string::npos)
+		return;
+	RequestMessage request(connections[clientfd].bufferRead);
+	if (request.getHeaderValue("Content-Length").second) {
+		// verifier que first de content length est bon
+		con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) -
+		                   (request.getBody().size());
+		if (con->bytesToRead < 0)
+			throw AMessage::MessageError(413);
+		if (con->bytesToRead == 0) {
+			requestMap[clientfd] = request;
+			con->status = PROCESSING;
+		}
+	} else if (request.getHeaderValue("Transfer-Encoding").second &&
+	           request.getHeaderValue("Transfer-Encoding").first == "chunked") {
 		if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
 			// Recree pour omettre ce qui peut etre apres 0\r\n\r\n
 			requestMap[clientfd] =
 			    RequestMessage(con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
 			con->status = PROCESSING;
 		}
-	}
-
-	if (con->bytesToRead == -1 && !con->chunk) {
-		if (con->bufferRead.find("\r\n\r\n") != std::string::npos) {
-			RequestMessage request(connections[clientfd].bufferRead);
-			if (request.getHeaderValue("Content-Length").second) {
-				// verifier que first de content length est bon
-				con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) -
-				                   (request.getBody().size());
-				if (con->bytesToRead < 0)
-					throw AMessage::MessageError(413);
-				if (con->bytesToRead == 0) {
-					requestMap[clientfd] = request;
-					con->status = PROCESSING;
-				}
-			} else if (request.getHeaderValue("Transfer-Encoding").second &&
-			           request.getHeaderValue("Transfer-Encoding").first == "chunked") {
-				if (con->bufferRead.find("0\r\n\r\n") != std::string::npos) {
-					// Recree pour omettre ce qui peut etre apres 0\r\n\r\n
-					requestMap[clientfd] = RequestMessage(
-					    con->bufferRead.substr(0, con->bufferRead.find("0\r\n\r\n") + 5));
-					con->status = PROCESSING;
-				}
-				con->chunk = true;
-			} else {
-				requestMap[clientfd] = RequestMessage(connections[clientfd].bufferRead);
-				if (!requestMap[clientfd].getBody().empty())
-					throw AMessage::MessageError(400);
-				con->status = PROCESSING;
-			}
-		}
+		con->chunk = true;
+	} else {
+		requestMap[clientfd] = RequestMessage(connections[clientfd].bufferRead);
+		if (!requestMap[clientfd].getBody().empty())
+			throw AMessage::MessageError(400);
+		con->status = PROCESSING;
 	}
 }
 
@@ -269,16 +267,16 @@ void Server::_serverLoop() {
 					}
 				} else if (events[i].events & EPOLLOUT) {
 					s_connection *con = &connections[currentFd];
-					if (con->status == WRITING_OUTPUT) {
-						bool doneSending = _sendAnswer(*con);
-						if (!doneSending)
-							continue;
-						if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
-							_clearForNewRequest(currentFd);
-							_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
-						} else
-							_cleanupConnection(currentFd);
-					}
+					if (con->status != WRITING_OUTPUT)
+						continue;
+					bool doneSending = _sendAnswer(*con);
+					if (!doneSending)
+						continue;
+					if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
+						_clearForNewRequest(currentFd);
+						_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
+					} else
+						_cleanupConnection(currentFd);
 				}
 			} catch (RequestHandler::CgiRequestException &e) {
 				cgiSessions[currentFd] = cgiSession(events[i].data.fd, e.request, events[i]);
