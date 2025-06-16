@@ -99,7 +99,8 @@ bool Server::_sendAnswer(s_connection &con) {
 	ssize_t bytesSent = send(con.clientFd, bufferPos, sizeLeft, MSG_NOSIGNAL);
 	if (bytesSent > 0) {
 		con.bytesWritten += bytesSent;
-	} else if (bytesSent == -1) {
+	} else {
+		_cleanupConnection(con.clientFd);
 		std::cerr << "Error on write\n";
 	}
 	if (con.bytesWritten >= ttSize) {
@@ -119,11 +120,7 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 
 	bzero(buffer, bufSize);
 	bytesRead = read(clientfd, buffer, bufSize);
-	if (bytesRead < 0) {
-		close(clientfd);
-		throw std::runtime_error("error on read");
-	}
-	if (bytesRead == 0) {
+	if (bytesRead <= 0) {
 		std::cout << "[LIFECYCLE] FD " << clientfd << ": DISCONNECTED BY CLIENT (read=0)"
 		          << std::endl;
 		_cleanupConnection(clientfd);
@@ -337,8 +334,6 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 
 		if (bytesWritten > 0) {
 			cgiSessions[clientFd].bytesWrittenToCgi += bytesWritten;
-		} else if (bytesWritten == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-			return;
 		} else {
 			std::cerr << "Erreur d'écriture sur le pipe du CGI" << std::endl;
 			_cleanupCgiSession(cgiSessions[clientFd]);
@@ -364,7 +359,7 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 			} else
 				break;
 		}
-		if (bytesRead == 0) {
+		if (bytesRead <= 0) {
 			_finalizeCgiRead(cgiSessions[cgiSessions[activeFd].getClientFd()]);
 		} else {
 			if (errno != EAGAIN && errno != EWOULDBLOCK) {
