@@ -279,7 +279,7 @@ void Server::_serverLoop() {
 					}
 					if (events[i].events & EPOLLIN) {
 						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
-						_listenClientRequest(currentFd, actualAppConfig);
+						_listenClientRequest(currentFd);
 						s_connection *con = &connections[currentFd];
 						if (con->status == PROCESSING) {
 							responseMap[currentFd] = RequestHandler::generateResponse(
