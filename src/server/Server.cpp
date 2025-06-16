@@ -284,8 +284,8 @@ void Server::_serverLoop() {
 						if (con->status == PROCESSING) {
 							responseMap[currentFd] = RequestHandler::generateResponse(
 							    actualAppConfig, requestMap[currentFd], currentFd);
-							con->bufferWrite = responseMap[currentFd].str();
 							con->status = WRITING_OUTPUT;
+							con->bufferWrite = responseMap[currentFd].str();
 							_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
 						}
 					} else if (events[i].events & EPOLLOUT) {
@@ -478,6 +478,7 @@ void Server::_finalizeCgiRead(cgiSession &session) {
 		ResponseMessage response(statusLine, session.cgiResponse);
 		RequestHandler::generateHeaders(response, session.request, 200);
 		con->bufferWrite = response.str();
+		responseMap[con->clientFd] = response;
 		con->status = WRITING_OUTPUT;
 		_modifySocketEpoll(_epollfd, session.getClientFd(), RESPONSE_FLAGS);
 		cgiSessions.erase(session.getClientFd());

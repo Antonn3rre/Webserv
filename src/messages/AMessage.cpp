@@ -90,7 +90,7 @@ bool AMessage::_isHeaderValid(const std::string &headerName) const {
 	std::map<std::string, Header>::const_iterator headerEntry = _validHeaders.find(headerName);
 	if (headerEntry != _validHeaders.end())
 		return headerEntry->second.isSupported();
-	std::cerr << "Warning: invalid header: " << headerName << std::endl;
+	std::cout << "Warning: invalid header: " << headerName << std::endl;
 	return false;
 }
 
@@ -120,7 +120,7 @@ void AMessage::_insertKnownHeader(const std::string &name, Header::HeaderType ty
 void AMessage::_setValidHeaders() {
 	// SUPPORTED
 	// General headers
-	_insertKnownHeader("Connection", Header::General, true, false);
+	_insertKnownHeader("Connection", Header::General, true, true);
 	_insertKnownHeader("Date", Header::General, true, false);
 	_insertKnownHeader("Transfer-Encoding", Header::General, true, true);
 	_insertKnownHeader("Trailer", Header::General, true, false);
