@@ -29,7 +29,7 @@ class Application {
 		std::string _message;
 	};
 
-	void initApplication(int epollfd);
+	bool initApplication(int epollfd);
 	void close() const;
 
 	// Config getter

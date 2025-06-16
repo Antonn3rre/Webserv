@@ -23,12 +23,13 @@ Application::Application(const Application &former) : _config(former.getConfig()
 	_lsockfd = former.getLSockFd();
 }
 
-void Application::initApplication(int epollfd) {
+bool Application::initApplication(int epollfd) {
 	struct epoll_event ev;
 	struct sockaddr_in servAddr;
 	_lsockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (_lsockfd == -1) {
 		std::cerr << "Error on socket." << std::endl;
+		return (false);
 		exit(1);
 	}
 
@@ -42,20 +43,21 @@ void Application::initApplication(int epollfd) {
 	servAddr.sin_port = htons(_config.getPort());
 	if (bind(_lsockfd, reinterpret_cast<struct sockaddr *>(&servAddr), sizeof(servAddr)) == -1) {
 		std::cerr << "Error on the primary bind." << std::endl;
-		exit(1);
+		return (false);
 	}
 	if (listen(_lsockfd, 5) == -1) {
 		std::cerr << "Error on listen." << std::endl;
-		exit(1);
+		return (false);
 	}
 
 	ev.events = EPOLLIN | EPOLLET;
 	ev.data.fd = _lsockfd;
 	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, _lsockfd, &ev) == -1) {
 		std::cerr << "Error on epoll_ctl." << std::endl;
-		exit(1);
+		return (false);
 	}
 	_printAtLaunch();
+	return (true);
 }
 
 void Application::close() const { ::close(_lsockfd); }

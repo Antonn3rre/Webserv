@@ -72,7 +72,14 @@ bool Server::_initServer(void) {
 	_epollfd = epoll_create(MAX_EVENTS);
 	for (std::vector<Application>::iterator itServer = _applicationList.begin();
 	     itServer != _applicationList.end(); ++itServer) {
-		itServer->initApplication(_epollfd);
+		if (!itServer->initApplication(_epollfd)) {
+			for (std::vector<Application>::iterator it2 = _applicationList.begin(); it2 != itServer;
+			     ++it2) {
+				it2->close();
+			}
+			close(_epollfd);
+			return false;
+		}
 	}
 	signal(SIGINT, callServerShutdown);
 	return true;
