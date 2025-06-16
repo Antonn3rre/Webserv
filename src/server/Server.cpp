@@ -274,7 +274,9 @@ void Server::_serverLoop() {
 			try {
 				try {
 					if (cgiSessions.count(currentFd)) {
+						std::cout << "Va dans _handleActiveCgi\n";
 						_handleActiveCgi(events[i]);
+						std::cout << "Sort de _handleActiveCgi\n";
 						continue;
 					}
 					if (events[i].events & EPOLLIN) {
@@ -349,13 +351,16 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 	int clientFd = cgiSessions[activeFd].getClientFd();
 
 	// Gestion erreurs
-	if (event.events & (EPOLLERR | EPOLLHUP)) {
+	if (event.events & (EPOLLERR)) {
+		std::cout << "[INFO] Dans erreur\n";
 		_cleanupCgiSession(cgiSessions[clientFd]);
+		throw AMessage::MessageError(500);
 		return;
 	}
 
 	// Ecriture pipeFdIn
 	if (activeFd == cgiSessions[clientFd].getPipeToCgi() && (event.events & EPOLLOUT)) {
+		std::cout << "[INFO] Dans ecriture pipefdIn\n";
 		size_t bytesToWrite = cgiSessions[clientFd].request.getBody().length() -
 		                      cgiSessions[clientFd].bytesWrittenToCgi;
 		if (bytesToWrite == 0) {
@@ -382,6 +387,7 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 
 	// Lecture PipeFdOut
 	else if (activeFd == cgiSessions[clientFd].getPipeFromCgi() && (event.events & EPOLLIN)) {
+		std::cout << "[INFO] Dans lecture pipefdOut\n";
 		char    buffer[4096];
 		ssize_t bytesRead = 0;
 
