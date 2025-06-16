@@ -264,7 +264,7 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 	try {
 		_locations.push_back(Location(str, file, _clientMaxBodySize));
 	} catch (Location::Exception &e) {
-		throw Config::Exception("Problem parse location");
+		throw Config::Exception(e.what());
 	}
 }
 

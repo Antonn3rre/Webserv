@@ -38,7 +38,7 @@ Location::Location(std::string &token, std::fstream &file, unsigned int clientMa
 			}
 		}
 		if (i == nbOfMethods)
-			throw Location::Exception("Location construction error: somethind goes wrong");
+			throw Location::Exception("Location construction error: something goes wrong");
 	}
 	// std::cout << "Name = |" << _name << "|\n";
 	//	std::cout << "Root = |" << _root << "|\n";
