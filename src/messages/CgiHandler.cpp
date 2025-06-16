@@ -108,17 +108,8 @@ void CgiHandler::executeCgi(const std::string &uri, const Config &config, cgiSes
 		close(pipefdIn[0]);
 		close(pipefdOut[1]);
 
-		if (uri.find(".php", uri.length() - 4) != std::string::npos) {
-			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
-			execve(argv[0], argv, envp.data());
-		} else if (uri.find(".py", uri.length() - 3) != std::string::npos) {
-			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
-			execve(argv[0], argv, envp.data());
-		} else if (uri.find(".cgi", uri.length() - 4) != std::string::npos) {
-			char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
-			execve(argv[0], argv, envp.data());
-		} else
-			std::cerr << "Format not supported" << std::endl;
+		char *argv[] = {const_cast<char *>(uri.c_str()), NULL};
+		execve(argv[0], argv, envp.data());
 
 		std::cerr << "execve error" << std::endl;
 		exit(EXIT_FAILURE);
