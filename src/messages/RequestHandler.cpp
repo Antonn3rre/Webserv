@@ -8,6 +8,7 @@
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
+#include <algorithm>
 #include <cerrno>
 #include <cstddef>
 #include <cstdlib>
@@ -28,16 +29,19 @@ ResponseMessage RequestHandler::generateResponse(const Config         &config,
                                                  const RequestMessage &request, int clientFd) {
 	unsigned short status;
 
+	if (!_checkMethods(findURILocation(config.getLocations(), request.getRequestUri()).getMethods(),
+	                   request.getMethod()))
+		throw AMessage::MessageError(405, "Method not allowed in location", request.getMethod());
 	std::string     body = _generateBody(request, status, config, clientFd);
-	StatusLine      statusLine = _generateStatusLine(status);
+	StatusLine      statusLine = generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
-	_generateHeaders(response, request, status);
+	generateHeaders(response, request, status);
 	return response;
 }
 
 ResponseMessage RequestHandler::generateErrorResponse(const Config &config, unsigned short status) {
 	std::string     body = _generateErrorBody(status, config);
-	StatusLine      statusLine = _generateStatusLine(status);
+	StatusLine      statusLine = generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
 	_generateErrorHeaders(response);
 	return response;
@@ -84,12 +88,12 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 	return body;
 }
 
-StatusLine RequestHandler::_generateStatusLine(unsigned short status) {
+StatusLine RequestHandler::generateStatusLine(unsigned short status) {
 	return StatusLine("HTTP/1.1", status);
 }
 
-void RequestHandler::_generateHeaders(ResponseMessage &response, const RequestMessage &request,
-                                      unsigned short status) {
+void RequestHandler::generateHeaders(ResponseMessage &response, const RequestMessage &request,
+                                     unsigned short status) {
 	response.addDateHeader();
 	_addConnectionHeader(request, response);
 	CgiHandler::divideCgiOutput(response);
@@ -149,8 +153,15 @@ const Location &RequestHandler::findURILocation(const std::vector<Location> &loc
 			longestValidLoc = &*it;
 	}
 	if (!longestValidLoc)
-		throw Config::Exception("No dedfault location found");
+		throw Config::Exception("No default location found");
 	return *longestValidLoc;
+}
+
+bool RequestHandler::_checkMethods(const std::vector<std::string> &methods,
+                                   const std::string              &requestMethod) {
+	return std::find(methods.begin(), methods.end(), requestMethod) != methods.end();
+	// for (std::vector<std::string>::const_iterator it = methods.begin(); it != methods.end();
+	// ++it) 	if (*it == requestMethod) 		return (true); return (false);
 }
 
 std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {

@@ -17,9 +17,9 @@ class RequestHandler {
 	static const Location &findURILocation(const std::vector<Location> &locations,
 	                                       const std::string           &uri);
 
-	static void       _generateHeaders(ResponseMessage &response, const RequestMessage &request,
+	static void       generateHeaders(ResponseMessage &response, const RequestMessage &request,
 	                                   unsigned short status);
-	static StatusLine _generateStatusLine(unsigned short status);
+	static StatusLine generateStatusLine(unsigned short status);
 
 	class CgiRequestException : public std::exception {
 		public:
@@ -40,14 +40,16 @@ class RequestHandler {
 	static ResponseMessage _createResponse(const Config &config, RequestMessage &request,
 	                                       std::pair<int, std::string> &handled);
 
-	//	static StatusLine  _generateStatusLine(unsigned short status);
-	//	static void        _generateHeaders(ResponseMessage &response, const RequestMessage
+	//	static StatusLine  generateStatusLine(unsigned short status);
+	//	static void        generateHeaders(ResponseMessage &response, const RequestMessage
 	//&request, 	                                    unsigned short status);
 	static std::string _generateBody(const RequestMessage &request, unsigned short &status,
 	                                 const Config &config, int clientFd);
 	static std::string _generateErrorBody(unsigned short status, const Config &config);
 	static void        _generateErrorHeaders(ResponseMessage &response);
 
+	static bool _checkMethods(const std::vector<std::string> &methods,
+	                          const std::string              &requestMethod);
 	static bool _checkHostHeader(const RequestMessage &request, const std::string &host);
 
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);

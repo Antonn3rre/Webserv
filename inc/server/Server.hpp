@@ -22,14 +22,14 @@ extern int g_sigint;
 enum e_status { READING_INPUT, PROCESSING, WRITING_OUTPUT, FINISHED };
 
 struct s_connection {
-	int         clientFd;
-	std::string bufferRead;
-	std::string bufferWrite;
-	int         status;
-	int         bytesToRead;  // en fonction de contentLength
-	size_t      bytesWritten; // pour le send final
-	                          //	RequestMessage  request;
-	                          //	ResponseMessage response;
+	int           clientFd;
+	std::string   bufferRead;
+	std::string   bufferWrite;
+	enum e_status status;
+	int           bytesToRead;  // en fonction de contentLength
+	size_t        bytesWritten; // pour le send final
+	                            //	RequestMessage  request;
+	                            //	ResponseMessage response;
 	bool chunk;
 
 	s_connection()
@@ -47,7 +47,7 @@ class Server {
 	int                      _epollfd;
 	std::map<int, Client>    _clientMap;
 
-	void _listenClientRequest(int clientfd, Config &config);
+	void _listenClientRequest(int clientfd);
 	bool _sendAnswer(s_connection &con);
 
 	static void _modifySocketEpoll(int epollfd, int clientfd, int flags);

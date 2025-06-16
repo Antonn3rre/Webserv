@@ -49,7 +49,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -134,7 +134,7 @@ bool Server::_sendAnswer(s_connection &con) {
 	return false;
 }
 
-void Server::_listenClientRequest(int clientfd, Config &config) {
+void Server::_listenClientRequest(int clientfd) {
 	const int     bufSize = 8192;
 	char          buffer[bufSize];
 	s_connection *con = &connections[clientfd];
@@ -200,10 +200,6 @@ void Server::_listenClientRequest(int clientfd, Config &config) {
 			throw AMessage::MessageError(400);
 		con->status = PROCESSING;
 	}
-	Location actualLocation = RequestHandler::findURILocation(config.getLocations(),
-	                                                          requestMap[clientfd].getRequestUri());
-	if (actualLocation.getClientMaxSizeBody() < requestMap[clientfd].getBody().length())
-		throw AMessage::MessageError(413);
 }
 
 Application &Server::_getApplicationFromFD(int sockfd) const {
@@ -478,9 +474,9 @@ void Server::_finalizeCgiRead(cgiSession &session) {
 
 	s_connection *con = &connections[session.getClientFd()];
 	if (con) {
-		StatusLine      statusLine = RequestHandler::_generateStatusLine(200);
+		StatusLine      statusLine = RequestHandler::generateStatusLine(200);
 		ResponseMessage response(statusLine, session.cgiResponse);
-		RequestHandler::_generateHeaders(response, session.request, 200);
+		RequestHandler::generateHeaders(response, session.request, 200);
 		con->bufferWrite = response.str();
 		con->status = WRITING_OUTPUT;
 		_modifySocketEpoll(_epollfd, session.getClientFd(), RESPONSE_FLAGS);
