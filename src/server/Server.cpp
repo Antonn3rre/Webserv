@@ -155,8 +155,12 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 			RequestMessage request(connections[clientfd].bufferRead);
 			if (request.getHeaderValue("Content-Length").second) {
 				// verifier que first de content length est bon
+				std::string value = request.getHeaderValue("Content-Length").first;
+				if (value.find_first_not_of("0123456789") != std::string::npos ||
+				    value.length() >= 10)
+					throw AMessage::MessageError(400);
 				con->bytesToRead = atoi(request.getHeaderValue("Content-Length").first.c_str()) -
-				                   (request.getBody().size());
+				                   request.getBody().size();
 				if (con->bytesToRead < 0)
 					throw AMessage::MessageError(413);
 				if (con->bytesToRead == 0) {
