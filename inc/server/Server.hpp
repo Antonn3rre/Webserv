@@ -47,7 +47,7 @@ class Server {
 	int                      _epollfd;
 	std::map<int, Client>    _clientMap;
 
-	void _listenClientRequest(int clientfd, unsigned long clientMaxBodySize);
+	void _listenClientRequest(int clientfd, Config &config);
 	bool _sendAnswer(s_connection &con);
 
 	static void _modifySocketEpoll(int epollfd, int clientfd, int flags);

@@ -3,6 +3,7 @@
 #include "Application.hpp"
 #include "CgiHandler.hpp"
 #include "Client.hpp"
+#include "Config.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
@@ -46,7 +47,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -108,7 +109,7 @@ bool Server::_sendAnswer(s_connection &con) {
 	return false;
 }
 
-void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize) {
+void Server::_listenClientRequest(int clientfd, Config &config) {
 	const int     bufSize = 8192;
 	char          buffer[bufSize];
 	s_connection *con = &connections[clientfd];
@@ -134,8 +135,8 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 			throw AMessage::MessageError(413);
 		con->bytesToRead -= bytesRead;
 	}
-	if (clientMaxBodySize != 0 && con->bufferRead.length() > clientMaxBodySize)
-		throw AMessage::MessageError(413);
+	// if (clientMaxBodySize != 0 && con->bufferRead.length() > clientMaxBodySize)
+	// 	throw AMessage::MessageError(413);
 	con->bufferRead.append(buffer, bytesRead);
 	if (!con->bytesToRead) {
 		requestMap[clientfd] = RequestMessage(connections[clientfd].bufferRead);
@@ -178,6 +179,10 @@ void Server::_listenClientRequest(int clientfd, unsigned long clientMaxBodySize)
 			throw AMessage::MessageError(400);
 		con->status = PROCESSING;
 	}
+	Location actualLocation = RequestHandler::findURILocation(config.getLocations(),
+	                                                          requestMap[clientfd].getRequestUri());
+	if (actualLocation.getClientMaxSizeBody() < requestMap[clientfd].getBody().length())
+		throw AMessage::MessageError(413);
 }
 
 Application &Server::_getApplicationFromFD(int sockfd) const {
@@ -256,7 +261,7 @@ void Server::_serverLoop() {
 				}
 				if (events[i].events & EPOLLIN) {
 					Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
-					_listenClientRequest(currentFd, actualAppConfig.getClientMaxBodySize());
+					_listenClientRequest(currentFd, actualAppConfig);
 					s_connection *con = &connections[currentFd];
 					if (con->status == PROCESSING) {
 						responseMap[currentFd] = RequestHandler::generateResponse(

@@ -1,7 +1,6 @@
 #include "Config.hpp"
 #include "utilsParsing.hpp"
 #include "utilsSpace.hpp"
-#include <algorithm> // pour afficher les tests
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -9,13 +8,13 @@
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
+#include <stdlib.h>
 #include <string>
 #include <utility>
 
 Config::Config(std::fstream &file) {
 	_setDefaultConfig();
 
-	int         i;
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
 	                      "host",   "root",        "index",      "location"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
@@ -39,6 +38,7 @@ Config::Config(std::fstream &file) {
 			throw Config::Exception("Server line wrong");
 	}
 
+	int i;
 	// mettre dans un parse body
 	while (true) {
 		token = readToken(file);
@@ -54,8 +54,6 @@ Config::Config(std::fstream &file) {
 				(this->*functionPointer[i])(token, file);
 				break;
 			}
-			if (i == 7)
-				throw Config::Exception("Problem parsing file");
 		}
 		if (i == 8)
 			throw Config::Exception("Problem parsing file");
@@ -209,10 +207,13 @@ void Config::_parseClientMaxSizeBody(std::string &str, std::fstream &file) {
 		if (!std::isdigit(*it))
 			multiplierLetter += *it;
 	}
-	if (multiplierLetter.length() != 1 ||
-	    multiplierLetter.find_first_of("kmgKMG") == std::string::npos)
+	if (multiplierLetter.length() > 1 ||
+	    (multiplierLetter.length() == 1 &&
+	     multiplierLetter.find_first_of("kmgKMG") == std::string::npos))
 		throw Config::Exception("client_max_body_size bad format.");
-	if (multiplierLetter == "k" || multiplierLetter == "K")
+	if (multiplierLetter.empty())
+		_clientMaxBodySize = val;
+	else if (multiplierLetter == "k" || multiplierLetter == "K")
 		_clientMaxBodySize = val * 1000;
 	else if (multiplierLetter == "m" || multiplierLetter == "M")
 		_clientMaxBodySize = val * 1000000;
@@ -261,7 +262,7 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 
 void Config::_parseLocation(std::string &str, std::fstream &file) {
 	try {
-		_locations.push_back(Location(str, file));
+		_locations.push_back(Location(str, file, _clientMaxBodySize));
 	} catch (Location::Exception &e) {
 		throw Config::Exception("Problem parse location");
 	}
