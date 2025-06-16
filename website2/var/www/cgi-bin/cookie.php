@@ -20,7 +20,6 @@
 
 // Si GET -> juste dire si on connait
 // Si POST -> dire si on connait et si non set
-error_log("Test");
 
 echo "Content-Type: text/plain\r\n\r\n";
 // Recuperer le header cookie que le navigateur envoie

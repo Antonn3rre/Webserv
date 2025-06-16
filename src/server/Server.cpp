@@ -49,7 +49,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -146,8 +146,6 @@ void Server::_listenClientRequest(int clientfd) {
 	bzero(buffer, bufSize);
 	bytesRead = read(clientfd, buffer, bufSize);
 	if (bytesRead <= 0) {
-		std::cout << "[LIFECYCLE] FD " << clientfd << ": DISCONNECTED BY CLIENT (read=0)"
-		          << std::endl;
 		_cleanupConnection(clientfd);
 		return;
 	}
@@ -240,7 +238,6 @@ bool Server::_acceptClientConnection(int currentFd, int &clientfd) {
 					std::cerr << "Error on accept clients." << std::endl;
 				break;
 			}
-			std::cout << "[LIFECYCLE] FD " << clientfd << ": CREATED" << std::endl;
 			_clientMap[clientfd] = Client(clientfd);
 			_clientMap[clientfd].setApplication(&(*it));
 
@@ -274,9 +271,7 @@ void Server::_serverLoop() {
 			try {
 				try {
 					if (cgiSessions.count(currentFd)) {
-						std::cout << "Va dans _handleActiveCgi\n";
 						_handleActiveCgi(events[i]);
-						std::cout << "Sort de _handleActiveCgi\n";
 						continue;
 					}
 					if (events[i].events & EPOLLIN) {
@@ -352,7 +347,6 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 
 	// Gestion erreurs
 	if (event.events & (EPOLLERR)) {
-		std::cout << "[INFO] Dans erreur\n";
 		_cleanupCgiSession(cgiSessions[clientFd]);
 		throw AMessage::MessageError(500);
 		return;
@@ -360,7 +354,6 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 
 	// Ecriture pipeFdIn
 	if (activeFd == cgiSessions[clientFd].getPipeToCgi() && (event.events & EPOLLOUT)) {
-		std::cout << "[INFO] Dans ecriture pipefdIn\n";
 		size_t bytesToWrite = cgiSessions[clientFd].request.getBody().length() -
 		                      cgiSessions[clientFd].bytesWrittenToCgi;
 		if (bytesToWrite == 0) {
@@ -387,7 +380,6 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 
 	// Lecture PipeFdOut
 	else if (activeFd == cgiSessions[clientFd].getPipeFromCgi() && (event.events & EPOLLIN)) {
-		std::cout << "[INFO] Dans lecture pipefdOut\n";
 		char    buffer[4096];
 		ssize_t bytesRead = 0;
 
@@ -496,7 +488,6 @@ void Server::_cleanupConnection(int fd) {
 		_cleanupCgiSession(cgiSessions[fd]);
 		return;
 	}
-	std::cout << "[LIFECYCLE] FD " << fd << ": DESTROYED" << std::endl;
 	connections.erase(fd);
 	epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, NULL);
 	close(fd);
@@ -504,7 +495,6 @@ void Server::_cleanupConnection(int fd) {
 }
 
 void Server::_clearForNewRequest(int clientFd) {
-	std::cout << "[LIFECYCLE] FD " << clientFd << ": RESET (Keep-Alive)" << std::endl;
 	requestMap[clientFd] = RequestMessage();
 	responseMap[clientFd] = ResponseMessage();
 	connections[clientFd].bufferRead.clear();
