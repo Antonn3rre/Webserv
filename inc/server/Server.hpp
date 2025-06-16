@@ -62,6 +62,7 @@ class Server {
 
 	Application &_getApplicationFromFD(int sockfd) const;
 
+	void _checkCgiRights(const std::string &uri);
 	void _handleActiveCgi(struct epoll_event &event);
 	void _stopWritingToCgi(cgiSession &session);
 	void _stopReadingFromCgi(cgiSession &session);

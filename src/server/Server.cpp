@@ -24,6 +24,7 @@
 #include <strings.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <utility>
@@ -275,38 +276,41 @@ void Server::_serverLoop() {
 				continue;
 			// si ne fonctionne pas, remplacer clientfd par events[i].data.fd
 			try {
-				if (cgiSessions.count(currentFd)) {
-					_handleActiveCgi(events[i]);
-					continue;
-				}
-				if (events[i].events & EPOLLIN) {
-					Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
-					_listenClientRequest(currentFd, actualAppConfig);
-					s_connection *con = &connections[currentFd];
-					if (con->status == PROCESSING) {
-						responseMap[currentFd] = RequestHandler::generateResponse(
-						    actualAppConfig, requestMap[currentFd], currentFd);
-						con->bufferWrite = responseMap[currentFd].str();
-						con->status = WRITING_OUTPUT;
-						_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
+				try {
+					if (cgiSessions.count(currentFd)) {
+						_handleActiveCgi(events[i]);
+						continue;
 					}
-				} else if (events[i].events & EPOLLOUT) {
-					s_connection *con = &connections[currentFd];
-					if (con->status != WRITING_OUTPUT)
-						continue;
-					bool doneSending = _sendAnswer(*con);
-					if (!doneSending)
-						continue;
-					if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
-						_clearForNewRequest(currentFd);
-						_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
-					} else
-						_cleanupConnection(currentFd);
+					if (events[i].events & EPOLLIN) {
+						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
+						_listenClientRequest(currentFd, actualAppConfig);
+						s_connection *con = &connections[currentFd];
+						if (con->status == PROCESSING) {
+							responseMap[currentFd] = RequestHandler::generateResponse(
+							    actualAppConfig, requestMap[currentFd], currentFd);
+							con->bufferWrite = responseMap[currentFd].str();
+							con->status = WRITING_OUTPUT;
+							_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
+						}
+					} else if (events[i].events & EPOLLOUT) {
+						s_connection *con = &connections[currentFd];
+						if (con->status != WRITING_OUTPUT)
+							continue;
+						bool doneSending = _sendAnswer(*con);
+						if (!doneSending)
+							continue;
+						if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
+							_clearForNewRequest(currentFd);
+							_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
+						} else
+							_cleanupConnection(currentFd);
+					}
+				} catch (RequestHandler::CgiRequestException &e) {
+					_checkCgiRights(e.uri);
+					cgiSessions[currentFd] = cgiSession(events[i].data.fd, e.request, events[i]);
+					CgiHandler::executeCgi(e.uri, e.config, cgiSessions[currentFd], *this,
+					                       events[i].data.fd);
 				}
-			} catch (RequestHandler::CgiRequestException &e) {
-				cgiSessions[currentFd] = cgiSession(events[i].data.fd, e.request, events[i]);
-				CgiHandler::executeCgi(e.uri, e.config, cgiSessions[currentFd], *this,
-				                       events[i].data.fd);
 			} catch (AMessage::MessageError &e) {
 				responseMap[currentFd] = RequestHandler::generateErrorResponse(
 				    _getApplicationFromFD(currentFd).getConfig(), e.getStatusCode());
@@ -320,6 +324,18 @@ void Server::_serverLoop() {
 			}
 		}
 	}
+}
+
+void Server::_checkCgiRights(const std::string &uri) {
+	struct stat sb;
+	if (access(uri.c_str(), F_OK) == -1) {
+		throw AMessage::MessageError(404);
+	}
+	if (stat(uri.c_str(), &sb) == 0 && (sb.st_mode & S_IFDIR)) {
+		throw AMessage::MessageError(403);
+	}
+	if (access(uri.c_str(), X_OK) == -1)
+		throw AMessage::MessageError(403);
 }
 
 int Server::getEpollFd() const { return this->_epollfd; }
