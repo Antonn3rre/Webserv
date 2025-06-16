@@ -15,6 +15,7 @@
 #include <exception>
 #include <fcntl.h>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <stdexcept>
 #include <stdlib.h>
@@ -54,18 +55,40 @@ extern "C" void callServerShutdown(int signal) {
 	g_sigint = 1;
 }
 
-void Server::_initServer(void) {
+bool Server::_initServer(void) {
+	// Check si servers ont des ports disctincts
+	for (std::vector<Application>::iterator it = _applicationList.begin();
+	     it != _applicationList.end(); ++it) {
+		std::vector<Application>::iterator it2 = it;
+		it2++;
+		while (it2 != _applicationList.end()) {
+			if (it->getConfig().getPort() == it2->getConfig().getPort()) {
+				std::cout << "Error : Multiple servers with the same port\n";
+				return false;
+			}
+			it2++;
+		}
+	}
+
 	_epollfd = epoll_create(MAX_EVENTS);
 	for (std::vector<Application>::iterator itServer = _applicationList.begin();
 	     itServer != _applicationList.end(); ++itServer) {
-		itServer->initApplication(_epollfd);
+		if (!itServer->initApplication(_epollfd)) {
+			for (std::vector<Application>::iterator it2 = _applicationList.begin(); it2 != itServer;
+			     ++it2) {
+				it2->close();
+			}
+			close(_epollfd);
+			return false;
+		}
 	}
 	signal(SIGINT, callServerShutdown);
+	return true;
 }
 
 void Server::startServer(void) {
-	_initServer();
-	_serverLoop();
+	if (_initServer())
+		_serverLoop();
 }
 
 void Server::_shutdown(void) {
@@ -100,7 +123,8 @@ bool Server::_sendAnswer(s_connection &con) {
 	ssize_t bytesSent = send(con.clientFd, bufferPos, sizeLeft, MSG_NOSIGNAL);
 	if (bytesSent > 0) {
 		con.bytesWritten += bytesSent;
-	} else if (bytesSent == -1) {
+	} else {
+		_cleanupConnection(con.clientFd);
 		std::cerr << "Error on write\n";
 	}
 	if (con.bytesWritten >= ttSize) {
@@ -120,11 +144,7 @@ void Server::_listenClientRequest(int clientfd, Config &config) {
 
 	bzero(buffer, bufSize);
 	bytesRead = read(clientfd, buffer, bufSize);
-	if (bytesRead < 0) {
-		close(clientfd);
-		throw std::runtime_error("error on read");
-	}
-	if (bytesRead == 0) {
+	if (bytesRead <= 0) {
 		std::cout << "[LIFECYCLE] FD " << clientfd << ": DISCONNECTED BY CLIENT (read=0)"
 		          << std::endl;
 		_cleanupConnection(clientfd);
@@ -336,8 +356,6 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 
 		if (bytesWritten > 0) {
 			cgiSessions[clientFd].bytesWrittenToCgi += bytesWritten;
-		} else if (bytesWritten == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-			return;
 		} else {
 			std::cerr << "Erreur d'écriture sur le pipe du CGI" << std::endl;
 			_cleanupCgiSession(cgiSessions[clientFd]);
@@ -363,7 +381,7 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 			} else
 				break;
 		}
-		if (bytesRead == 0) {
+		if (bytesRead <= 0) {
 			_finalizeCgiRead(cgiSessions[cgiSessions[activeFd].getClientFd()]);
 		} else {
 			if (errno != EAGAIN && errno != EWOULDBLOCK) {

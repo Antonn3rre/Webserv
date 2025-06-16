@@ -103,7 +103,7 @@
       background-color: var(--primary-dark);
     }
 
-    #notification {
+    .notification {
       display: none;
       margin-top: 1rem;
       padding: 0.8rem;
@@ -163,7 +163,7 @@
     <button type="submit">GET : Test cookie</button>
   </form>
 
-    <div id="notification"></div>
+    <div id=2 class="notification"></div>
 </div>
 
     <!-- Upload fichier -->
@@ -174,7 +174,7 @@
         <input type="file" name="file" required />
         <button type="submit">Envoyer</button>
       </form>
-      <div id="notification"></div>
+      <div id=1 class="notification"></div>
     </div>
   </main>
 
@@ -237,12 +237,12 @@ try {
 
         const text = await response.text();
         if (response.ok && text.includes('uploaded successfully')) {
-          showNotification('Upload réussi');
+          showNotification(1, 'Upload réussi');
         } else {
-          showNotification('Erreur lors de l\'upload', true);
+          showNotification(1, 'Erreur lors de l\'upload', true);
         }
       } catch (err) {
-        showNotification('Erreur réseau', true);
+        showNotification(1, 'Erreur réseau', true);
       }
     });
 
@@ -260,9 +260,9 @@ try {
       });
 
       const body = await response.text();
-		showNotification(body, !response.ok);
+		showNotification(2, body, !response.ok);
     } catch (err) {
-		showNotification('Erreur reseau', true);
+		showNotification(2, 'Erreur reseau', true);
     }
   });
 
@@ -273,17 +273,16 @@ try {
     try {
       const response = await fetch('/cgi-bin/cookie.php');
       const body = await response.text();
-		showNotification(body, !response.ok);
+		showNotification(2, body, !response.ok);
     } catch (err) {
-		showNotification('Erreur reseau', true);
+		showNotification(2, 'Erreur reseau', true);
     }
   });
 
 
-
-
-    function showNotification(message, isError = false) {
-      const notif = document.getElementById('notification');
+    function showNotification(id, message, isError = false) {
+      const notif = document.getElementById(id);
+	  if (!notif) return ;
       notif.textContent = message;
       notif.style.display = 'block';
       notif.style.backgroundColor = isError ? '#f44336' : '#4CAF50';
