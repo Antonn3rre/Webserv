@@ -55,7 +55,7 @@ class Server {
 	bool _evaluateClientConnection(int clientfd, const ResponseMessage &response);
 	bool _acceptClientConnection(int currentFd, int &clientfd);
 	void _disconnectClient(int clientfd) const;
-	void _initServer();
+	bool _initServer();
 	void _serverLoop();
 	bool _checkServerState();
 	void _shutdown();

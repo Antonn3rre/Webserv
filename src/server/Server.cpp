@@ -14,6 +14,7 @@
 #include <exception>
 #include <fcntl.h>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <stdexcept>
 #include <stdlib.h>
@@ -53,18 +54,33 @@ extern "C" void callServerShutdown(int signal) {
 	g_sigint = 1;
 }
 
-void Server::_initServer(void) {
+bool Server::_initServer(void) {
+	// Check si servers ont des ports disctincts
+	for (std::vector<Application>::iterator it = _applicationList.begin();
+	     it != _applicationList.end(); ++it) {
+		std::vector<Application>::iterator it2 = it;
+		it2++;
+		while (it2 != _applicationList.end()) {
+			if (it->getConfig().getPort() == it2->getConfig().getPort()) {
+				std::cout << "Error : Multiple servers with the same port\n";
+				return false;
+			}
+			it2++;
+		}
+	}
+
 	_epollfd = epoll_create(MAX_EVENTS);
 	for (std::vector<Application>::iterator itServer = _applicationList.begin();
 	     itServer != _applicationList.end(); ++itServer) {
 		itServer->initApplication(_epollfd);
 	}
 	signal(SIGINT, callServerShutdown);
+	return true;
 }
 
 void Server::startServer(void) {
-	_initServer();
-	_serverLoop();
+	if (_initServer())
+		_serverLoop();
 }
 
 void Server::_shutdown(void) {
