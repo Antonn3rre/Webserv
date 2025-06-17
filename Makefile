@@ -36,27 +36,6 @@ $(BUILD_DIR)%.o: $(SRCS_DIR)*/%.cpp
 	@ mkdir -p $(BUILD_DIR)
 	@ $(CXX) $(CXXFLAGS) -c $< -o $@
 
-TEST_NAME = test_webserv
-TEST_DIR = test/
-
-$(TEST_DIR)%.o: $(TEST_DIR)%.cpp
-	@ $(CXX) $(CXXFLAGS) -c $< -o $@
-
-TEST_SRCS := $(addprefix $(SRCS_DIR)server/, $(SRCS_SERVER)) \
-			 $(addprefix $(SRCS_DIR)messages/, $(SRCS_MESSAGES)) \
-		     $(addprefix $(SRCS_DIR)utils/, $(SRCS_UTILS)) \
-
-TEST_OBJS := $(addprefix $(BUILD_DIR), $(notdir $(TEST_SRCS:.cpp=.o))) \
-			 $(TEST_DIR)test.o
-
-TEST_DEP=$(TEST_OBJS:.o=.d)
-
-test: $(TEST_OBJS)
-	@ echo " \033[33mCompiling Webserv tests\033[m"
-	@ $(CXX) $(CXXFLAGS) -o $(TEST_NAME) $(TEST_OBJS)
-	@ echo " \033[34m \033[1mWebserv tests\033[22m compiled\033[m"
-	@ ./test_webserv
-
 all: $(NAME)
 
 clean:
@@ -70,7 +49,6 @@ fclean: clean
 
 re: fclean all
 
-
-.PHONY: all fclean re clean test
+.PHONY: all fclean re clean
 
 -include $(DEP)
