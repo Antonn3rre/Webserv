@@ -17,6 +17,7 @@ class cgiSession {
 	void setCgiPid(pid_t pid);
 	void setPipeToCgi(int fd);
 	void setPipeFromCgi(int fd);
+	void setTimeStart(time_t time);
 
 	// GETTERS
 	int            getClientFd(void) const;
@@ -24,6 +25,7 @@ class cgiSession {
 	pid_t          getCgiPid(void) const;
 	int            getPipeToCgi(void) const;
 	int            getPipeFromCgi(void) const;
+	time_t         getTimeStart(void) const;
 	size_t         bytesWrittenToCgi;
 	size_t         bytesWrittenToClient;
 	std::string    cgiResponse;
@@ -35,6 +37,7 @@ class cgiSession {
 	int                _pipeToCgi;
 	int                _pipeFromCgi;
 	struct epoll_event _event;
+	time_t             _time;
 };
 
 #endif // !CGISESSION_HPP

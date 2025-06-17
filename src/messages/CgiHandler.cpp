@@ -135,6 +135,7 @@ void CgiHandler::executeCgi(const std::string &uri, const Config &config, cgiSes
 		close(session.getPipeToCgi());
 		session.setPipeToCgi(-1);
 	}
+	session.setTimeStart(time(NULL));
 
 	server.cgiSessions[eventFd] = session;
 	if (session.getPipeFromCgi() != -1) {
