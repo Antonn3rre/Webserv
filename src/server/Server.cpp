@@ -49,7 +49,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -279,6 +279,12 @@ void Server::_serverLoop() {
 						_listenClientRequest(currentFd);
 						s_connection *con = &connections[currentFd];
 						if (con->status == PROCESSING) {
+							const Location &actualLocation = RequestHandler::findURILocation(
+							    actualAppConfig.getLocations(),
+							    requestMap[currentFd].getRequestUri());
+							if (actualLocation.getClientMaxSizeBody() <
+							    requestMap[currentFd].getBody().length())
+								throw AMessage::MessageError(413);
 							responseMap[currentFd] = RequestHandler::generateResponse(
 							    actualAppConfig, requestMap[currentFd], currentFd);
 							con->status = WRITING_OUTPUT;
