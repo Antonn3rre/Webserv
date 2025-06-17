@@ -402,11 +402,6 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 		}
 		if (bytesRead <= 0) {
 			_finalizeCgiRead(cgiSessions[cgiSessions[activeFd].getClientFd()]);
-		} else {
-			if (errno != EAGAIN && errno != EWOULDBLOCK) {
-				std::cerr << "Erreur de lecture depuis le pipe du CGI" << std::endl;
-				_cleanupCgiSession(cgiSessions[clientFd]);
-			}
 		}
 	}
 }
