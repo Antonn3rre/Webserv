@@ -7,6 +7,7 @@
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
+#include "cgiSession.hpp"
 #include <cerrno>
 #include <csignal>
 #include <cstddef>
@@ -17,6 +18,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <signal.h>
 #include <stdexcept>
 #include <stdlib.h>
 #include <string.h>
@@ -49,7 +51,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -262,6 +264,7 @@ void Server::_serverLoop() {
 			break;
 		nfds = epoll_wait(_epollfd, events, MAX_EVENTS, TIME_OUT);
 
+		_checkCgiTime();
 		for (int i = 0; i < nfds; ++i) {
 			int  currentFd = events[i].data.fd;
 			bool isNewClient = _acceptClientConnection(events[i].data.fd, clientfd);
@@ -305,6 +308,7 @@ void Server::_serverLoop() {
 							_cleanupConnection(currentFd);
 					}
 				} catch (RequestHandler::CgiRequestException &e) {
+					std::cout << "dans cgi execute\n";
 					_checkCgiRights(e.uri);
 					cgiSessions[currentFd] = cgiSession(events[i].data.fd, e.request, events[i]);
 					CgiHandler::executeCgi(e.uri, e.config, cgiSessions[currentFd], *this,
@@ -509,4 +513,34 @@ void Server::_clearForNewRequest(int clientFd) {
 	connections[clientFd].bytesToRead = -1;
 	connections[clientFd].status = FINISHED;
 	connections[clientFd].chunk = false;
+}
+
+void Server::_checkCgiTime() {
+	if (cgiSessions.empty())
+		return;
+	int currentFd = -1;
+	try {
+		time_t actualTime = time(NULL);
+		for (std::map<int, cgiSession>::iterator it = cgiSessions.begin(); it != cgiSessions.end();
+		     ++it) {
+			if (actualTime - it->second.getTimeStart() > TIME_OUT) {
+				kill(it->second.getCgiPid(), 0);
+				currentFd = it->second.getClientFd();
+
+				if (it->second.getPipeToCgi() != -1)
+					_stopWritingToCgi(it->second);
+				if (it->second.getPipeFromCgi() != -1)
+					_stopReadingFromCgi(it->second);
+				cgiSessions.erase(it->second.getClientFd());
+				throw(AMessage::MessageError(504));
+			}
+		}
+	} catch (AMessage::MessageError &e) {
+		responseMap[currentFd] = RequestHandler::generateErrorResponse(
+		    _getApplicationFromFD(currentFd).getConfig(), e.getStatusCode());
+		connections[currentFd] = s_connection(currentFd);
+		connections[currentFd].bufferWrite = responseMap[currentFd].str();
+		connections[currentFd].status = WRITING_OUTPUT;
+		_modifySocketEpoll(_epollfd, currentFd, RESPONSE_FLAGS);
+	}
 }

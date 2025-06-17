@@ -15,7 +15,7 @@
 #define RESPONSE_FLAGS EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT
 
 #define MAX_EVENTS 100
-#define TIME_OUT   3000
+#define TIME_OUT   3 // en sec
 
 extern int g_sigint;
 
@@ -58,6 +58,7 @@ class Server {
 	bool _initServer();
 	void _serverLoop();
 	bool _checkServerState();
+	void _checkCgiTime();
 	void _shutdown();
 
 	Application &_getApplicationFromFD(int sockfd) const;
