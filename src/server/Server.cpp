@@ -308,7 +308,6 @@ void Server::_serverLoop() {
 							_cleanupConnection(currentFd);
 					}
 				} catch (RequestHandler::CgiRequestException &e) {
-					std::cout << "dans cgi execute\n";
 					_checkCgiRights(e.uri);
 					cgiSessions[currentFd] = cgiSession(events[i].data.fd, e.request, events[i]);
 					CgiHandler::executeCgi(e.uri, e.config, cgiSessions[currentFd], *this,
