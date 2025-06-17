@@ -51,7 +51,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -358,7 +358,6 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 	if (event.events & (EPOLLERR)) {
 		_cleanupCgiSession(cgiSessions[clientFd]);
 		throw AMessage::MessageError(500);
-		return;
 	}
 
 	// Ecriture pipeFdIn
@@ -394,15 +393,14 @@ void Server::_handleActiveCgi(struct epoll_event &event) {
 
 		while (true) {
 			bytesRead = read(activeFd, buffer, sizeof(buffer));
-
-			if (bytesRead > 0) {
-				cgiSessions[clientFd].cgiResponse.append(buffer, bytesRead);
-			} else
+			if (bytesRead <= 0)
 				break;
+			cgiSessions[clientFd].cgiResponse.append(buffer, bytesRead);
 		}
-		if (bytesRead <= 0) {
+		if (bytesRead == 0)
 			_finalizeCgiRead(cgiSessions[cgiSessions[activeFd].getClientFd()]);
-		}
+		else
+			throw AMessage::MessageError(500, "could not read from cgi", "");
 	}
 }
 
