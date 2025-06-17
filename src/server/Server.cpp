@@ -16,10 +16,8 @@
 #include <exception>
 #include <fcntl.h>
 #include <iostream>
-#include <iterator>
 #include <map>
 #include <signal.h>
-#include <stdexcept>
 #include <stdlib.h>
 #include <string.h>
 #include <string>
@@ -51,7 +49,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void){};
+Server::~Server(void) {};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
