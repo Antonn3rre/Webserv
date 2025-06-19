@@ -41,10 +41,12 @@ Location::Location(std::string &token, std::fstream &file, unsigned int clientMa
 			throw Location::Exception("Location construction error: something goes wrong");
 	}
 	// std::cout << "Name = |" << _name << "|\n";
-	//	std::cout << "Root = |" << _root << "|\n";
-	//	std::cout << "autoindex = " << _autoindex << std::endl;
-	//	std::cout << "redirection [301] = " << _redirection[301] << std::endl;
-	//	std::cout << "methods[0] = " << _methods[0] << std::endl;
+	// std::cout << "Root = |" << _root << "|\n";
+	// std::cout << "autoindex = " << _autoindex << std::endl;
+	// std::cout << "redirection = " << _redirection.first << std::endl;
+	// if (_redirection.first != -1)
+	//	std::cout << "redirection str = " << _redirection.second << std::endl;
+	//  std::cout << "methods[0] = " << _methods[0] << std::endl;
 	// if (!_index.empty())
 	//	std::cout << "index[0] = " << _index[0] << std::endl;
 }

@@ -2,6 +2,7 @@
 #define REQUESTHANDLER_HPP
 
 #include "Config.hpp"
+#include "Location.hpp"
 #include "RequestMessage.hpp"
 #include "ResponseMessage.hpp"
 #include "StatusLine.hpp"
@@ -10,7 +11,7 @@
 
 class RequestHandler {
 	public:
-	static ResponseMessage generateResponse(const Config &config, const RequestMessage &request,
+	static ResponseMessage generateResponse(const Config &config, RequestMessage &request,
 	                                        int clientFd);
 
 	static ResponseMessage generateErrorResponse(const Config &config, unsigned short status);
@@ -18,7 +19,7 @@ class RequestHandler {
 	                                       const std::string           &uri);
 
 	static void       generateHeaders(ResponseMessage &response, const RequestMessage &request,
-	                                   unsigned short status);
+	                                  unsigned short status);
 	static StatusLine generateStatusLine(unsigned short status);
 
 	class CgiRequestException : public std::exception {
@@ -43,20 +44,21 @@ class RequestHandler {
 	//	static StatusLine  generateStatusLine(unsigned short status);
 	//	static void        generateHeaders(ResponseMessage &response, const RequestMessage
 	//&request, 	                                    unsigned short status);
-	static std::string _generateBody(const RequestMessage &request, unsigned short &status,
-	                                 const Config &config, int clientFd);
+	static std::string _generateBody(const RequestMessage &request, const Config &config,
+	                                 int clientFd);
 	static std::string _generateErrorBody(unsigned short status, const Config &config);
 	static void        _generateErrorHeaders(ResponseMessage &response);
 
-	static bool _checkMethods(const std::vector<std::string> &methods,
-	                          const std::string              &requestMethod);
-	static bool _checkHostHeader(const RequestMessage &request, const std::string &host);
+	static bool           _checkMethods(const std::vector<std::string> &methods,
+	                                    const std::string              &requestMethod);
+	static bool           _checkHostHeader(const RequestMessage &request, const std::string &host);
+	static unsigned short _checkRedirection(const Location &loc, RequestMessage &request);
 
 	static void _addConnectionHeader(const RequestMessage &request, ResponseMessage &response);
 	static void _addContentTypeHeader(const RequestMessage &request, ResponseMessage &response,
 	                                  unsigned short status);
 
-	static std::string _getCompletePath(const Config &config, const std::string &requestUri);
+	static std::string _getCompletePath(const Location &loc, const std::string &requestUri);
 };
 
 #endif

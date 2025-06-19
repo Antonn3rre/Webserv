@@ -18,6 +18,8 @@ class RequestLine : public AStartLine {
 	const std::string                 &getRequestUri() const;
 	const std::map<std::string, bool> &getValidMethods() const;
 
+	void setUri(const std::string &uri);
+
 	std::string str() const;
 
 	private:

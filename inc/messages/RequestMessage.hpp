@@ -20,6 +20,8 @@ class RequestMessage : public AMessage {
 	const std::string           &getRequestUri() const;
 	std::pair<std::string, bool> getCookieValue(const std::string &name) const;
 
+	void setUri(const std::string &uri);
+
 	std::string str() const;
 
 	void displayCookies();

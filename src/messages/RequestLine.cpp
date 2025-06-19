@@ -64,3 +64,5 @@ void RequestLine::_setValidMethods() {
 	_validMethods.insert(std::pair<std::string, bool>("TRACE", false));
 	_validMethods.insert(std::pair<std::string, bool>("OPTIONS", false));
 }
+
+void RequestLine::setUri(const std::string &uri) { _requestUri = uri; }

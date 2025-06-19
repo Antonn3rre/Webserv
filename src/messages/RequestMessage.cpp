@@ -30,6 +30,8 @@ RequestMessage &RequestMessage::operator=(const RequestMessage &other) {
 	return *this;
 }
 
+void RequestMessage::setUri(const std::string &uri) { _requestLine.setUri(uri); }
+
 std::string RequestMessage::str() const {
 	std::string str = _requestLine.str();
 	str += "\r\n";

@@ -25,14 +25,27 @@
 
 RequestHandler::RequestHandler() {}
 
-ResponseMessage RequestHandler::generateResponse(const Config         &config,
-                                                 const RequestMessage &request, int clientFd) {
-	unsigned short status;
+unsigned short RequestHandler::_checkRedirection(const Location &loc, RequestMessage &request) {
+	(void)request;
+	if (loc.getRedirection().first == -1)
+		return 0;
+	//	request.setUri(loc.getRedirection().second);
+	return loc.getRedirection().first;
+}
+
+ResponseMessage RequestHandler::generateResponse(const Config &config, RequestMessage &request,
+                                                 int clientFd) {
+	unsigned short  status;
+	const Location &loc = findURILocation(config.getLocations(), request.getRequestUri());
 
 	if (!_checkMethods(findURILocation(config.getLocations(), request.getRequestUri()).getMethods(),
 	                   request.getMethod()))
 		throw AMessage::MessageError(405, "Method not allowed in location", request.getMethod());
-	std::string     body = _generateBody(request, status, config, clientFd);
+
+	status = _checkRedirection(loc, request);
+	if (!status)
+		status = 200;
+	std::string     body = _generateBody(request, config, clientFd);
 	StatusLine      statusLine = generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
 	generateHeaders(response, request, status);
@@ -59,20 +72,24 @@ void RequestHandler::_generateErrorHeaders(ResponseMessage &response) {
 	response.addHeader(Header("Server", "webserv"));
 }
 
-std::string RequestHandler::_generateBody(const RequestMessage &request, unsigned short &status,
-                                          const Config &config, int clientFd) {
-	std::string body;
+std::string RequestHandler::_generateBody(const RequestMessage &request, const Config &config,
+                                          int clientFd) {
+	std::string     body;
+	const Location &loc = findURILocation(config.getLocations(), request.getRequestUri());
 
 	if (request.getRequestUri()[0] != '/') {
-		status = 400;
-		return _generateErrorBody(status, config);
+		return _generateErrorBody(400, config);
 	}
 
 	const std::string &method = request.getMethod();
-	std::string        path = _getCompletePath(config, request.getRequestUri());
+
+	std::string path;
+	if (loc.getRedirection().first == -1)
+		path = _getCompletePath(loc, request.getRequestUri());
+	else
+		path = loc.getRedirection().second;
 
 	try {
-		status = 200;
 		if (path.find("/cgi-bin/") != std::string::npos)
 			throw CgiRequestException(request, clientFd, path, config);
 		if (method == "DELETE")
@@ -82,8 +99,7 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, unsigne
 		} else
 			body = MethodHandler::getRequest(request, path, config);
 	} catch (AMessage::MessageError &e) {
-		status = e.getStatusCode();
-		return _generateErrorBody(status, config);
+		return _generateErrorBody(e.getStatusCode(), config);
 	}
 	return body;
 }
@@ -164,8 +180,9 @@ bool RequestHandler::_checkMethods(const std::vector<std::string> &methods,
 	// ++it) 	if (*it == requestMethod) 		return (true); return (false);
 }
 
-std::string RequestHandler::_getCompletePath(const Config &config, const std::string &requestUri) {
-	std::string locRoot = findURILocation(config.getLocations(), requestUri).getRoot();
+std::string RequestHandler::_getCompletePath(const Location &loc, const std::string &requestUri) {
+	const std::string &locRoot = loc.getRoot();
+
 	std::string path =
 	    (locRoot[locRoot.size() - 1] == '/' ? locRoot.substr(0, locRoot.size() - 1) : locRoot) +
 	    requestUri;
@@ -178,8 +195,7 @@ std::string RequestHandler::_getCompletePath(const Config &config, const std::st
 			path += '/';
 		while (true) {
 			try {
-				testPath =
-				    path + findURILocation(config.getLocations(), requestUri).getIndex().at(i);
+				testPath = path + loc.getIndex().at(i);
 			} catch (const std::out_of_range &e) {
 				break;
 			}
