@@ -83,7 +83,9 @@ void Location::_parseRedirection(std::string &str, std::fstream &file) {
 	std::istringstream issNum(str);
 	if (!(issNum >> _redirection.first) || _redirection.first < 100 || _redirection.first > 599)
 		throw Location::Exception("Problem parse Redirection: invalid data");
-	if (!(issNum >> _redirection.second) || (issNum >> str))
+	if (!(issNum >> _redirection.second))
+		(void)_redirection.second;
+	else if (issNum >> str)
 		throw Location::Exception("Problem parse Redirection: invalid data");
 }
 
@@ -190,6 +192,11 @@ void Location::setDefaultIndex(const std::vector<std::string> &index) {
 		_index = index;
 }
 void Location::setDefaultRoot(const std::string &root) { _root = root; }
+void Location::setDefaultRedirection(const std::pair<int, std::string> &redirection) {
+	_redirection = redirection;
+}
+
+void Location::setRedirectionPage(const std::string &page) { _redirection.second = page; }
 
 const std::string                 &Location::getName() const { return _name; }
 const std::pair<int, std::string> &Location::getRedirection() const { return _redirection; }

@@ -40,6 +40,7 @@ class Config {
 	const std::string                           &getRoot() const;
 	const std::vector<std::string>              &getIndex() const;
 	const std::vector<Location>                 &getLocations() const;
+	const std::pair<int, std::string>           &getRedirection() const;
 
 	// Location getter , int parameter is the index of the container
 	const std::string                 &getLocName(int) const;
@@ -62,6 +63,7 @@ class Config {
 	std::string                           _root;
 	std::vector<std::string>              _index;
 	std::vector<Location>                 _locations;
+	std::pair<int, std::string>           _redirection;
 
 	void _parseListen(std::string &, std::fstream &);
 	void _parseApplicationName(std::string &, std::fstream &);
@@ -71,6 +73,7 @@ class Config {
 	void _parseRoot(std::string &, std::fstream &);
 	void _parseIndex(std::string &, std::fstream &);
 	void _parseLocation(std::string &, std::fstream &);
+	void _parseRedirection(std::string &, std::fstream &);
 
 	void _setDefaultErrorPages();
 	void _setDefaultConfig();

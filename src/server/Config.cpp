@@ -16,12 +16,14 @@ Config::Config(std::fstream &file) {
 	_setDefaultConfig();
 
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
-	                      "host",   "root",        "index",      "location"};
+	                      "host",   "root",        "index",      "location",
+	                      "return"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
-	    &Config::_parseListen,    &Config::_parseApplicationName,
-	    &Config::_parseErrorPage, &Config::_parseClientMaxSizeBody,
-	    &Config::_parseHost,      &Config::_parseRoot,
-	    &Config::_parseIndex,     &Config::_parseLocation};
+	    &Config::_parseListen,     &Config::_parseApplicationName,
+	    &Config::_parseErrorPage,  &Config::_parseClientMaxSizeBody,
+	    &Config::_parseHost,       &Config::_parseRoot,
+	    &Config::_parseIndex,      &Config::_parseLocation,
+	    &Config::_parseRedirection};
 
 	// mettre dans un check empty
 	std::string token = " ";
@@ -49,13 +51,13 @@ Config::Config(std::fstream &file) {
 			break;
 		if (token.empty())
 			throw Config::Exception("Missing closing brackets");
-		for (i = 0; i < 8; i++) {
+		for (i = 0; i < 9; i++) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
 				break;
 			}
 		}
-		if (i == 8)
+		if (i == 9)
 			throw Config::Exception("Problem parsing file");
 	}
 
@@ -89,7 +91,8 @@ Config::Config(const Config &former)
     : _address(former.getAddress()), _port(former.getPort()),
       _applicationName(former.getApplicationName()), _errorPages(former.getErrorPages()),
       _clientMaxBodySize(former.getClientMaxBodySize()), _host(former.getHost()),
-      _root(former.getRoot()), _index(former.getIndex()), _locations(former.getLocations()) {}
+      _root(former.getRoot()), _index(former.getIndex()), _locations(former.getLocations()),
+      _redirection(former.getRedirection()) {}
 
 Config &Config::operator=(const Config &former) {
 	if (this != &former) {
@@ -102,6 +105,7 @@ Config &Config::operator=(const Config &former) {
 		_root = former.getRoot();
 		_index = former.getIndex();
 		_locations = former.getLocations();
+		_redirection = former.getRedirection();
 	}
 	return *this;
 }
@@ -268,6 +272,27 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 	}
 }
 
+void Config::_parseRedirection(std::string &str, std::fstream &file) {
+	std::getline(file, str);
+	if (str.empty() || justSpaces(str))
+		throw Location::Exception("Problem parse Redirection");
+	str = trim(str);
+	if (str.empty() || str[str.length() - 1] != ';')
+		throw Location::Exception("Problem parse Redirection");
+	str.erase(str.length() - 1);
+	if (str.empty())
+		throw Location::Exception("Problem parse Redirection");
+	str = trim(str);
+
+	std::istringstream issNum(str);
+	if (!(issNum >> _redirection.first) || _redirection.first < 100 || _redirection.first > 599)
+		throw Location::Exception("Problem parse Redirection: invalid data");
+	if (!(issNum >> _redirection.second))
+		_redirection.second = getErrorPage(_redirection.first);
+	else if (issNum >> str)
+		throw Location::Exception("Problem parse Redirection: invalid data");
+}
+
 void Config::_setDefaultErrorPages() {
 	std::stringstream pageNameStream;
 	std::string       pageName;
@@ -293,6 +318,10 @@ void Config::_setDefaultLocation() {
 			it->setDefaultRoot(getRoot());
 		if (it->getIndex().empty())
 			it->setDefaultIndex(getIndex());
+		if (it->getRedirection().first == -1)
+			it->setDefaultRedirection(getRedirection());
+		else if (it->getRedirection().second.empty())
+			it->setRedirectionPage(getErrorPage(it->getRedirection().first));
 	}
 }
 
@@ -313,6 +342,7 @@ const std::string              &Config::getHost() const { return _host; }
 const std::string              &Config::getRoot() const { return _root; }
 const std::vector<std::string> &Config::getIndex() const { return _index; }
 const std::vector<Location>    &Config::getLocations() const { return _locations; }
+const std::pair<int, std::string> &Config::getRedirection() const { return _redirection; }
 
 // Location getter , int parameter is the index of the container
 const std::string &Config::getLocName(int index) const { return _locations.at(index).getName(); }

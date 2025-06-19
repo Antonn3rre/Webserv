@@ -32,6 +32,8 @@ class Location {
 	void setDefaultMethods();
 	void setDefaultIndex(const std::vector<std::string> &);
 	void setDefaultRoot(const std::string &);
+	void setDefaultRedirection(const std::pair<int, std::string> &);
+	void setRedirectionPage(const std::string &);
 
 	private:
 	std::string                 _name;
