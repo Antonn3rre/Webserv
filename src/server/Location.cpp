@@ -71,6 +71,8 @@ Location::Exception::Exception(const std::string &message) : _errorMessage(messa
 Location::Exception::~Exception() throw() {}
 
 void Location::_parseRedirection(std::string &str, std::fstream &file) {
+	if (_redirection.first != -1)
+		throw Location::Exception("Problem parse Redirection");
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Location::Exception("Problem parse Redirection");

@@ -12,7 +12,7 @@
 #include <string>
 #include <utility>
 
-Config::Config(std::fstream &file) {
+Config::Config(std::fstream &file) : _redirection(std::pair<int, std::string>(-1, "")) {
 	_setDefaultConfig();
 
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
@@ -273,6 +273,8 @@ void Config::_parseLocation(std::string &str, std::fstream &file) {
 }
 
 void Config::_parseRedirection(std::string &str, std::fstream &file) {
+	if (_redirection.first != -1)
+		throw Location::Exception("Problem parse Redirection");
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Location::Exception("Problem parse Redirection");
