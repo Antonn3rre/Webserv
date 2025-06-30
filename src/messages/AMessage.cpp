@@ -90,7 +90,6 @@ bool AMessage::_isHeaderValid(const std::string &headerName) const {
 	std::map<std::string, Header>::const_iterator headerEntry = _validHeaders.find(headerName);
 	if (headerEntry != _validHeaders.end())
 		return headerEntry->second.isSupported();
-	std::cout << "Warning: invalid header: " << headerName << std::endl;
 	return false;
 }
 
@@ -133,6 +132,7 @@ void AMessage::_setValidHeaders() {
 	_insertKnownHeader("Cookie", Header::Request, true, false);
 	// Response headers
 	_insertKnownHeader("Server", Header::Response, true, false);
+	_insertKnownHeader("Location", Header::Response, true, false);
 	_insertKnownHeader("Set-Cookie", Header::Response, true, true);
 
 	// UNSUPPORTED

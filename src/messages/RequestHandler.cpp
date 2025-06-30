@@ -16,6 +16,7 @@
 #include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
+#include <iostream>
 #include <string>
 #include <sys/epoll.h>
 #include <sys/stat.h>
@@ -43,12 +44,24 @@ ResponseMessage RequestHandler::generateResponse(const Config &config, RequestMe
 		throw AMessage::MessageError(405, "Method not allowed in location", request.getMethod());
 
 	status = _checkRedirection(loc, request);
-	if (!status)
-		status = 200;
+	if (status)
+		return _generateRedirectionResponse(status, loc.getRedirection().second);
+	status = 200;
 	std::string     body = _generateBody(request, config, clientFd);
 	StatusLine      statusLine = generateStatusLine(status);
 	ResponseMessage response(statusLine, body);
 	generateHeaders(response, request, status);
+	return response;
+}
+
+ResponseMessage RequestHandler::_generateRedirectionResponse(unsigned short     status,
+                                                             const std::string &path) {
+	std::cout << "REDIR" << std::endl;
+	StatusLine      statusLine = generateStatusLine(status);
+	ResponseMessage response(statusLine, "");
+	response.addHeader(Header("Location", path));
+	response.addHeader(Header("Connection", "close"));
+	std::cout << response.str() << std::endl;
 	return response;
 }
 

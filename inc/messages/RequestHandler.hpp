@@ -41,13 +41,12 @@ class RequestHandler {
 	static ResponseMessage _createResponse(const Config &config, RequestMessage &request,
 	                                       std::pair<int, std::string> &handled);
 
-	//	static StatusLine  generateStatusLine(unsigned short status);
-	//	static void        generateHeaders(ResponseMessage &response, const RequestMessage
-	//&request, 	                                    unsigned short status);
-	static std::string _generateBody(const RequestMessage &request, const Config &config,
-	                                 int clientFd);
-	static std::string _generateErrorBody(unsigned short status, const Config &config);
-	static void        _generateErrorHeaders(ResponseMessage &response);
+	static ResponseMessage _generateRedirectionResponse(unsigned short     status,
+	                                                    const std::string &path);
+	static std::string     _generateBody(const RequestMessage &request, const Config &config,
+	                                     int clientFd);
+	static std::string     _generateErrorBody(unsigned short status, const Config &config);
+	static void            _generateErrorHeaders(ResponseMessage &response);
 
 	static bool           _checkMethods(const std::vector<std::string> &methods,
 	                                    const std::string              &requestMethod);
