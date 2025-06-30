@@ -89,18 +89,14 @@ std::string RequestHandler::_generateBody(const RequestMessage &request, const C
 	else
 		path = loc.getRedirection().second;
 
-	try {
-		if (path.find("/cgi-bin/") != std::string::npos)
-			throw CgiRequestException(request, clientFd, path, config);
-		if (method == "DELETE")
-			body = MethodHandler::deleteRequest(path);
-		else if (method == "POST") {
-			body = MethodHandler::postRequest(request, path);
-		} else
-			body = MethodHandler::getRequest(request, path, config);
-	} catch (AMessage::MessageError &e) {
-		return _generateErrorBody(e.getStatusCode(), config);
-	}
+	if (path.find("/cgi-bin/") != std::string::npos)
+		throw CgiRequestException(request, clientFd, path, config);
+	if (method == "DELETE")
+		body = MethodHandler::deleteRequest(path);
+	else if (method == "POST") {
+		body = MethodHandler::postRequest(request, path);
+	} else
+		body = MethodHandler::getRequest(request, path, config);
 	return body;
 }
 
