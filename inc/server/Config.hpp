@@ -36,7 +36,6 @@ class Config {
 	std::string                                  getErrorPage(unsigned short status) const;
 	const std::map<unsigned short, std::string> &getErrorPages() const;
 	unsigned long                                getClientMaxBodySize() const;
-	const std::string                           &getHost() const;
 	const std::string                           &getRoot() const;
 	const std::vector<std::string>              &getIndex() const;
 	const std::vector<Location>                 &getLocations() const;
@@ -59,7 +58,6 @@ class Config {
 	std::vector<std::string>              _applicationName;
 	std::map<unsigned short, std::string> _errorPages;
 	unsigned int                          _clientMaxBodySize;
-	std::string                           _host;
 	std::string                           _root;
 	std::vector<std::string>              _index;
 	std::vector<Location>                 _locations;
@@ -69,7 +67,6 @@ class Config {
 	void _parseApplicationName(std::string &, std::fstream &);
 	void _parseErrorPage(std::string &, std::fstream &);
 	void _parseClientMaxSizeBody(std::string &, std::fstream &);
-	void _parseHost(std::string &, std::fstream &);
 	void _parseRoot(std::string &, std::fstream &);
 	void _parseIndex(std::string &, std::fstream &);
 	void _parseLocation(std::string &, std::fstream &);

@@ -12,18 +12,17 @@
 #include <string>
 #include <utility>
 
-Config::Config(std::fstream &file) : _redirection(std::pair<int, std::string>(-1, "")) {
+Config::Config(std::fstream &file)
+    : _address(""), _port(-1), _redirection(std::pair<int, std::string>(-1, "")) {
 	_setDefaultConfig();
 
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",
-	                      "host",   "root",        "index",      "location",
-	                      "return"};
+	                      "root",   "index",       "location",   "return"};
 	void (Config::*functionPointer[])(std::string &, std::fstream &file) = {
-	    &Config::_parseListen,     &Config::_parseApplicationName,
-	    &Config::_parseErrorPage,  &Config::_parseClientMaxSizeBody,
-	    &Config::_parseHost,       &Config::_parseRoot,
-	    &Config::_parseIndex,      &Config::_parseLocation,
-	    &Config::_parseRedirection};
+	    &Config::_parseListen,    &Config::_parseApplicationName,
+	    &Config::_parseErrorPage, &Config::_parseClientMaxSizeBody,
+	    &Config::_parseRoot,      &Config::_parseIndex,
+	    &Config::_parseLocation,  &Config::_parseRedirection};
 
 	// mettre dans un check empty
 	std::string token = " ";
@@ -51,7 +50,7 @@ Config::Config(std::fstream &file) : _redirection(std::pair<int, std::string>(-1
 			break;
 		if (token.empty())
 			throw Config::Exception("Missing closing brackets");
-		for (i = 0; i < 9; i++) {
+		for (i = 0; i < 8; i++) {
 			if (token == list[i]) {
 				(this->*functionPointer[i])(token, file);
 				break;
@@ -69,29 +68,16 @@ Config::Config(std::fstream &file) : _redirection(std::pair<int, std::string>(-1
 	if (i == getNumOfLoc())
 		throw Config::Exception("No / location");
 	_setDefaultLocation();
-	// Affichage test
-	// std::cout << "TESTTTT = " << getAddress() << " | " << getPort() << std::endl;
-	// std::cout << "Listen = |" << _listen << "|" << std::endl;
-	// for (std::vector<std::string>::iterator it = _applicationName.begin();
-	//      it != _applicationName.end(); it++)
-	// 	std::cout << "Config name = " << *it << std::endl;
-	// std::cout << "Root = |" << _root << "|" << std::endl;
-	// for (std::vector<std::string>::iterator it = _index.begin(); it != _index.end(); it++)
-	// 	std::cout << "Index = " << *it << std::endl;
-	// std::cout << "Client max = | " << _clientMaxBodySize << " | " << std::endl;
-	// std::cout << " Host = | " << _host << " | " << std::endl;
-	//
-	// std::cout << "Location : " << std::endl;
-	// std::cout << "Root = |" << _locations[0].getRoot() << "|" << std::endl;
-	// std::cout << "Index = |" << _locations[0].getIndex().at(0) << "|" << std::endl;
-	// std::cout << "Root = |" << _location.front().getRoot() << "|" << std::endl;
-	// std::cout << "Nmae = |" << _location.front().getName() << "|" << std::endl;
+	if (getAddress().empty())
+		throw Config::Exception("Missing listen line");
+	if (getPort() == -1)
+		throw Config::Exception("Missing listen line");
 }
 Config::Config(const Config &former)
     : _address(former.getAddress()), _port(former.getPort()),
       _applicationName(former.getApplicationName()), _errorPages(former.getErrorPages()),
-      _clientMaxBodySize(former.getClientMaxBodySize()), _host(former.getHost()),
-      _root(former.getRoot()), _index(former.getIndex()), _locations(former.getLocations()),
+      _clientMaxBodySize(former.getClientMaxBodySize()), _root(former.getRoot()),
+      _index(former.getIndex()), _locations(former.getLocations()),
       _redirection(former.getRedirection()) {}
 
 Config &Config::operator=(const Config &former) {
@@ -101,7 +87,6 @@ Config &Config::operator=(const Config &former) {
 		_applicationName = former.getApplicationName();
 		_errorPages = former.getErrorPages();
 		_clientMaxBodySize = former.getClientMaxBodySize();
-		_host = former.getHost();
 		_root = former.getRoot();
 		_index = former.getIndex();
 		_locations = former.getLocations();
@@ -129,7 +114,7 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 	listen = trim(listen);
 	size_t semicolonPos = listen.find(':');
 	if (semicolonPos >= listen.length() - 1)
-		throw Config::Exception("Problem parse listen, nothing after ':'");
+		throw Config::Exception("Problem parse listen");
 	try {
 		_address = listen.substr(0, semicolonPos);
 		_port =
@@ -223,17 +208,6 @@ void Config::_parseClientMaxSizeBody(std::string &str, std::fstream &file) {
 		_clientMaxBodySize = val * 1000000;
 	else if (multiplierLetter == "g" || multiplierLetter == "G")
 		_clientMaxBodySize = val * 1000000000;
-}
-
-void Config::_parseHost(std::string &str, std::fstream &file) {
-	std::getline(file, str);
-	if (str.empty() || justSpaces(str))
-		throw Config::Exception("Problem parse host");
-	_host = trim(str);
-	if (_host.length() - 1 != _host.find(';') || _host.length() == 1)
-		throw Config::Exception("Problem parse host (;)");
-	_host.resize(_host.length() - 1);
-	_host = trim(_host);
 }
 
 void Config::_parseRoot(std::string &str, std::fstream &file) {
@@ -340,7 +314,6 @@ std::string                     Config::getErrorPage(unsigned short status) cons
 }
 const std::map<unsigned short, std::string> &Config::getErrorPages() const { return _errorPages; }
 unsigned long int               Config::getClientMaxBodySize() const { return _clientMaxBodySize; }
-const std::string              &Config::getHost() const { return _host; }
 const std::string              &Config::getRoot() const { return _root; }
 const std::vector<std::string> &Config::getIndex() const { return _index; }
 const std::vector<Location>    &Config::getLocations() const { return _locations; }
