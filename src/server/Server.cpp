@@ -271,13 +271,14 @@ void Server::_serverLoop() {
 						_handleActiveCgi(events[i]);
 						continue;
 					}
+					Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
 					if (events[i].events & EPOLLIN) {
-						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
 						_listenClientRequest(currentFd);
 						s_connection *con = &connections[currentFd];
 						if (con->status == PROCESSING) {
-							std::cout << "\e[35;1m[RECV] \e[0m" << requestMap[currentFd].getMethod()
-							          << " " << requestMap[currentFd].getRequestUri() << std::endl;
+							std::cout << "\e[35;1m[RECV:" << actualAppConfig.getPort() << "] \e[0m"
+							          << requestMap[currentFd].getMethod() << " "
+							          << requestMap[currentFd].getRequestUri() << std::endl;
 							const Location &actualLocation = RequestHandler::findURILocation(
 							    actualAppConfig.getLocations(),
 							    requestMap[currentFd].getRequestUri());
@@ -297,7 +298,7 @@ void Server::_serverLoop() {
 						bool doneSending = _sendAnswer(*con);
 						if (!doneSending)
 							continue;
-						std::cout << "\e[34;1m[SENT]\e[0m "
+						std::cout << "\e[34;1m[SENT:" << actualAppConfig.getPort() << "]\e[0m "
 						          << responseMap[currentFd].getStatusCode() << " "
 						          << responseMap[currentFd].getReasonPhrase() << std::endl;
 						if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
