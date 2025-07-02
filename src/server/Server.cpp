@@ -14,19 +14,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
-#include <fcntl.h>
 #include <iostream>
 #include <map>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
 #include <string>
 #include <strings.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -49,7 +44,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -84,6 +79,7 @@ bool Server::_initServer(void) {
 		}
 	}
 	signal(SIGINT, callServerShutdown);
+	signal(SIGTERM, callServerShutdown);
 	return true;
 }
 
