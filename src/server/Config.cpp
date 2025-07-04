@@ -119,13 +119,14 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 	size_t semicolonPos = listen.find(':');
 	if (semicolonPos >= listen.length() - 1)
 		throw Config::Exception("Problem parse listen");
-	try {
-		_address = listen.substr(0, semicolonPos);
-		_port =
-		    std::atoi(listen.substr(semicolonPos + 1, listen.length() - semicolonPos - 1).c_str());
-	} catch (const std::exception &e) {
-		std::cerr << "Error" << std::endl;
-	}
+	_address = listen.substr(0, semicolonPos);
+	if ((listen.length() - semicolonPos - 1) > 5 ||
+	    listen.substr(semicolonPos + 1, listen.length() - semicolonPos - 1)
+	            .find_first_not_of("0123456789") != std::string::npos)
+		throw Config::Exception("Problem parse listen :  wrong port ");
+	_port = std::atoi(listen.substr(semicolonPos + 1, listen.length() - semicolonPos - 1).c_str());
+	if (_port > 65535)
+		throw Config::Exception("Problem parse listen :  wrong port ");
 }
 
 void Config::_parseApplicationName(std::string &str, std::fstream &file) {
