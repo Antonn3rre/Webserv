@@ -164,7 +164,7 @@ void Location::_parseClientMaxSizeBody(std::string &str, std::fstream &file) {
 	str.resize(str.length() - 1);
 	str = trim(str);
 
-	int val = std::atoi(str.c_str());
+	unsigned long val = std::atoi(str.c_str());
 
 	std::string multiplierLetter;
 	for (std::string::iterator it = str.begin(); it != str.end(); ++it) {
