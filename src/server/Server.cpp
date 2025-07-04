@@ -14,19 +14,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
-#include <fcntl.h>
 #include <iostream>
 #include <map>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
 #include <string>
 #include <strings.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -49,7 +44,7 @@ Server::Server(const std::string &filename) {
 	file.close();
 }
 
-Server::~Server(void) {};
+Server::~Server(void){};
 
 extern "C" void callServerShutdown(int signal) {
 	(void)signal;
@@ -84,6 +79,7 @@ bool Server::_initServer(void) {
 		}
 	}
 	signal(SIGINT, callServerShutdown);
+	signal(SIGTERM, callServerShutdown);
 	return true;
 }
 
@@ -93,7 +89,7 @@ void Server::startServer(void) {
 }
 
 void Server::_shutdown(void) {
-	std::cout << "\nShutting down server" << std::endl;
+	std::cout << "\n\e[31;1m[STOP]\e[0m Shutting down server" << std::endl;
 	for (std::map<int, Client>::iterator it = _clientMap.begin(); it != _clientMap.end(); ++it) {
 		_disconnectClient(it->first);
 	}
@@ -275,11 +271,14 @@ void Server::_serverLoop() {
 						_handleActiveCgi(events[i]);
 						continue;
 					}
+					Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
 					if (events[i].events & EPOLLIN) {
-						Config actualAppConfig = _getApplicationFromFD(currentFd).getConfig();
 						_listenClientRequest(currentFd);
 						s_connection *con = &connections[currentFd];
 						if (con->status == PROCESSING) {
+							std::cout << "\e[35;1m[RECV:" << actualAppConfig.getPort() << "] \e[0m"
+							          << requestMap[currentFd].getMethod() << " "
+							          << requestMap[currentFd].getRequestUri() << std::endl;
 							const Location &actualLocation = RequestHandler::findURILocation(
 							    actualAppConfig.getLocations(),
 							    requestMap[currentFd].getRequestUri());
@@ -299,6 +298,9 @@ void Server::_serverLoop() {
 						bool doneSending = _sendAnswer(*con);
 						if (!doneSending)
 							continue;
+						std::cout << "\e[34;1m[SENT:" << actualAppConfig.getPort() << "]\e[0m "
+						          << responseMap[currentFd].getStatusCode() << " "
+						          << responseMap[currentFd].getReasonPhrase() << std::endl;
 						if (!_evaluateClientConnection(currentFd, responseMap[currentFd])) {
 							_clearForNewRequest(currentFd);
 							_modifySocketEpoll(_epollfd, currentFd, REQUEST_FLAGS);
@@ -470,17 +472,15 @@ void Server::_finalizeCgiRead(cgiSession &session) {
 		cgiSessions.erase(session.getPipeToCgi());
 	}
 
-	s_connection *con = &connections[session.getClientFd()];
-	if (con) {
-		StatusLine      statusLine = RequestHandler::generateStatusLine(200);
-		ResponseMessage response(statusLine, session.cgiResponse);
-		RequestHandler::generateHeaders(response, session.request, 200);
-		con->bufferWrite = response.str();
-		responseMap[con->clientFd] = response;
-		con->status = WRITING_OUTPUT;
-		_modifySocketEpoll(_epollfd, session.getClientFd(), RESPONSE_FLAGS);
-		cgiSessions.erase(session.getClientFd());
-	}
+	s_connection   *con = &connections[session.getClientFd()];
+	StatusLine      statusLine = RequestHandler::generateStatusLine(200);
+	ResponseMessage response(statusLine, session.cgiResponse);
+	RequestHandler::generateHeaders(response, session.request, 200);
+	con->bufferWrite = response.str();
+	responseMap[con->clientFd] = response;
+	con->status = WRITING_OUTPUT;
+	_modifySocketEpoll(_epollfd, session.getClientFd(), RESPONSE_FLAGS);
+	cgiSessions.erase(session.getClientFd());
 }
 
 void Server::_cleanupConnection(int fd) {

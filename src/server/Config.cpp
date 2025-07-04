@@ -12,8 +12,7 @@
 #include <string>
 #include <utility>
 
-Config::Config(std::fstream &file)
-    : _address(""), _port(-1), _redirection(std::pair<int, std::string>(-1, "")) {
+Config::Config(std::fstream &file) : _port(-1), _redirection(std::pair<int, std::string>(-1, "")) {
 	_setDefaultConfig();
 
 	std::string list[] = {"listen", "server_name", "error_page", "client_max_body_size",

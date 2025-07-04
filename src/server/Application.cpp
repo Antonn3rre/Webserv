@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-Application::Application(std::fstream &file) : _config(Config(file)) {};
+Application::Application(std::fstream &file) : _config(Config(file)){};
 
 Application::Application(const Application &former) : _config(former.getConfig()) {
 	_lsockfd = former.getLSockFd();
@@ -30,7 +30,6 @@ bool Application::initApplication(int epollfd) {
 	if (_lsockfd == -1) {
 		std::cerr << "Error on socket." << std::endl;
 		return (false);
-		exit(1);
 	}
 
 	// allow the socket to be reusable
@@ -63,8 +62,8 @@ bool Application::initApplication(int epollfd) {
 void Application::close() const { ::close(_lsockfd); }
 
 void Application::_printAtLaunch(void) {
-	std::cout << "Server launch at this address: http://" << _config.getAddress() << ":"
-	          << _config.getPort() << "/" << std::endl;
+	std::cout << "\e[32;1m[START]\e[0m http://" << _config.getAddress() << ":" << _config.getPort()
+	          << "/" << std::endl;
 }
 
 // Config getter
