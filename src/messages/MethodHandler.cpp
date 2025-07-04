@@ -22,13 +22,19 @@ std::string MethodHandler::getFileRequest(const Location &loc, const std::string
 	if (!dir)
 		throw AMessage::MessageError(403);
 	const struct dirent *stDir;
+	body += "<!DOCTYPE html>\
+		<html lang=\"fr\"> \
+		<body>";
+	body += "<ul>";
 	while (true) {
 		stDir = readdir(dir);
 		if (!stDir)
 			break;
-		body += stDir->d_name;
+		body += "<li><a href=" + page.substr(7) + std::string(stDir->d_name) + ">" + stDir->d_name +
+		        "</a></li>";
 		body += "\n";
 	}
+	body += "</ul></body>";
 	return (body);
 }
 
