@@ -17,7 +17,7 @@ std::string MethodHandler::getFileRequest(const Location &loc, const std::string
 	std::string body;
 
 	if (!loc.getAutoindex())
-		throw AMessage::MessageError(403);
+		throw AMessage::MessageError(404);
 	DIR *dir = opendir(page.c_str());
 	if (!dir)
 		throw AMessage::MessageError(403);
