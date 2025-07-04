@@ -3,6 +3,7 @@
 #include "Config.hpp"
 #include "RequestHandler.hpp"
 #include "RequestMessage.hpp"
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <dirent.h>
@@ -63,15 +64,23 @@ std::string MethodHandler::postRequest(const RequestMessage &request, const std:
 	return "";
 }
 
-std::string MethodHandler::deleteRequest(const std::string &page) {
+std::string MethodHandler::deleteRequest(std::string &page) {
+	std::string            body = loadFile(page);
+	std::string            to_replace = "%20";
+	std::string            replacement = " ";
+	std::string::size_type pos = 0;
+	while ((pos = page.find(to_replace, pos)) != std::string::npos) {
+		page.replace(pos, to_replace.length(), replacement);
+		pos += replacement.length();
+	}
+
 	if (access(page.c_str(), F_OK))
 		throw AMessage::MessageError(404, "delete method", "file does not exist");
 	if (access(page.c_str(), W_OK))
 		throw AMessage::MessageError(403, "delete method", "cannot delete file");
 
-	std::string body = loadFile(page);
 	std::remove(page.c_str());
-	// add check ?
+
 	return (body);
 }
 

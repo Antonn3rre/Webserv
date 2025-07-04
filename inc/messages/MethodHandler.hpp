@@ -11,7 +11,7 @@ class MethodHandler {
 	static void _saveFile(const std::string &filename, const std::string &body);
 
 	public:
-	static std::string deleteRequest(const std::string &page);
+	static std::string deleteRequest(std::string &page);
 	static std::string getRequest(const RequestMessage &request, const std::string &page,
 	                              const Config &config);
 	static std::string postRequest(const RequestMessage &request, const std::string &page);
