@@ -72,6 +72,8 @@ Config::Config(std::fstream &file)
 		throw Config::Exception("Missing listen line");
 	if (getPort() == -1)
 		throw Config::Exception("Missing listen line");
+	if (getApplicationName().empty())
+		throw Config::Exception("Missing server_name line");
 }
 Config::Config(const Config &former)
     : _address(former.getAddress()), _port(former.getPort()),
@@ -104,6 +106,9 @@ Config::Exception::Exception(const std::string &message) : _errorMessage(message
 Config::Exception::~Exception() throw() {}
 
 void Config::_parseListen(std::string &str, std::fstream &file) {
+	if (_port != -1)
+		throw Config::Exception("Multiple listen");
+
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse listen, empty");
@@ -120,11 +125,13 @@ void Config::_parseListen(std::string &str, std::fstream &file) {
 		_port =
 		    std::atoi(listen.substr(semicolonPos + 1, listen.length() - semicolonPos - 1).c_str());
 	} catch (const std::exception &e) {
-		std::cerr << "bite" << std::endl;
+		std::cerr << "Error" << std::endl;
 	}
 }
 
 void Config::_parseApplicationName(std::string &str, std::fstream &file) {
+	if (!getApplicationName().empty())
+		throw Config::Exception("Multiple server_name line");
 	std::getline(file, str);
 	if (str.empty() || justSpaces(str))
 		throw Config::Exception("Problem parse server name, empty");
