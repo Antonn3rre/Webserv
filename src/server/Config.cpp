@@ -1,4 +1,5 @@
 #include "Config.hpp"
+#include "Location.hpp"
 #include "utilsParsing.hpp"
 #include "utilsSpace.hpp"
 #include <exception>
@@ -11,6 +12,7 @@
 #include <stdlib.h>
 #include <string>
 #include <utility>
+#include <vector>
 
 Config::Config(std::fstream &file) : _port(-1), _redirection(std::pair<int, std::string>(-1, "")) {
 	_setDefaultConfig();
@@ -247,7 +249,11 @@ void Config::_parseIndex(std::string &str, std::fstream &file) {
 
 void Config::_parseLocation(std::string &str, std::fstream &file) {
 	try {
-		_locations.push_back(Location(str, file, _clientMaxBodySize));
+		Location loc(str, file, _clientMaxBodySize);
+		for (std::vector<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it)
+			if (it->getName() == loc.getName())
+				throw Location::Exception("More than one definition of location " + loc.getName());
+		_locations.push_back(loc);
 	} catch (Location::Exception &e) {
 		throw Config::Exception(e.what());
 	}
