@@ -57,7 +57,7 @@ Config::Config(std::fstream &file) : _port(-1), _redirection(std::pair<int, std:
 				break;
 			}
 		}
-		if (i == 9)
+		if (i == 8)
 			throw Config::Exception("Problem parsing file");
 	}
 
